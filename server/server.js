@@ -1,48 +1,31 @@
-import express from 'express';
-import cors from 'cors';
-import dotenv from 'dotenv';
-import mongoose from 'mongoose';
-import morgan from 'morgan';
-import authRoutes from './routes/auth.js';
-import adminRoutes from './routes/admin.js';
+const app = require("./app");
+const connectDB = require("./config/database");
 
-// Load environment variables
-dotenv.config();
+console.log("Environment check:");
+console.log("MONGO_URI:", process.env.MONGO_URI ? "✓ Loaded" : "✗ Missing");
+console.log("JWT_SECRET:", process.env.JWT_SECRET ? "✓ Loaded" : "✗ Missing");
+console.log("PORT:", process.env.PORT || "Using default 5000");
 
-const app = express();
-
-// Middleware
-app.use(cors());
-app.use(express.json());
-app.use(morgan('dev'));
-
-// Database connection
-mongoose
-  .connect(process.env.MONGODB_URI)
-  .then(() => console.log('DB Connected'))
-  .catch((err) => console.log('DB Connection Error:', err));
-
-// Routes
-app.use('/api/auth', authRoutes);
-app.use('/api/admin', adminRoutes);
-
-// Basic route
-app.get('/', (req, res) => {
-  res.send('API is running...');
+// Handle uncaught exceptions
+process.on("uncaughtException", (err) => {
+  console.log(`Error: ${err.message}`);
+  console.log("Shutting down server due to uncaught exception");
+  process.exit(1);
 });
 
-// Error handling middleware
-app.use((err, req, res, next) => {
-  const statusCode = err.statusCode || 500;
-  const message = err.message || 'Internal Server Error';
-  res.status(statusCode).json({
-    success: false,
-    statusCode,
-    message,
+// Connect to database
+connectDB();
+
+const PORT = process.env.PORT || 5001;
+const server = app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+});
+
+// Handle unhandled promise rejections
+process.on("unhandledRejection", (err) => {
+  console.log(`Error: ${err.message}`);
+  console.log("Shutting down server due to unhandled promise rejection");
+  server.close(() => {
+    process.exit(1);
   });
-});
-
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
 });

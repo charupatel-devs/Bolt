@@ -2,21 +2,54 @@
   "name": "server",
   "version": "1.0.0",
   "main": "server.js",
-  "type": "module",
   "scripts": {
     "start": "node server.js",
     "dev": "nodemon server.js"
   },
+  "keywords": [
+    "electronics",
+    "marketplace",
+    "ecommerce",
+    "nodejs",
+    "express",
+    "mongodb"
+  ],
+  "author": "Your Name",
+  "license": "MIT",
   "dependencies": {
-    "bcryptjs": "^2.4.3",
-    "cors": "^2.8.5",
-    "dotenv": "^16.4.1",
     "express": "^4.18.2",
+    "mongoose": "^8.0.3",
+    "bcryptjs": "^2.4.3",
     "jsonwebtoken": "^9.0.2",
-    "mongoose": "^8.1.1",
-    "morgan": "^1.10.0"
+    "dotenv": "^16.3.1",
+    "cors": "^2.8.5",
+    "body-parser": "^1.20.2",
+    "nodemailer": "^6.9.7",
+    "validator": "^13.11.0",
+    "multer": "^2.0.0-alpha.8",
+    "winston": "^3.11.0",
+    "helmet": "^7.1.0",
+    "express-rate-limit": "^7.1.5",
+    "express-mongo-sanitize": "^2.2.0",
+    "hpp": "^0.2.3",
+    "compression": "^1.7.4",
+    "morgan": "^1.10.0",
+    "express-validator": "^7.0.1",
+    "joi": "^17.11.0",
+    "sharp": "^0.32.6",
+    "cloudinary": "^1.41.0",
+    "stripe": "^14.5.0",
+    "razorpay": "^2.9.2"
   },
   "devDependencies": {
-    "nodemon": "^3.0.3"
+    "nodemon": "^3.0.2",
+    "jest": "^29.7.0",
+    "supertest": "^6.3.3",
+    "mongodb-memory-server": "^9.1.1",
+    "eslint": "^8.54.0",
+    "prettier": "^3.1.0"
+  },
+  "engines": {
+    "node": ">=16.0.0"
   }
 }
