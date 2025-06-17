@@ -1,9 +1,8 @@
-import { Toaster } from "react-hot-toast";
+// import { Toaster } from "react-hot-toast";
 import { Navigate, Route, Routes } from "react-router-dom";
 
 // Import route components
 import AdminRoutes from "./routes/AdminRoutes";
-import CustomerRoutes from "./routes/CustomerRoutes";
 
 // Import global components
 import ErrorBoundary from "./components/common/ErrorBoundary";
@@ -16,7 +15,7 @@ function App() {
     <ErrorBoundary>
       <div className="App">
         {/* Global Toast Notifications */}
-        <Toaster
+        {/* <Toaster
           position="top-right"
           toastOptions={{
             duration: 4000,
@@ -37,22 +36,21 @@ function App() {
               },
             },
           }}
-        />
+        /> */}
 
         {/* Main Application Routes */}
         <Routes>
           {/* Customer Routes - Main e-commerce site */}
-          <Route path="/*" element={<CustomerRoutes />} />
+          {/* <Route path="/*" element={<CustomerRoutes />} /> */}
 
           {/* Admin Routes - Admin panel */}
-          <Route path="/admin/*" element={<AdminRoutes />} />
 
           {/* Redirect root admin to dashboard */}
           <Route
             path="/admin"
             element={<Navigate to="/admin/dashboard" replace />}
           />
-
+          <Route path="/admin/*" element={<AdminRoutes />} />
           {/* 404 - Fallback route */}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
