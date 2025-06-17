@@ -1,59 +1,63 @@
-import { Route, BrowserRouter as Router, Routes } from "react-router-dom";
-import { useEffect } from "react";
-import { useDispatch } from "react-redux";
-import { loadUserFromToken } from "./store/slices/authSlice";
+import { Toaster } from "react-hot-toast";
+import { Navigate, Route, Routes } from "react-router-dom";
 
-// Pages & Components
-import AdminDashboard from "./pages/admin/Dashboard";
-import NotFound from "./pages/NotFound";
-import Home from "./pages/user/Home";
-import Login from "./components/auth/Login";
-import Signup from "./components/auth/Signup";
-import ProtectedRoute from "./components/common/ProtectedRoute";
-import Navbar from "./components/common/Navbar";  // ⬅️ Added Navbar
-import Footer from "./components/common/Footer";  // ⬅️ Added Footer
+// Import route components
+import AdminRoutes from "./routes/AdminRoutes";
+import CustomerRoutes from "./routes/CustomerRoutes";
 
-import "./App.css"; // Optional global styling
+// Import global components
+import ErrorBoundary from "./components/common/ErrorBoundary";
+
+// Import styles
+import "./App.css";
 
 function App() {
-  const dispatch = useDispatch();
-
-  useEffect(() => {
-    dispatch(loadUserFromToken());
-  }, [dispatch]);
-
   return (
-    <Router>
-      <div className="app-wrapper">
-        <Navbar /> {/* Top Navigation Bar */}
- 
-        <main className="app-content">
-          <Routes>
-            {/* Auth Routes */}
-            <Route path="/login" element={<Login />} />
-            <Route path="/signup" element={<Signup />} />
+    <ErrorBoundary>
+      <div className="App">
+        {/* Global Toast Notifications */}
+        <Toaster
+          position="top-right"
+          toastOptions={{
+            duration: 4000,
+            style: {
+              background: "#363636",
+              color: "#fff",
+            },
+            success: {
+              style: {
+                background: "#4aed88",
+                color: "#000",
+              },
+            },
+            error: {
+              style: {
+                background: "#f87171",
+                color: "#fff",
+              },
+            },
+          }}
+        />
 
-            {/* User Routes */}
-            <Route path="/" element={<Home />} />
+        {/* Main Application Routes */}
+        <Routes>
+          {/* Customer Routes - Main e-commerce site */}
+          <Route path="/*" element={<CustomerRoutes />} />
 
-            {/* Admin Routes */}
-            <Route
-              path="/admin/*"
-              element={
-                <ProtectedRoute requiredRole="admin">
-                  <AdminDashboard />
-                </ProtectedRoute>
-              }
-            />
+          {/* Admin Routes - Admin panel */}
+          <Route path="/admin/*" element={<AdminRoutes />} />
 
-            {/* 404 Route */}
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </main>
+          {/* Redirect root admin to dashboard */}
+          <Route
+            path="/admin"
+            element={<Navigate to="/admin/dashboard" replace />}
+          />
 
-        <Footer /> {/* Bottom Footer */}
+          {/* 404 - Fallback route */}
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
       </div>
-    </Router>
+    </ErrorBoundary>
   );
 }
 
