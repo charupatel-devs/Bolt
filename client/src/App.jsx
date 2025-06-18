@@ -1,4 +1,4 @@
-// import { Toaster } from "react-hot-toast";
+import { Toaster } from "react-hot-toast";
 import { Navigate, Route, Routes } from "react-router-dom";
 
 // Import route components
@@ -15,7 +15,7 @@ function App() {
     <ErrorBoundary>
       <div className="App">
         {/* Global Toast Notifications */}
-        {/* <Toaster
+        <Toaster
           position="top-right"
           toastOptions={{
             duration: 4000,
@@ -36,7 +36,7 @@ function App() {
               },
             },
           }}
-        /> */}
+        />
 
         {/* Main Application Routes */}
         <Routes>

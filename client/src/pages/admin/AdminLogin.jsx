@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Alert,
   Button,
@@ -8,17 +8,33 @@ import {
   Form,
   Row,
 } from "react-bootstrap";
-import { useNavigate } from "react-router-dom";
-import { adminLogin } from "../../services/admin/adminAuthService"; // Adjust the import path as necessary
+import { useDispatch, useSelector } from "react-redux";
+
+import { useLocation, useNavigate } from "react-router-dom";
+import { adminLogin } from "../../services/admin/adminAuthService";
 
 const AdminLogin = () => {
   const [formData, setFormData] = useState({
     email: "",
     password: "",
   });
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState("");
+
+  const dispatch = useDispatch();
   const navigate = useNavigate();
+  const location = useLocation();
+
+  // Get auth state from Redux
+  const { isAuthenticated, isFetching, error, errMsg } = useSelector(
+    (state) => state.adminAuth
+  );
+
+  // Redirect if already authenticated
+  useEffect(() => {
+    if (isAuthenticated) {
+      const from = location.state?.from?.pathname || "/admin/dashboard";
+      navigate(from, { replace: true });
+    }
+  }, [isAuthenticated, navigate, location]);
 
   // Handle input changes
   const handleChange = (e) => {
@@ -26,31 +42,31 @@ const AdminLogin = () => {
       ...formData,
       [e.target.name]: e.target.value,
     });
+
     // Clear error when user starts typing
-    if (error) setError("");
+    if (error) {
+      dispatch(ClearAdminError());
+    }
   };
 
   // Handle form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setIsLoading(true);
-    setError("");
+
+    // Basic validation
+    if (!formData.email || !formData.password) {
+      return;
+    }
 
     try {
-      // Call API service
-      const response = await adminLogin(formData);
-
-      // Store token in localStorage
-      localStorage.setItem("adminToken", response.token);
-
-      // Redirect to dashboard
-      navigate("/admin/dashboard");
+      await adminLogin(dispatch, formData);
+      // Navigation will happen automatically due to useEffect above
     } catch (error) {
-      setError(error.message || "Login failed. Please try again.");
-    } finally {
-      setIsLoading(false);
+      // Error handling is done in the API call
+      console.error("Login failed:", error);
     }
   };
+
   return (
     <div className="min-vh-100 d-flex align-items-center justify-content-center bg-light">
       <Container>
@@ -72,10 +88,10 @@ const AdminLogin = () => {
                 </div>
 
                 {/* Error Alert */}
-                {error && (
+                {error && errMsg && (
                   <Alert variant="danger" className="mb-4">
                     <i className="bi bi-exclamation-circle me-2"></i>
-                    {error}
+                    {errMsg}
                   </Alert>
                 )}
 
@@ -91,7 +107,8 @@ const AdminLogin = () => {
                       placeholder="Enter your email"
                       size="lg"
                       required
-                      disabled={isLoading}
+                      disabled={isFetching}
+                      autoComplete="email"
                     />
                   </Form.Group>
 
@@ -105,7 +122,8 @@ const AdminLogin = () => {
                       placeholder="Enter your password"
                       size="lg"
                       required
-                      disabled={isLoading}
+                      disabled={isFetching}
+                      autoComplete="current-password"
                     />
                   </Form.Group>
 
@@ -114,9 +132,11 @@ const AdminLogin = () => {
                     variant="primary"
                     size="lg"
                     className="w-100"
-                    disabled={isLoading}
+                    disabled={
+                      isFetching || !formData.email || !formData.password
+                    }
                   >
-                    {isLoading ? (
+                    {isFetching ? (
                       <>
                         <span
                           className="spinner-border spinner-border-sm me-2"

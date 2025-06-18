@@ -19,7 +19,6 @@ api.interceptors.request.use(
         config.headers.Authorization = `Bearer ${adminToken}`;
       }
     }
-
     // Add user token for user routes
     else {
       const userToken = localStorage.getItem("userToken");
@@ -43,15 +42,24 @@ api.interceptors.response.use(
   (error) => {
     // Handle 401 Unauthorized
     if (error.response?.status === 401) {
+      // Get current pathname
+      const currentPath = window.location.pathname;
+
       // If admin route, clear admin token and redirect to admin login
       if (error.config.url.includes("/admin")) {
         localStorage.removeItem("adminToken");
-        window.location.href = "/admin/login";
+        // Only redirect if not already on admin login page
+        if (currentPath !== "/admin/login") {
+          window.location.href = "/admin/login";
+        }
       }
       // If user route, clear user token and redirect to user login
       else {
         localStorage.removeItem("userToken");
-        window.location.href = "/login";
+        // Only redirect if not already on login page
+        if (currentPath !== "/login" && currentPath !== "/") {
+          window.location.href = "/login";
+        }
       }
     }
 

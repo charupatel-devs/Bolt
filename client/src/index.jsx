@@ -1,5 +1,4 @@
 import { QueryClient } from "@tanstack/react-query";
-import React from "react";
 import ReactDOM from "react-dom/client";
 import { BrowserRouter } from "react-router-dom";
 
@@ -8,12 +7,13 @@ import "bootstrap-icons/font/bootstrap-icons.css";
 import "bootstrap/dist/css/bootstrap.min.css";
 import "./index.css";
 // Import custom global styles
+import { Provider } from "react-redux";
 import "./App.css";
 import "./styles/global.css";
 
 // Import main App component
 import App from "./App";
-// import { store } from "./store";
+import store from "./store/index";
 
 // Create a QueryClient instance for React Query
 const queryClient = new QueryClient({
@@ -28,13 +28,11 @@ const queryClient = new QueryClient({
 const root = ReactDOM.createRoot(document.getElementById("root"));
 
 root.render(
-  <React.StrictMode>
-    {/* <Provider store={store}>
-      <QueryClientProvider client={queryClient}> */}
+  <Provider store={store}>
+    {/* <QueryClientProvider client={queryClient}> */}
     <BrowserRouter>
       <App />
     </BrowserRouter>
-    {/* </QueryClientProvider>
-    </Provider> */}
-  </React.StrictMode>
+    {/* </QueryClientProvider> */}
+  </Provider>
 );
