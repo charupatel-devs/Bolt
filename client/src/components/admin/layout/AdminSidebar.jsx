@@ -8,7 +8,6 @@ import {
   Package,
   Settings,
   ShoppingCart,
-  Tag,
   Truck,
   Users,
 } from "lucide-react";
@@ -91,20 +90,20 @@ const AdminSidebar = ({ isOpen, onToggle }) => {
         { label: "Sales Reports", path: "/admin/analytics/sales" },
         { label: "Product Performance", path: "/admin/analytics/products" },
         { label: "Customer Analytics", path: "/admin/analytics/customers" },
-        { label: "Traffic Reports", path: "/admin/analytics/traffic" },
+        // { label: "Traffic Reports", path: "/admin/analytics/traffic" },
       ],
     },
-    {
-      key: "marketing",
-      label: "Marketing",
-      icon: Tag,
-      submenu: [
-        { label: "Promotions", path: "/admin/marketing/promotions" },
-        { label: "Coupons", path: "/admin/marketing/coupons" },
-        { label: "Email Campaigns", path: "/admin/marketing/emails" },
-        { label: "Banner Management", path: "/admin/marketing/banners" },
-      ],
-    },
+    // {
+    //   key: "marketing",
+    //   label: "Marketing",
+    //   icon: Tag,
+    //   submenu: [
+    //     { label: "Promotions", path: "/admin/marketing/promotions" },
+    //     { label: "Coupons", path: "/admin/marketing/coupons" },
+    //     { label: "Email Campaigns", path: "/admin/marketing/emails" },
+    //     { label: "Banner Management", path: "/admin/marketing/banners" },
+    //   ],
+    // },
     {
       key: "shipping",
       label: "Shipping",
@@ -120,8 +119,8 @@ const AdminSidebar = ({ isOpen, onToggle }) => {
       label: "Finance",
       icon: Banknote,
       submenu: [
-        { label: "Revenue Reports", path: "/admin/finance/revenue" },
-        { label: "Tax Management", path: "/admin/finance/tax" },
+        // { label: "Revenue Reports", path: "/admin/finance/revenue" },
+        // { label: "Tax Management", path: "/admin/finance/tax" },
         { label: "Payment Methods", path: "/admin/finance/payments" },
         { label: "Refunds", path: "/admin/finance/refunds" },
       ],
@@ -131,11 +130,11 @@ const AdminSidebar = ({ isOpen, onToggle }) => {
       label: "Settings",
       icon: Settings,
       submenu: [
-        { label: "General Settings", path: "/admin/settings/general" },
-        { label: "Store Configuration", path: "/admin/settings/store" },
-        { label: "Payment Settings", path: "/admin/settings/payments" },
-        { label: "Email Settings", path: "/admin/settings/email" },
-        { label: "SEO Settings", path: "/admin/settings/seo" },
+        { label: "General Settings", path: "/admin/settings" },
+        // { label: "Store Configuration", path: "/admin/settings/store" },
+        // { label: "Payment Settings", path: "/admin/settings/payments" },
+        // { label: "Email Settings", path: "/admin/settings/email" },
+        // { label: "SEO Settings", path: "/admin/settings/seo" },
       ],
     },
   ];

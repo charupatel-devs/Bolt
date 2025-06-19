@@ -13,15 +13,26 @@ import AdminProducts from "../pages/admin/AdminProducts";
 import AllOrders from "../pages/admin/AdminAllOrders";
 import Orders from "../pages/admin/AdminOrders";
 import PendingOrders from "../pages/admin/AdminPendingOrders";
+import AdminSettings from "../pages/admin/AdminSettings";
+import CustomerAnalytics from "../pages/admin/CustomerAnalytics";
 import CustomerGroups from "../pages/admin/CustomerGroups";
 import CustomerReviews from "../pages/admin/CustomerReviews";
 import Customers from "../pages/admin/Customers";
 import DeliveredOrders from "../pages/admin/DeliveredOrders";
+import PaymentMethods from "../pages/admin/PaymentMethods";
 import ProcessingOrders from "../pages/admin/ProcessingOrders";
+import ProductPerformance from "../pages/admin/ProductPerformance";
+import PurchaseOrders from "../pages/admin/PurchaseOrders";
+import Refunds from "../pages/admin/Refunds";
 import Returns from "../pages/admin/Returns";
+import SalesReports from "../pages/admin/SalesReports";
 import ShippedOrders from "../pages/admin/ShippedOrders";
+import ShippingMethods from "../pages/admin/ShippingMethods";
+import ShippingZones from "../pages/admin/ShippingZones";
 import StockAdjustments from "../pages/admin/StockAdjustments";
 import StockManagement from "../pages/admin/StockManagement";
+import Suppliers from "../pages/admin/Suppliers";
+import TrackShipments from "../pages/admin/TrackShipments";
 
 // Commented out pages for future implementation
 // import AdminAnalytics from "../pages/admin/AdminAnalytics";
@@ -76,32 +87,31 @@ const AdminRoutes = () => {
         {/* 📊 INVENTORY ROUTES (Future) */}
         <Route path="/inventory" element={<StockManagement />} />
         <Route path="/inventory/adjustments" element={<StockAdjustments />} />
-        <Route path="/inventory/supplier" element={<StockManagement />} />
-        <Route
-          path="/inventory/purchase-orders"
-          element={<StockManagement />}
-        />
+        <Route path="/inventory/suppliers" element={<Suppliers />} />
+        <Route path="/inventory/purchase-orders" element={<PurchaseOrders />} />
 
         {/* 📊 ANALYTICS ROUTES (Future) */}
-        {/* <Route path="/analytics" element={<AdminAnalytics />} /> */}
-        {/* <Route path="/analytics/sales" element={<AdminSalesAnalytics />} /> */}
-        {/* <Route path="/analytics/products" element={<AdminProductAnalytics />} /> */}
-        {/* <Route path="/analytics/customers" element={<AdminCustomerAnalytics />} /> */}
+        <Route path="/analytics/sales" element={<SalesReports />} />
+        <Route path="/analytics/products" element={<ProductPerformance />} />
+        <Route path="/analytics/customers" element={<CustomerAnalytics />} />
+
+        {/* 💰 SHIPPING ROUTES (Future) */}
+        <Route path="/shipping/methods" element={<ShippingMethods />} />
+        <Route path="/shipping/zones" element={<ShippingZones />} />
+        <Route path="/shipping/tracking" element={<TrackShipments />} />
 
         {/* 💰 FINANCE ROUTES (Future) */}
-        {/* <Route path="/finance" element={<AdminFinance />} /> */}
-        {/* <Route path="/finance/transactions" element={<AdminTransactions />} /> */}
-        {/* <Route path="/finance/refunds" element={<AdminRefunds />} /> */}
-        {/* <Route path="/finance/reports" element={<AdminFinanceReports />} /> */}
+        <Route path="/finance/payments" element={<PaymentMethods />} />
+        <Route path="/finance/refunds" element={<Refunds />} />
 
         {/* 📢 MARKETING ROUTES (Future) */}
-        {/* <Route path="/marketing" element={<AdminMarketing />} /> */}
-        {/* <Route path="/marketing/campaigns" element={<AdminCampaigns />} /> */}
-        {/* <Route path="/marketing/coupons" element={<AdminCoupons />} /> */}
-        {/* <Route path="/marketing/emails" element={<AdminEmails />} /> */}
+        {/* <Route path="/marketing" element={<AdminMarketing />} />
+        <Route path="/marketing/campaigns" element={<AdminCampaigns />} />
+        <Route path="/marketing/coupons" element={<AdminCoupons />} />
+        <Route path="/marketing/emails" element={<AdminEmails />} /> */}
 
         {/* 🔧 SETTINGS ROUTES (Future) */}
-        {/* <Route path="/settings" element={<AdminSettings />} /> */}
+        <Route path="/settings" element={<AdminSettings />} />
         {/* <Route path="/settings/general" element={<AdminGeneralSettings />} /> */}
         {/* <Route path="/settings/payment" element={<AdminPaymentSettings />} /> */}
         {/* <Route path="/settings/shipping" element={<AdminShippingSettings />} /> */}

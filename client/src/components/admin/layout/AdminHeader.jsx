@@ -5,7 +5,6 @@ import {
   LogOut,
   Menu,
   Search,
-  Settings,
   UserCircle,
 } from "lucide-react";
 
@@ -183,22 +182,16 @@ const AdminHeader = ({ onMenuClick }) => {
                 </div>
                 <div className="py-1">
                   <a
-                    href="#"
+                    href="/admin/settings"
                     className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                   >
                     <UserCircle className="w-4 h-4 mr-3" />
-                    Profile Settings
+                    General Settings
                   </a>
-                  <a
-                    href="#"
-                    className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                  >
-                    <Settings className="w-4 h-4 mr-3" />
-                    Admin Settings
-                  </a>
+
                   <hr className="my-1" />
                   <a
-                    href="#"
+                    href=""
                     className="flex items-center px-4 py-2 text-sm text-red-600 hover:bg-red-50"
                   >
                     <LogOut className="w-4 h-4 mr-3" />

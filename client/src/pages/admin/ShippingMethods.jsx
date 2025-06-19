@@ -1,60 +1,69 @@
-// src/pages/admin/Suppliers.jsx
+// src/pages/admin/ShippingMethods.jsx
 import {
-  Building,
+  Clock,
+  DollarSign,
   Edit,
-  Mail,
   MapPin,
-  Phone,
   Plus,
   Search,
-  Star,
+  ToggleLeft,
+  ToggleRight,
   Trash2,
+  Truck,
 } from "lucide-react";
 import { useState } from "react";
 import AdminLayout from "../../components/admin/layout/AdminLayout";
 
-const Suppliers = () => {
+const ShippingMethods = () => {
   const [searchTerm, setSearchTerm] = useState("");
 
-  const suppliers = [
+  const shippingMethods = [
     {
       id: 1,
-      name: "TechParts Supply Co",
-      email: "orders@techparts.com",
-      phone: "+1-555-0123",
-      address: "123 Industrial Ave, Tech City, TC 12345",
-      rating: 4.5,
-      totalOrders: 45,
-      status: "active",
+      name: "Standard Shipping",
+      description: "Regular delivery within 5-7 business days",
+      cost: 9.99,
+      estimatedDays: "5-7",
+      isActive: true,
+      provider: "USPS",
     },
     {
       id: 2,
-      name: "Electronic Components Ltd",
-      email: "sales@electroniccomp.com",
-      phone: "+1-555-0456",
-      address: "456 Commerce St, Metro City, MC 67890",
-      rating: 4.2,
-      totalOrders: 32,
-      status: "active",
+      name: "Express Shipping",
+      description: "Fast delivery within 2-3 business days",
+      cost: 19.99,
+      estimatedDays: "2-3",
+      isActive: true,
+      provider: "FedEx",
     },
     {
       id: 3,
-      name: "Global Hardware Solutions",
-      email: "info@globalhardware.com",
-      phone: "+1-555-0789",
-      address: "789 Business Blvd, Trade Town, TT 54321",
-      rating: 3.8,
-      totalOrders: 18,
-      status: "inactive",
+      name: "Overnight Shipping",
+      description: "Next day delivery",
+      cost: 34.99,
+      estimatedDays: "1",
+      isActive: true,
+      provider: "UPS",
+    },
+    {
+      id: 4,
+      name: "Free Shipping",
+      description: "Free delivery for orders over $50",
+      cost: 0.0,
+      estimatedDays: "7-10",
+      isActive: false,
+      provider: "USPS",
     },
   ];
 
-  const filteredSuppliers = suppliers.filter((supplier) =>
-    supplier.name.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredMethods = shippingMethods.filter((method) =>
+    method.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const activeSuppliers = suppliers.filter((s) => s.status === "active").length;
-  const totalOrders = suppliers.reduce((sum, s) => sum + s.totalOrders, 0);
+  const activeMethods = shippingMethods.filter((m) => m.isActive).length;
+  const averageCost = (
+    shippingMethods.reduce((sum, m) => sum + m.cost, 0) / shippingMethods.length
+  ).toFixed(2);
 
   return (
     <AdminLayout>
@@ -63,14 +72,16 @@ const Suppliers = () => {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold text-gray-900 flex items-center">
-              <Building className="w-8 h-8 mr-3 text-blue-600" />
-              Suppliers
+              <Truck className="w-8 h-8 mr-3 text-blue-600" />
+              Shipping Methods
             </h1>
-            <p className="text-gray-600 mt-1">Manage supplier relationships</p>
+            <p className="text-gray-600 mt-1">
+              Configure shipping options and rates
+            </p>
           </div>
           <button className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center">
             <Plus className="w-4 h-4 mr-2" />
-            Add Supplier
+            Add Method
           </button>
         </div>
 
@@ -80,13 +91,13 @@ const Suppliers = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-600">
-                  Total Suppliers
+                  Total Methods
                 </p>
                 <p className="text-2xl font-bold text-gray-900 mt-1">
-                  {suppliers.length}
+                  {shippingMethods.length}
                 </p>
               </div>
-              <Building className="w-8 h-8 text-blue-600" />
+              <Truck className="w-8 h-8 text-blue-600" />
             </div>
           </div>
 
@@ -94,13 +105,13 @@ const Suppliers = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-600">
-                  Active Suppliers
+                  Active Methods
                 </p>
                 <p className="text-2xl font-bold text-green-600 mt-1">
-                  {activeSuppliers}
+                  {activeMethods}
                 </p>
               </div>
-              <Star className="w-8 h-8 text-green-600" />
+              <MapPin className="w-8 h-8 text-green-600" />
             </div>
           </div>
 
@@ -108,13 +119,13 @@ const Suppliers = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-600">
-                  Total Orders
+                  Average Cost
                 </p>
-                <p className="text-2xl font-bold text-blue-600 mt-1">
-                  {totalOrders}
+                <p className="text-2xl font-bold text-purple-600 mt-1">
+                  ${averageCost}
                 </p>
               </div>
-              <Phone className="w-8 h-8 text-blue-600" />
+              <DollarSign className="w-8 h-8 text-purple-600" />
             </div>
           </div>
         </div>
@@ -125,7 +136,7 @@ const Suppliers = () => {
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
             <input
               type="text"
-              placeholder="Search suppliers..."
+              placeholder="Search shipping methods..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -133,26 +144,23 @@ const Suppliers = () => {
           </div>
         </div>
 
-        {/* Suppliers List */}
+        {/* Methods Table */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-100">
           <div className="overflow-x-auto">
             <table className="min-w-full">
               <thead className="bg-gray-50">
                 <tr>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                    Supplier
+                    Method
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                    Contact
+                    Provider
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                    Address
+                    Cost
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                    Rating
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                    Orders
+                    Delivery Time
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
                     Status
@@ -163,52 +171,49 @@ const Suppliers = () => {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {filteredSuppliers.map((supplier) => (
-                  <tr key={supplier.id} className="hover:bg-gray-50">
+                {filteredMethods.map((method) => (
+                  <tr key={method.id} className="hover:bg-gray-50">
                     <td className="px-6 py-4">
-                      <div className="text-sm font-medium text-gray-900">
-                        {supplier.name}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="text-sm text-gray-600 flex items-center">
-                        <Mail className="w-4 h-4 mr-2 text-gray-400" />
-                        {supplier.email}
-                      </div>
-                      <div className="text-sm text-gray-600 flex items-center mt-1">
-                        <Phone className="w-4 h-4 mr-2 text-gray-400" />
-                        {supplier.phone}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="text-sm text-gray-600 flex items-start">
-                        <MapPin className="w-4 h-4 mr-2 text-gray-400 mt-0.5" />
-                        {supplier.address}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="flex items-center">
-                        <Star className="w-4 h-4 text-yellow-400 mr-1" />
-                        <span className="text-sm text-gray-900">
-                          {supplier.rating}
-                        </span>
+                      <div>
+                        <div className="text-sm font-medium text-gray-900">
+                          {method.name}
+                        </div>
+                        <div className="text-sm text-gray-500">
+                          {method.description}
+                        </div>
                       </div>
                     </td>
                     <td className="px-6 py-4">
                       <div className="text-sm text-gray-900">
-                        {supplier.totalOrders}
+                        {method.provider}
                       </div>
                     </td>
                     <td className="px-6 py-4">
-                      <span
-                        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                          supplier.status === "active"
-                            ? "bg-green-100 text-green-800"
-                            : "bg-gray-100 text-gray-800"
-                        }`}
-                      >
-                        {supplier.status}
-                      </span>
+                      <div className="text-sm font-medium text-gray-900">
+                        ${method.cost.toFixed(2)}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="text-sm text-gray-600 flex items-center">
+                        <Clock className="w-4 h-4 mr-1 text-gray-400" />
+                        {method.estimatedDays} days
+                      </div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="flex items-center">
+                        {method.isActive ? (
+                          <ToggleRight className="w-6 h-6 text-green-500" />
+                        ) : (
+                          <ToggleLeft className="w-6 h-6 text-gray-400" />
+                        )}
+                        <span
+                          className={`ml-2 text-sm ${
+                            method.isActive ? "text-green-600" : "text-gray-500"
+                          }`}
+                        >
+                          {method.isActive ? "Active" : "Inactive"}
+                        </span>
+                      </div>
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center space-x-2">
@@ -231,4 +236,4 @@ const Suppliers = () => {
   );
 };
 
-export default Suppliers;
+export default ShippingMethods;
