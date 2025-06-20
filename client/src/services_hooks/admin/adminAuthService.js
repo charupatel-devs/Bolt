@@ -5,11 +5,8 @@ import {
   AdminLoginSuccess,
   AdminLogoutStart,
   AdminLogoutSuccess,
-  GetAdminProfileFailure,
-  GetAdminProfileStart,
-  GetAdminProfileSuccess,
 } from "../../store/admin/adminAuthSlice";
-import axios from "../api";
+import api from "../api";
 
 // Toast options
 const ErrorToastOptions = {
@@ -28,7 +25,7 @@ const SuccessToastOptions = {
   },
 };
 
-// Parse error function (like yours)
+// Parse error function
 const parseError = (error) => {
   if (error.response) {
     return error.response.data.message || "Invalid credentials";
@@ -39,17 +36,18 @@ const parseError = (error) => {
   }
 };
 
-// Admin Login API Call
+// Admin Login API Call (HttpOnly Cookie)
 export const adminLogin = async (dispatch, credentials) => {
   dispatch(AdminLoginStart());
 
   try {
-    const { data } = await axios.post("/admin/login", {
+    const { data } = await api.post("/admin/login", {
       email: credentials.email,
       password: credentials.password,
     });
 
-    localStorage.setItem("adminToken", data.token);
+    // No need to store token - backend sets HttpOnly cookie
+    // Token is automatically included in future requests
 
     dispatch(AdminLoginSuccess(data));
 
@@ -67,88 +65,57 @@ export const adminLogin = async (dispatch, credentials) => {
       ...ErrorToastOptions,
     });
     dispatch(AdminLoginFailure(errorMessage));
-    // throw error;
+    throw error;
+  }
+};
+
+// Admin Logout API Call (Clear HttpOnly Cookie)
+export const AdminLogout = async (dispatch) => {
+  dispatch(AdminLogoutStart());
+
+  try {
+    toast.loading("Signing out...", { id: "admin-logout" });
+
+    // Backend will clear the HttpOnly cookie
+    await api.post("/admin/logout");
+
+    dispatch(AdminLogoutSuccess());
+
+    toast.success("Logged out successfully", {
+      id: "admin-logout",
+      ...SuccessToastOptions,
+    });
+
+    return true;
+  } catch (error) {
+    // Even on error, assume logout worked
+    dispatch(AdminLogoutSuccess());
+
+    toast.success("Logged out successfully", {
+      id: "admin-logout",
+      ...SuccessToastOptions,
+    });
+
+    return true;
   }
 };
 
 // Get Admin Profile API Call
 export const GetAdminProfile = async (dispatch) => {
-  dispatch(GetAdminProfileStart());
-  const token = localStorage.getItem("adminToken");
-
   try {
-    const { data } = await axios.get("/admin/profile", {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-
-    dispatch(GetAdminProfileSuccess(data));
+    const { data } = await api.get("/admin/profile");
     return data;
   } catch (error) {
-    const errorMessage = parseError(error);
-    dispatch(GetAdminProfileFailure(errorMessage));
-    // Remove invalid token
-    localStorage.removeItem("adminToken");
-    throw error;
+    throw new Error("Failed to get admin profile");
   }
 };
 
-// Admin Logout API Call
-export const AdminLogout = async (dispatch) => {
-  dispatch(AdminLogoutStart());
-  const token = localStorage.getItem("adminToken");
-
+// Validate Admin Token API Call (Check HttpOnly Cookie)
+export const ValidateAdminToken = async () => {
   try {
-    toast.loading("Signing out...", { id: "admin-logout" });
-
-    await axios.post(
-      "/admin/logout",
-      {},
-      {
-        headers: { Authorization: `Bearer ${token}` },
-      }
-    );
-
-    // Remove token from localStorage
-    localStorage.removeItem("adminToken");
-
-    dispatch(AdminLogoutSuccess());
-
-    toast.success("Logged out successfully", {
-      id: "admin-logout",
-      ...SuccessToastOptions,
-    });
-
-    return true;
-  } catch (error) {
-    // Even on error, logout locally
-    localStorage.removeItem("adminToken");
-    dispatch(AdminLogoutSuccess());
-
-    toast.success("Logged out successfully", {
-      id: "admin-logout",
-      ...SuccessToastOptions,
-    });
-
-    return true;
-  }
-};
-
-// Validate Admin Token API Call
-export const ValidateAdminToken = async (dispatch) => {
-  const token = localStorage.getItem("adminToken");
-
-  if (!token) {
-    throw new Error("No token found");
-  }
-
-  try {
-    const { data } = await axios.get("/admin/validate-token", {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-
+    const { data } = await api.get("/admin/validate-token");
     return data;
   } catch (error) {
-    localStorage.removeItem("adminToken");
-    throw new Error("Invalid token");
+    throw new Error("Invalid or expired session");
   }
 };

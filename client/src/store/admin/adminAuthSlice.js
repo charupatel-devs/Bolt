@@ -4,9 +4,7 @@ const adminAuthSlice = createSlice({
   name: "adminAuth",
   initialState: {
     admin: null,
-    token: localStorage.getItem("adminToken"),
-    isAuthenticated: !!localStorage.getItem("adminToken"),
-
+    isAuthenticated: false,
     isFetching: false,
     error: false,
     errMsg: "",
@@ -19,20 +17,14 @@ const adminAuthSlice = createSlice({
       state.errMsg = "";
     },
     AdminLoginSuccess: (state, action) => {
-      const { token, admin } = action.payload;
-      state.admin = admin;
-      state.token = token;
+      state.admin = action.payload.admin;
       state.isAuthenticated = true;
       state.isFetching = false;
       state.error = false;
       state.errMsg = "";
-
-      // ✅ Persist token to localStorage
-      localStorage.setItem("adminToken", token);
     },
     AdminLoginFailure: (state, action) => {
       state.admin = null;
-      state.token = null;
       state.isAuthenticated = false;
       state.isFetching = false;
       state.error = true;
@@ -53,7 +45,6 @@ const adminAuthSlice = createSlice({
     },
     GetAdminProfileFailure: (state, action) => {
       state.admin = null;
-      state.token = null;
       state.isAuthenticated = false;
       state.isFetching = false;
       state.error = true;
@@ -65,48 +56,39 @@ const adminAuthSlice = createSlice({
       state.isFetching = true;
       state.error = false;
     },
-    AdminLogoutSuccess: (state) => {
+    AdminLogoutSuccess: (state, action) => {
       state.admin = null;
-      state.token = null;
       state.isAuthenticated = false;
       state.isFetching = false;
       state.error = false;
       state.errMsg = "";
-
-      // ✅ Remove token from localStorage
-      localStorage.removeItem("adminToken");
     },
-    AdminLogoutFailure: (state) => {
+    AdminLogoutFailure: (state, action) => {
+      // Even on failure, we logout locally
       state.admin = null;
-      state.token = null;
       state.isAuthenticated = false;
       state.isFetching = false;
       state.error = false;
       state.errMsg = "";
-
-      // ✅ Remove token on failure too
-      localStorage.removeItem("adminToken");
     },
 
     // Clear Error
     ClearAdminError: (state, action) => {
       state.error = false;
       state.errMsg = "";
+      state.isFetching = false;
     },
 
-    // Check Initial Auth
-    CheckInitialAuth: (state) => {
-      const token = localStorage.getItem("adminToken");
-      if (token) {
-        state.token = token;
-        state.isAuthenticated = true;
-      } else {
-        state.token = null;
-        state.isAuthenticated = false;
+    // Set Authentication Status
+    SetAuthenticationStatus: (state, action) => {
+      state.isAuthenticated = action.payload;
+      if (!action.payload) {
+        state.admin = null;
       }
     },
   },
 });
+
 export const {
   AdminLoginStart,
   AdminLoginSuccess,
@@ -118,7 +100,7 @@ export const {
   AdminLogoutSuccess,
   AdminLogoutFailure,
   ClearAdminError,
-  CheckInitialAuth,
+  SetAuthenticationStatus,
 } = adminAuthSlice.actions;
 
 export default adminAuthSlice.reducer;

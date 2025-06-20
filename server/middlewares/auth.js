@@ -1,29 +1,31 @@
 // middlewares/auth.js
-// Complete authentication middleware for all routes
+// Complete authentication middleware for all routes with HttpOnly cookies
 
 const jwt = require("jsonwebtoken");
 const User = require("../models/User");
 const catchAsync = require("../utils/catchAsync");
 const AppError = require("../utils/appError");
 
-// Extract JWT token from request
+// Extract JWT token from request (UPDATED FOR COOKIES)
 const extractToken = (req) => {
   let token = null;
 
-  // Check Authorization header (Bearer token)
-  if (
+  // 🚨 PRIORITY 1: Check HttpOnly cookies first
+  if (req.cookies && req.cookies.adminToken) {
+    token = req.cookies.adminToken;
+  } else if (req.cookies && req.cookies.userToken) {
+    token = req.cookies.userToken;
+  } else if (req.cookies && req.cookies.token) {
+    token = req.cookies.token;
+  }
+  // FALLBACK: Check Authorization header (Bearer token) for API access
+  else if (
     req.headers.authorization &&
     req.headers.authorization.startsWith("Bearer")
   ) {
     token = req.headers.authorization.split(" ")[1];
   }
-
-  // Check cookies if no Bearer token (for web apps)
-  else if (req.cookies && req.cookies.token) {
-    token = req.cookies.token;
-  }
-
-  // Check x-auth-token header (alternative)
+  // FALLBACK: Check x-auth-token header (alternative)
   else if (req.headers["x-auth-token"]) {
     token = req.headers["x-auth-token"];
   }
@@ -326,7 +328,7 @@ exports.logActivity = (action) => {
     if (req.user) {
       // Log user activity (implement based on your logging needs)
       console.log(
-        `User ${req.user._id} performed action: ${action} at ${new Date().toISOString()}`
+        `User ${req.user._id} (${req.user.role}) performed action: ${action} at ${new Date().toISOString()}`
       );
 
       // You can save to database, send to analytics service, etc.

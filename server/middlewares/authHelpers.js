@@ -1,5 +1,5 @@
 // middlewares/authHelpers.js
-// Additional authentication helper functions and utilities
+// Additional authentication helper functions and utilities (UPDATED FOR COOKIES)
 
 const jwt = require("jsonwebtoken");
 const crypto = require("crypto");
@@ -14,25 +14,32 @@ const signToken = (id) => {
   });
 };
 
-// Create and send JWT token
-const createSendToken = (user, statusCode, res, message = "Success") => {
+// 🚨 UPDATED: Create and send JWT token via HttpOnly cookie
+const createSendToken = (
+  user,
+  statusCode,
+  res,
+  message = "Success",
+  cookieName = "token"
+) => {
   const token = signToken(user._id);
 
-  // Cookie options
+  // 🚨 HttpOnly Cookie options
   const cookieOptions = {
     expires: new Date(
       Date.now() +
         (process.env.JWT_COOKIE_EXPIRES_IN || 7) * 24 * 60 * 60 * 1000
     ),
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "strict",
+    httpOnly: true, // 🚨 CRITICAL: Prevents JavaScript access
+    secure: process.env.NODE_ENV === "production", // HTTPS only in production
+    sameSite: "strict", // CSRF protection
+    path: "/",
   };
 
-  // Send cookie
-  res.cookie("jwt", token, cookieOptions);
+  // 🚨 Send HttpOnly cookie (don't send token in response)
+  res.cookie(cookieName, token, cookieOptions);
 
-  // Remove password from output
+  // Remove sensitive data from output
   user.password = undefined;
   user.loginAttempts = undefined;
   user.lockUntil = undefined;
@@ -40,7 +47,7 @@ const createSendToken = (user, statusCode, res, message = "Success") => {
   res.status(statusCode).json({
     success: true,
     message,
-    token,
+    // 🚨 IMPORTANT: Don't send token in response anymore
     user: {
       _id: user._id,
       name: user.name,
@@ -55,9 +62,37 @@ const createSendToken = (user, statusCode, res, message = "Success") => {
   });
 };
 
-// Verify if token is valid without throwing errors
-const verifyTokenSilent = async (token) => {
+// 🚨 NEW: Create admin token with specific cookie name
+const createSendAdminToken = (admin, statusCode, res, message = "Success") => {
+  return createSendToken(admin, statusCode, res, message, "adminToken");
+};
+
+// 🚨 NEW: Create user token with specific cookie name
+const createSendUserToken = (user, statusCode, res, message = "Success") => {
+  return createSendToken(user, statusCode, res, message, "userToken");
+};
+
+// 🚨 UPDATED: Verify if token is valid without throwing errors (check cookies first)
+const verifyTokenSilent = async (req) => {
   try {
+    // Extract token from cookies or headers
+    let token = null;
+
+    if (req.cookies && req.cookies.adminToken) {
+      token = req.cookies.adminToken;
+    } else if (req.cookies && req.cookies.userToken) {
+      token = req.cookies.userToken;
+    } else if (req.cookies && req.cookies.token) {
+      token = req.cookies.token;
+    } else if (
+      req.headers.authorization &&
+      req.headers.authorization.startsWith("Bearer")
+    ) {
+      token = req.headers.authorization.split(" ")[1];
+    }
+
+    if (!token) return null;
+
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     const user = await User.findById(decoded.id);
 
@@ -179,9 +214,6 @@ const validateApiKey = (apiKey) => {
 // Track user activity
 const trackUserActivity = async (userId, action, details = {}) => {
   try {
-    // You can implement this based on your needs
-    // Example: Save to database, send to analytics service, etc.
-
     const activity = {
       userId,
       action,
@@ -193,9 +225,6 @@ const trackUserActivity = async (userId, action, details = {}) => {
 
     // Log to console (replace with actual implementation)
     console.log("User Activity:", JSON.stringify(activity, null, 2));
-
-    // Example: Save to database
-    // await ActivityLog.create(activity);
 
     return activity;
   } catch (error) {
@@ -279,13 +308,6 @@ const createSession = (user, req) => {
 // Validate session
 const validateSession = async (sessionId, userId) => {
   try {
-    // Implement session validation logic
-    // This could check Redis, database, or in-memory store
-
-    // Example implementation:
-    // const session = await SessionStore.get(sessionId);
-    // return session && session.userId === userId && !session.expired;
-
     return true; // Placeholder
   } catch (error) {
     return false;
@@ -340,9 +362,25 @@ const updateLastActivity = catchAsync(async (req, res, next) => {
   next();
 });
 
+// 🚨 NEW: Clear all authentication cookies
+const clearAuthCookies = (res) => {
+  const cookieOptions = {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "strict",
+    path: "/",
+  };
+
+  res.clearCookie("adminToken", cookieOptions);
+  res.clearCookie("userToken", cookieOptions);
+  res.clearCookie("token", cookieOptions);
+};
+
 module.exports = {
   signToken,
   createSendToken,
+  createSendAdminToken, // 🚨 NEW
+  createSendUserToken, // 🚨 NEW
   verifyTokenSilent,
   generatePasswordResetToken,
   generateEmailVerificationToken,
@@ -359,4 +397,5 @@ module.exports = {
   validateSession,
   checkAccountStatus,
   updateLastActivity,
+  clearAuthCookies, // 🚨 NEW
 };

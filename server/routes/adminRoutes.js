@@ -1,9 +1,9 @@
-// routes/adminRoutes.js
-// Updated admin routes with complete authentication
-
 const express = require("express");
 const {
   adminLogin,
+  adminLogout, // 🚨 NEW: Logout endpoint
+  validateAdminToken, // 🚨 NEW: Token validation endpoint
+  getAdminProfile, // 🚨 NEW: Profile endpoint
   getDashboardStats,
   getAllUsers,
   getUserById,
@@ -32,10 +32,18 @@ const {
 const router = express.Router();
 
 // ===========================================
-// ADMIN AUTHENTICATION
+// PUBLIC ADMIN ROUTES
 // ===========================================
 
 router.post("/login", adminLogin);
+
+// ===========================================
+// AUTHENTICATION ROUTES (REQUIRE TOKEN)
+// ===========================================
+
+router.post("/logout", isAuthenticated, isAdmin, adminLogout);
+router.get("/validate-token", isAuthenticated, isAdmin, validateAdminToken);
+router.get("/profile", isAuthenticated, isAdmin, getAdminProfile);
 
 // ===========================================
 // ALL ROUTES BELOW REQUIRE ADMIN AUTHENTICATION
@@ -67,11 +75,8 @@ router.get("/activities/recent", getRecentActivities);
 // ===========================================
 
 router.get("/users", getAllUsers);
-
 router.get("/users/:id", getUserById);
-
 router.put("/users/:id/role", logActivity("update_user_role"), updateUserRole);
-
 router.delete("/users/:id", logActivity("delete_user"), deleteUser);
 
 // ===========================================
@@ -79,15 +84,12 @@ router.delete("/users/:id", logActivity("delete_user"), deleteUser);
 // ===========================================
 
 router.get("/orders", getAllOrders);
-
 router.get("/orders/:id", getOrderById);
-
 router.put(
   "/orders/:id/status",
   logActivity("update_order_status"),
   updateOrderStatus
 );
-
 router.delete("/orders/:id", logActivity("delete_order"), deleteOrder);
 
 // ===========================================
@@ -95,19 +97,14 @@ router.delete("/orders/:id", logActivity("delete_order"), deleteOrder);
 // ===========================================
 
 router.get("/products", getAllProducts);
-
 router.post("/products", logActivity("create_product"), createProduct);
-
 router.put("/products/:id", logActivity("update_product"), updateProduct);
-
 router.delete("/products/:id", logActivity("delete_product"), deleteProduct);
-
 router.post(
   "/products/bulk-upload",
   logActivity("bulk_upload_products"),
   bulkUploadProducts
 );
-
 router.get("/products/low-stock", getLowStockProducts);
 
 module.exports = router;

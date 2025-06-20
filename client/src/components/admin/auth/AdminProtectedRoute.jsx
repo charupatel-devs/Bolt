@@ -1,28 +1,71 @@
-import { useEffect } from "react";
-import { useDispatch, useSelector } from "react-redux";
+import { useEffect, useState } from "react";
 import { Navigate, Outlet, useLocation } from "react-router-dom";
-import { GetAdminProfile } from "../../../services_hooks/admin/adminAuthService";
 
 const AdminProtectedRoute = () => {
-  const dispatch = useDispatch();
+  const [authState, setAuthState] = useState({
+    isChecking: true,
+    isAuthenticated: false,
+    error: null,
+  });
+
   const location = useLocation();
 
-  const { isAuthenticated, token, isFetching, admin } = useSelector(
-    (state) => state.adminAuth
-  );
-
-  // Check authentication on mount
   useEffect(() => {
-    if (token && !admin && !isFetching) {
-      // We have a token but no admin profile, fetch it
-      GetAdminProfile(dispatch).catch(() => {
-        // Error is handled in the API call
+    validateAdminAccess();
+  }, []);
+
+  const validateAdminAccess = async () => {
+    try {
+      // Validate token with backend (HttpOnly cookie automatically included)
+      const response = await fetch(
+        `${"http://localhost:5001/api"}/admin/validate-token`,
+        {
+          method: "GET",
+          credentials: "include", // 🚨 CRITICAL: Include HttpOnly cookies
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      if (response.ok) {
+        const data = await response.json();
+
+        // Check if user is actually admin
+        if (data.role === "admin" || data.isAdmin || data.admin) {
+          setAuthState({
+            isChecking: false,
+            isAuthenticated: true,
+            error: null,
+          });
+        } else {
+          // Valid user but not admin
+          setAuthState({
+            isChecking: false,
+            isAuthenticated: false,
+            error: "Access denied: Admin role required",
+          });
+        }
+      } else {
+        // Invalid token/session
+        setAuthState({
+          isChecking: false,
+          isAuthenticated: false,
+          error: "Invalid or expired session",
+        });
+      }
+    } catch (error) {
+      console.error("Admin auth validation failed:", error);
+      setAuthState({
+        isChecking: false,
+        isAuthenticated: false,
+        error: "Unable to verify access. Please try again.",
       });
     }
-  }, [dispatch, token, admin, isFetching]);
+  };
 
-  // Show loading while checking authentication
-  if (isFetching) {
+  // Show loading while checking
+  if (authState.isChecking) {
     return (
       <div className="min-vh-100 d-flex align-items-center justify-content-center bg-light">
         <div className="text-center">
@@ -31,20 +74,27 @@ const AdminProtectedRoute = () => {
             role="status"
             style={{ width: "3rem", height: "3rem" }}
           >
-            <span className="visually-hidden">Loading...</span>
+            <span className="visually-hidden">Verifying admin access...</span>
           </div>
-          <h5 className="text-muted">Verifying access...</h5>
+          <h5 className="text-muted">Checking permissions...</h5>
+          <small className="text-muted">This should only take a moment</small>
         </div>
       </div>
     );
   }
 
-  // Redirect to login if not authenticated
-  if (!isAuthenticated || !token) {
-    return <Navigate to="/admin/login" state={{ from: location }} replace />;
+  // Redirect if not authenticated
+  if (!authState.isAuthenticated) {
+    return (
+      <Navigate
+        to="/admin/login"
+        state={{ from: location, error: authState.error }}
+        replace
+      />
+    );
   }
 
-  // Render protected admin pages if authenticated
+  // Render protected content
   return <Outlet />;
 };
 

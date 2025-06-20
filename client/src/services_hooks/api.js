@@ -4,32 +4,30 @@ import axios from "axios";
 const api = axios.create({
   baseURL: "http://localhost:5001/api",
   timeout: 10000,
+  withCredentials: true, // 🚨 CRITICAL: Include cookies in requests
   headers: {
     "Content-Type": "application/json",
   },
 });
 
-// Request interceptor - Add auth token to requests
+// Request interceptor - Cookies are automatically included
 api.interceptors.request.use(
   (config) => {
-    // Add admin token for admin routes
-    if (config.url.includes("/admin")) {
-      const adminToken = localStorage.getItem("adminToken");
-      if (adminToken) {
-        config.headers.Authorization = `Bearer ${adminToken}`;
-      }
-    }
-    // Add user token for user routes
-    else {
-      const userToken = localStorage.getItem("userToken");
-      if (userToken) {
-        config.headers.Authorization = `Bearer ${userToken}`;
-      }
-    }
+    console.log("🚀 API REQUEST:", {
+      url: config.url,
+      method: config.method,
+      fullURL: config.baseURL + config.url,
+      withCredentials: config.withCredentials,
+      currentPath: window.location.pathname,
+    });
+
+    // No need to manually add Authorization header
+    // HttpOnly cookies are automatically included by browser
 
     return config;
   },
   (error) => {
+    console.error("❌ REQUEST ERROR:", error);
     return Promise.reject(error);
   }
 );
@@ -37,27 +35,55 @@ api.interceptors.request.use(
 // Response interceptor - Handle common errors
 api.interceptors.response.use(
   (response) => {
+    console.log("✅ API SUCCESS:", {
+      url: response.config.url,
+      status: response.status,
+    });
     return response;
   },
   (error) => {
+    console.error("❌ API ERROR:", {
+      url: error.config?.url,
+      status: error.response?.status,
+      message: error.response?.data?.message,
+      currentPath: window.location.pathname,
+    });
+
     // Handle 401 Unauthorized
     if (error.response?.status === 401) {
-      // Get current pathname
+      const requestUrl = error.config.url;
       const currentPath = window.location.pathname;
 
-      // If admin route, clear admin token and redirect to admin login
-      if (error.config.url.includes("/admin")) {
-        localStorage.removeItem("adminToken");
-        // Only redirect if not already on admin login page
-        if (currentPath !== "/admin/login") {
+      console.log("🔐 401 UNAUTHORIZED DETECTED:", {
+        requestUrl,
+        currentPath,
+        isAdminRoute: requestUrl.includes("/admin"),
+        isLoginPage: currentPath === "/admin/login",
+        isLoginRequest: requestUrl.includes("/admin/login"),
+      });
+
+      if (requestUrl.includes("/admin")) {
+        const isLoginPage = currentPath === "/admin/login";
+        const isLoginRequest = requestUrl.includes("/admin/login");
+
+        if (!isLoginPage && !isLoginRequest) {
+          console.log("🚨 REDIRECTING TO LOGIN - Invalid admin session");
           window.location.href = "/admin/login";
+        } else {
+          console.log("💡 Login failed - staying on login page");
         }
       }
-      // If user route, clear user token and redirect to user login
+      // Handle user routes
       else {
-        localStorage.removeItem("userToken");
-        // Only redirect if not already on login page
-        if (currentPath !== "/login" && currentPath !== "/") {
+        const currentPath = window.location.pathname;
+        const isUserLoginPage =
+          currentPath === "/login" || currentPath === "/register";
+        const isUserLoginRequest =
+          requestUrl.includes("/user/login") ||
+          requestUrl.includes("/auth/login");
+
+        if (!isUserLoginPage && !isUserLoginRequest) {
+          console.log("🔐 User session expired, redirecting to login");
           window.location.href = "/login";
         }
       }

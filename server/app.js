@@ -3,6 +3,8 @@ const cors = require("cors");
 const dotenv = require("dotenv");
 const compression = require("compression");
 const morgan = require("morgan");
+const cookieParser = require("cookie-parser"); // 🚨 Add this line
+
 const errorMiddleware = require("./middlewares/auth");
 const { applySecurity } = require("./middlewares/security");
 
@@ -18,6 +20,7 @@ app.set("trust proxy", 1);
 
 // Compression middleware
 app.use(compression());
+app.use(cookieParser());
 
 // Logging middleware
 if (process.env.NODE_ENV === "development") {

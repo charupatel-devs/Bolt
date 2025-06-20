@@ -76,7 +76,7 @@ const createRateLimit = (windowMs, max, message) => {
 // Different rate limits for different routes
 const authLimiter = createRateLimit(
   1 * 60 * 1000, // 1 minutes
-  5, // 5 attempts per window
+  1, // 5 attempts per window
   "Too many authentication attempts, please try again later"
 );
 

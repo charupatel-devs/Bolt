@@ -7,10 +7,26 @@ const AppError = require("../utils/appError");
 const generateToken = require("../utils/generateToken");
 const sendEmail = require("../utils/sendEmail");
 const APIFeatures = require("../utils/apiFeatures");
+const {
+  createSendAdminToken,
+  clearAuthCookies,
+} = require("../middlewares/authHelpers");
 
-// Generate JWT token for admin
+// Generate JWT token for admin and set HttpOnly cookie
 const sendTokenResponse = (admin, statusCode, res, message = "Success") => {
   const token = generateToken(admin._id);
+
+  // Set HttpOnly cookie options
+  const cookieOptions = {
+    httpOnly: true, // 🚨 CRITICAL: Prevents JavaScript access
+    secure: process.env.NODE_ENV === "production", // HTTPS only in production
+    sameSite: "strict", // CSRF protection
+    maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+    path: "/",
+  };
+
+  // Set the HttpOnly cookie
+  res.cookie("adminToken", token, cookieOptions);
 
   // Remove password from output
   admin.password = undefined;
@@ -18,7 +34,7 @@ const sendTokenResponse = (admin, statusCode, res, message = "Success") => {
   res.status(statusCode).json({
     success: true,
     message,
-    token,
+    // 🚨 IMPORTANT: Don't send token in response body anymore
     admin: {
       _id: admin._id,
       name: admin.name,
@@ -68,7 +84,58 @@ exports.adminLogin = catchAsync(async (req, res, next) => {
   admin.lastLogin = new Date();
   await admin.save({ validateBeforeSave: false });
 
-  sendTokenResponse(admin, 200, res, "Admin login successful");
+  createSendAdminToken(admin, 200, res, "Admin login successful");
+});
+
+// @desc    Admin logout
+// @route   POST /api/admin/logout
+// @access  Private/Admin
+exports.adminLogout = catchAsync(async (req, res, next) => {
+  // Clear the HttpOnly cookie
+  clearAuthCookies(res);
+
+  res.status(200).json({
+    success: true,
+    message: "Logged out successfully",
+  });
+});
+
+// @desc    Validate admin token
+// @route   GET /api/admin/validate-token
+// @access  Private/Admin
+exports.validateAdminToken = catchAsync(async (req, res, next) => {
+  // Token validation is already done by middleware
+  // Just return success with admin info
+  res.status(200).json({
+    success: true,
+    admin: req.user,
+    role: req.user.role,
+    isAdmin: true,
+  });
+});
+
+// @desc    Get admin profile
+// @route   GET /api/admin/profile
+// @access  Private/Admin
+exports.getAdminProfile = catchAsync(async (req, res, next) => {
+  const admin = await User.findById(req.user._id).select("-password");
+
+  if (!admin) {
+    return next(new AppError("Admin not found", 404));
+  }
+
+  res.status(200).json({
+    success: true,
+    admin: {
+      _id: admin._id,
+      name: admin.name,
+      email: admin.email,
+      role: admin.role,
+      avatar: admin.avatar,
+      lastLogin: admin.lastLogin,
+      createdAt: admin.createdAt,
+    },
+  });
 });
 
 // @desc    Get dashboard statistics
