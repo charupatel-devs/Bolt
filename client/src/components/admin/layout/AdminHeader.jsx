@@ -9,10 +9,25 @@ import {
 } from "lucide-react";
 
 import { useState } from "react";
+import { useDispatch } from "react-redux"; // Add this import
+import { useNavigate } from "react-router-dom"; // Add this import
+import { AdminLogout } from "../../../services_hooks/admin/adminAuthService"; // Adjust path as needed
 
 const AdminHeader = ({ onMenuClick }) => {
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
+
+  // Add these hooks
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
+
+  // Handle logout function
+  const handleLogout = async () => {
+    const success = await AdminLogout(dispatch);
+    if (success) {
+      navigate("/admin/login"); // Redirect to admin login page
+    }
+  };
 
   const notifications = [
     {
@@ -190,13 +205,14 @@ const AdminHeader = ({ onMenuClick }) => {
                   </a>
 
                   <hr className="my-1" />
-                  <a
-                    href=""
-                    className="flex items-center px-4 py-2 text-sm text-red-600 hover:bg-red-50"
+                  {/* Updated Sign Out button */}
+                  <button
+                    onClick={handleLogout}
+                    className="flex items-center w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50 text-left"
                   >
                     <LogOut className="w-4 h-4 mr-3" />
                     Sign Out
-                  </a>
+                  </button>
                 </div>
               </div>
             )}

@@ -11,7 +11,7 @@ import {
 import { useDispatch, useSelector } from "react-redux";
 
 import { useLocation, useNavigate } from "react-router-dom";
-import { adminLogin } from "../../services/admin/adminAuthService";
+import { adminLogin } from "../../services_hooks/admin/adminAuthService";
 
 const AdminLogin = () => {
   const [formData, setFormData] = useState({

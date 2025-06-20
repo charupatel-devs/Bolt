@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { Navigate, Outlet, useLocation } from "react-router-dom";
-import { GetAdminProfile } from "../../../services/admin/adminAuthService";
+import { GetAdminProfile } from "../../../services_hooks/admin/adminAuthService";
 
 const AdminProtectedRoute = () => {
   const dispatch = useDispatch();
