@@ -4,100 +4,46 @@ const catchAsync = require("../utils/catchAsync");
 const AppError = require("../utils/appError");
 const APIFeatures = require("../utils/apiFeatures");
 
-// @desc    Get all categories with optional filtering
-// @route   GET /api/categories
-// @access  Public
+// @desc    Get all categories
+// @route   GET /api/admin/categories
+// @access  Private/Admin
 exports.getAllCategories = catchAsync(async (req, res, next) => {
-  const {
-    includeInactive = false,
-    parentId = null,
-    level,
-    featured,
-    withProductCount = false,
-    sort = "sortOrder name",
-  } = req.query;
+  const { search, isActive, isFeatured, tag, sortBy = "name" } = req.query;
 
-  // Build filter object
-  let filter = {};
+  let query = {};
 
-  if (!includeInactive) {
-    filter.isActive = true;
+  // Search filter
+  if (search) {
+    query.$or = [
+      { name: { $regex: search, $options: "i" } },
+      { description: { $regex: search, $options: "i" } },
+      { tags: { $in: [new RegExp(search, "i")] } },
+    ];
   }
 
-  if (parentId !== null) {
-    filter.parent = parentId === "null" ? null : parentId;
+  // Active filter
+  if (isActive !== undefined) {
+    query.isActive = isActive === "true";
   }
 
-  if (level !== undefined) {
-    filter.level = parseInt(level);
+  // Featured filter
+  if (isFeatured !== undefined) {
+    query.isFeatured = isFeatured === "true";
   }
 
-  if (featured === "true") {
-    filter.isFeatured = true;
+  // Tag filter
+  if (tag) {
+    query.tags = { $in: [tag] };
   }
 
-  let query = Category.find(filter);
-
-  // Populate parent information if needed
-  if (req.query.includeParent === "true") {
-    query = query.populate("parent", "name slug");
-  }
-
-  // Sort categories
-  query = query.sort(sort);
-
-  const categories = await query;
-
-  // Add product counts if requested
-  if (withProductCount === "true") {
-    for (let category of categories) {
-      await category.updateProductCount();
-    }
-  }
-
-  // Group by level for better organization
-  const categoriesByLevel = categories.reduce((acc, category) => {
-    const level = category.level;
-    if (!acc[level]) acc[level] = [];
-    acc[level].push(category);
-    return acc;
-  }, {});
+  const categories = await Category.find(query)
+    .populate("createdBy", "name email")
+    .sort({ [sortBy]: 1 });
 
   res.status(200).json({
     success: true,
     count: categories.length,
-    categoriesByLevel,
-    categories,
-  });
-});
-
-// @desc    Get category tree structure
-// @route   GET /api/categories/tree
-// @access  Public
-exports.getCategoryTree = catchAsync(async (req, res, next) => {
-  const maxDepth = parseInt(req.query.maxDepth) || 3;
-  const includeInactive = req.query.includeInactive === "true";
-  const withProductCount = req.query.withProductCount === "true";
-
-  // Get the complete category tree
-  const tree = await Category.getCategoryTree(null, maxDepth);
-
-  // Filter out inactive categories if needed
-  const filteredTree = includeInactive ? tree : filterActiveCategories(tree);
-
-  // Add product counts if requested
-  if (withProductCount) {
-    await addProductCountsToTree(filteredTree);
-  }
-
-  // Calculate tree statistics
-  const stats = calculateTreeStats(filteredTree);
-
-  res.status(200).json({
-    success: true,
-    maxDepth,
-    stats,
-    tree: filteredTree,
+    data: categories,
   });
 });
 
@@ -204,56 +150,21 @@ exports.searchCategories = catchAsync(async (req, res, next) => {
     categories: categoriesWithBreadcrumb,
   });
 });
-
-// @desc    Get single category by ID
-// @route   GET /api/categories/:id
-// @access  Public
-exports.getCategoryById = catchAsync(async (req, res, next) => {
+// @desc    Get single category
+// @route   GET /api/admin/categories/:id
+// @access  Private/Admin
+exports.getCategory = catchAsync(async (req, res, next) => {
   const category = await Category.findById(req.params.id)
-    .populate("parent", "name slug description")
-    .populate("children", "name slug description image productCount isActive");
+    .populate("createdBy", "name email")
+    .populate("updatedBy", "name email");
 
   if (!category) {
     return next(new AppError("Category not found", 404));
   }
 
-  // Get category path/breadcrumb
-  const breadcrumb = await category.getBreadcrumb();
-
-  // Get all attributes (including inherited from parent categories)
-  const allAttributes = await category.getAllAttributes();
-
-  // Update product count
-  await category.updateProductCount();
-
-  // Get direct children
-  const children = await Category.find({
-    parent: category._id,
-    isActive: true,
-  }).sort({ sortOrder: 1, name: 1 });
-
-  // Get some featured products from this category
-  const featuredProducts = await Product.find({
-    category: category._id,
-    isActive: true,
-    isFeatured: true,
-  })
-    .populate("category", "name")
-    .limit(8);
-
-  // Category statistics
-  const stats = await getCategoryStats(category._id);
-
   res.status(200).json({
     success: true,
-    category: {
-      ...category.toObject(),
-      breadcrumb,
-      allAttributes,
-      children,
-      stats,
-    },
-    featuredProducts,
+    data: category,
   });
 });
 
@@ -496,24 +407,12 @@ exports.getSubcategories = catchAsync(async (req, res, next) => {
   });
 });
 
-// @desc    Create new category (Admin only)
-// @route   POST /api/categories
+/// @desc    Create new category (Admin only)
+// @route   POST /api/admin/categories
 // @access  Private/Admin
 exports.createCategory = catchAsync(async (req, res, next) => {
-  const {
-    name,
-    description,
-    parent,
-    image,
-    icon,
-    color,
-    isFeatured,
-    sortOrder,
-    attributes,
-    metaTitle,
-    metaDescription,
-    metaKeywords,
-  } = req.body;
+  const { name, description, tags, image, isFeatured, sortOrder, attributes } =
+    req.body;
 
   // Validation
   if (!name) {
@@ -523,170 +422,91 @@ exports.createCategory = catchAsync(async (req, res, next) => {
   // Check if category with same name already exists
   const existingCategory = await Category.findOne({
     name: name.trim(),
-    parent: parent || null,
   });
 
   if (existingCategory) {
-    return next(
-      new AppError("Category with this name already exists at this level", 400)
-    );
-  }
-
-  // Validate parent if provided
-  if (parent) {
-    const parentCategory = await Category.findById(parent);
-    if (!parentCategory) {
-      return next(new AppError("Parent category not found", 404));
-    }
-
-    if (parentCategory.level >= 2) {
-      return next(
-        new AppError("Maximum category depth exceeded (3 levels)", 400)
-      );
-    }
+    return next(new AppError("Category with this name already exists", 400));
   }
 
   // Create category
   const category = await Category.create({
     name: name.trim(),
     description,
-    parent: parent || null,
+    tags: tags || [],
     image,
-    icon,
-    color,
     isFeatured: isFeatured || false,
     sortOrder: sortOrder || 0,
     attributes: attributes || [],
-    metaTitle,
-    metaDescription,
-    metaKeywords,
-    createdBy: req.user._id,
+    createdBy: req.user?._id,
   });
 
   res.status(201).json({
     success: true,
     message: "Category created successfully",
-    category,
+    data: category,
   });
 });
 
-// @desc    Update category (Admin only)
-// @route   PUT /api/categories/:id
+// @desc    Update category
+// @route   PUT /api/admin/categories/:id
 // @access  Private/Admin
 exports.updateCategory = catchAsync(async (req, res, next) => {
-  const category = await Category.findById(req.params.id);
+  const {
+    name,
+    description,
+    tags,
+    image,
+    isFeatured,
+    isActive,
+    sortOrder,
+    attributes,
+  } = req.body;
+
+  let category = await Category.findById(req.params.id);
 
   if (!category) {
     return next(new AppError("Category not found", 404));
   }
 
-  const {
-    name,
-    description,
-    parent,
-    image,
-    icon,
-    color,
-    isActive,
-    isFeatured,
-    sortOrder,
-    attributes,
-    metaTitle,
-    metaDescription,
-    metaKeywords,
-  } = req.body;
-
-  // Validate name if provided
+  // Check if name is being changed and if it already exists
   if (name && name.trim() !== category.name) {
     const existingCategory = await Category.findOne({
       name: name.trim(),
-      parent: parent !== undefined ? parent : category.parent,
-      _id: { $ne: category._id },
+      _id: { $ne: req.params.id },
     });
 
     if (existingCategory) {
-      return next(
-        new AppError(
-          "Category with this name already exists at this level",
-          400
-        )
-      );
+      return next(new AppError("Category with this name already exists", 400));
     }
   }
 
-  // Validate parent change if provided
-  if (parent !== undefined && parent !== category.parent) {
-    if (parent) {
-      const newParent = await Category.findById(parent);
-      if (!newParent) {
-        return next(new AppError("New parent category not found", 404));
-      }
-
-      // Check for circular reference
-      const newParentPath = await newParent.getFullPath();
-      if (
-        newParentPath.some(
-          (cat) => cat._id.toString() === category._id.toString()
-        )
-      ) {
-        return next(
-          new AppError("Cannot move category to its own descendant", 400)
-        );
-      }
-
-      // Check depth limit
-      if (newParent.level >= 2) {
-        return next(
-          new AppError("Moving would exceed maximum nesting depth", 400)
-        );
-      }
-    }
-
-    // Move category
-    try {
-      await category.moveTo(parent);
-    } catch (error) {
-      return next(new AppError(error.message, 400));
-    }
-  }
-
-  // Update other fields
-  const updateFields = {
-    updatedBy: req.user._id,
+  // Update fields
+  const updateData = {
+    ...(name && { name: name.trim() }),
+    ...(description !== undefined && { description }),
+    ...(tags && { tags }),
+    ...(image !== undefined && { image }),
+    ...(isFeatured !== undefined && { isFeatured }),
+    ...(isActive !== undefined && { isActive }),
+    ...(sortOrder !== undefined && { sortOrder }),
+    ...(attributes && { attributes }),
+    updatedBy: req.user?._id,
   };
 
-  if (name) updateFields.name = name.trim();
-  if (description !== undefined) updateFields.description = description;
-  if (image !== undefined) updateFields.image = image;
-  if (icon !== undefined) updateFields.icon = icon;
-  if (color !== undefined) updateFields.color = color;
-  if (isActive !== undefined) updateFields.isActive = isActive;
-  if (isFeatured !== undefined) updateFields.isFeatured = isFeatured;
-  if (sortOrder !== undefined) updateFields.sortOrder = sortOrder;
-  if (attributes !== undefined) updateFields.attributes = attributes;
-  if (metaTitle !== undefined) updateFields.metaTitle = metaTitle;
-  if (metaDescription !== undefined)
-    updateFields.metaDescription = metaDescription;
-  if (metaKeywords !== undefined) updateFields.metaKeywords = metaKeywords;
-
-  const updatedCategory = await Category.findByIdAndUpdate(
-    req.params.id,
-    updateFields,
-    {
-      new: true,
-      runValidators: true,
-    }
-  ).populate("parent", "name slug");
+  category = await Category.findByIdAndUpdate(req.params.id, updateData, {
+    new: true,
+    runValidators: true,
+  });
 
   res.status(200).json({
     success: true,
     message: "Category updated successfully",
-    category: updatedCategory,
+    data: category,
   });
 });
 
-// @desc    Delete category (Admin only)
-// @route   DELETE /api/categories/:id
+// @desc    Delete category
+// @route   DELETE /api/admin/categories/:id
 // @access  Private/Admin
 exports.deleteCategory = catchAsync(async (req, res, next) => {
   const category = await Category.findById(req.params.id);
@@ -695,19 +515,13 @@ exports.deleteCategory = catchAsync(async (req, res, next) => {
     return next(new AppError("Category not found", 404));
   }
 
-  // Check if category has children
-  const childrenCount = await Category.countDocuments({ parent: category._id });
-  if (childrenCount > 0) {
-    return next(
-      new AppError(
-        "Cannot delete category with subcategories. Please delete or move subcategories first.",
-        400
-      )
-    );
-  }
-
   // Check if category has products
-  const productCount = await Product.countDocuments({ category: category._id });
+  const Product = require("../models/Product");
+  const productCount = await Product.countDocuments({
+    category: req.params.id,
+    isActive: true,
+  });
+
   if (productCount > 0) {
     return next(
       new AppError(

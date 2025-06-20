@@ -1,227 +1,147 @@
-// src/pages/admin/Categories.jsx
 import {
   AlertTriangle,
+  CheckSquare,
   ChevronDown,
-  ChevronRight,
+  ChevronUp,
   Edit,
-  Eye,
   FolderOpen,
-  Grid3X3,
+  Hash,
   List,
   Package,
   Plus,
+  Save,
   Search,
+  Sliders,
+  ToggleLeft,
   Trash2,
+  Type,
+  X,
 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
 import AdminLayout from "../../components/admin/layout/AdminLayout";
+import {
+  createCategory,
+  deleteCategory,
+  fetchCategories,
+  updateCategory,
+} from "../../services_hooks/admin/adminCategory";
+import { clearMessages } from "../../store/admin/adminCategorySlice";
 
 const AdminCategories = () => {
+  const dispatch = useDispatch();
+
+  const {
+    isFetching,
+    isCreating,
+    isUpdating,
+    isDeleting,
+    error,
+    errorMessage,
+    successMessage,
+    totalCategories,
+    totalProducts,
+    totalLowStock,
+  } = useSelector((state) => state.categories);
+  const { categories = [] } = useSelector((state) => state.categories || {});
+
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState(null);
-  const [expandedCategories, setExpandedCategories] = useState([]);
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingCategory, setEditingCategory] = useState(null);
-  const [viewMode, setViewMode] = useState("tree");
-
-  const [categories, setCategories] = useState([
-    {
-      id: 1,
-      name: "Electronics Components",
-      slug: "electronics-components",
-      description: "Basic electronic components and parts",
-      icon: "⚡",
-      status: "active",
-      productCount: 2137,
-      lowStockCount: 58,
-      subcategories: [
-        {
-          id: 11,
-          name: "Resistors",
-          slug: "resistors",
-          productCount: 1245,
-          lowStockCount: 23,
-          status: "active",
-        },
-        {
-          id: 12,
-          name: "Capacitors",
-          slug: "capacitors",
-          productCount: 892,
-          lowStockCount: 15,
-          status: "active",
-        },
-        {
-          id: 13,
-          name: "Integrated Circuits",
-          slug: "integrated-circuits",
-          productCount: 567,
-          lowStockCount: 8,
-          status: "active",
-        },
-        {
-          id: 14,
-          name: "Transistors",
-          slug: "transistors",
-          productCount: 433,
-          lowStockCount: 12,
-          status: "active",
-        },
-      ],
-    },
-    {
-      id: 2,
-      name: "Sensors & Detectors",
-      slug: "sensors-detectors",
-      description: "Various sensors and detection devices",
-      icon: "🔍",
-      status: "active",
-      productCount: 677,
-      lowStockCount: 17,
-      subcategories: [
-        {
-          id: 21,
-          name: "Temperature Sensors",
-          slug: "temperature-sensors",
-          productCount: 234,
-          lowStockCount: 5,
-          status: "active",
-        },
-        {
-          id: 22,
-          name: "Pressure Sensors",
-          slug: "pressure-sensors",
-          productCount: 189,
-          lowStockCount: 7,
-          status: "active",
-        },
-        {
-          id: 23,
-          name: "Proximity Sensors",
-          slug: "proximity-sensors",
-          productCount: 156,
-          lowStockCount: 3,
-          status: "active",
-        },
-        {
-          id: 24,
-          name: "Flow Sensors",
-          slug: "flow-sensors",
-          productCount: 98,
-          lowStockCount: 2,
-          status: "active",
-        },
-      ],
-    },
-    {
-      id: 3,
-      name: "Power Management",
-      slug: "power-management",
-      description: "Power supplies, regulators, and management ICs",
-      icon: "🔋",
-      status: "active",
-      productCount: 924,
-      lowStockCount: 37,
-      subcategories: [
-        {
-          id: 31,
-          name: "Voltage Regulators",
-          slug: "voltage-regulators",
-          productCount: 345,
-          lowStockCount: 18,
-          status: "active",
-        },
-        {
-          id: 32,
-          name: "Power Supplies",
-          slug: "power-supplies",
-          productCount: 278,
-          lowStockCount: 9,
-          status: "active",
-        },
-        {
-          id: 33,
-          name: "Battery Management",
-          slug: "battery-management",
-          productCount: 167,
-          lowStockCount: 6,
-          status: "active",
-        },
-        {
-          id: 34,
-          name: "DC-DC Converters",
-          slug: "dc-dc-converters",
-          productCount: 134,
-          lowStockCount: 4,
-          status: "active",
-        },
-      ],
-    },
-    {
-      id: 4,
-      name: "Connectors & Cables",
-      slug: "connectors-cables",
-      description: "Various connectors, cables, and interconnects",
-      icon: "🔌",
-      status: "active",
-      productCount: 1002,
-      lowStockCount: 43,
-      subcategories: [
-        {
-          id: 41,
-          name: "USB Connectors",
-          slug: "usb-connectors",
-          productCount: 456,
-          lowStockCount: 21,
-          status: "active",
-        },
-        {
-          id: 42,
-          name: "Audio Connectors",
-          slug: "audio-connectors",
-          productCount: 234,
-          lowStockCount: 11,
-          status: "active",
-        },
-        {
-          id: 43,
-          name: "Power Connectors",
-          slug: "power-connectors",
-          productCount: 189,
-          lowStockCount: 8,
-          status: "active",
-        },
-        {
-          id: 44,
-          name: "Ribbon Cables",
-          slug: "ribbon-cables",
-          productCount: 123,
-          lowStockCount: 3,
-          status: "active",
-        },
-      ],
-    },
-  ]);
+  const [showAttributesSection, setShowAttributesSection] = useState(false);
 
   const [newCategory, setNewCategory] = useState({
     name: "",
     description: "",
-    icon: "",
-    parentId: null,
+    tags: [],
+    image: "",
+    attributes: [],
   });
 
-  const toggleCategory = (categoryId) => {
-    setExpandedCategories((prev) =>
-      prev.includes(categoryId)
-        ? prev.filter((id) => id !== categoryId)
-        : [...prev, categoryId]
-    );
+  const [currentTag, setCurrentTag] = useState("");
+  const [currentAttribute, setCurrentAttribute] = useState({
+    name: "",
+    label: "",
+    type: "text",
+    unit: "",
+    options: [],
+    isRequired: false,
+    isFilterable: true,
+  });
+  const [currentOption, setCurrentOption] = useState("");
+  const [editingAttributeIndex, setEditingAttributeIndex] = useState(-1);
+
+  const attributeTypes = [
+    { value: "text", label: "Text", icon: Type },
+    { value: "number", label: "Number", icon: Hash },
+    { value: "select", label: "Select", icon: List },
+    { value: "multiselect", label: "Multi-Select", icon: CheckSquare },
+    { value: "boolean", label: "Yes/No", icon: ToggleLeft },
+    { value: "range", label: "Range", icon: Sliders },
+  ];
+
+  // Fetch categories on component mount
+  useEffect(() => {
+    fetchCategories(dispatch);
+    console.log(dispatch);
+  }, [dispatch]);
+
+  // Handle success/error messages
+  useEffect(() => {
+    if (successMessage) {
+      alert(successMessage);
+      dispatch(clearMessages());
+    }
+    if (error && errorMessage) {
+      alert(errorMessage);
+      dispatch(clearMessages());
+    }
+  }, [successMessage, error, errorMessage, dispatch]);
+
+  const resetForm = () => {
+    setNewCategory({
+      name: "",
+      description: "",
+      tags: [],
+      image: "",
+      attributes: [],
+    });
+    setCurrentTag("");
+    setCurrentAttribute({
+      name: "",
+      label: "",
+      type: "text",
+      unit: "",
+      options: [],
+      isRequired: false,
+      isFilterable: true,
+    });
+    setCurrentOption("");
+    setEditingCategory(null);
+    setEditingAttributeIndex(-1);
+    setShowAttributesSection(false);
   };
 
   const handleAddCategory = () => {
-    // Add category logic here
+    if (!newCategory.name.trim()) {
+      alert("Please enter a category name");
+      return;
+    }
+
+    createCategory(newCategory, dispatch);
     setShowAddModal(false);
-    setNewCategory({ name: "", description: "", icon: "", parentId: null });
+    resetForm();
+  };
+
+  const handleUpdateCategory = () => {
+    if (!newCategory.name.trim()) {
+      alert("Please enter a category name");
+      return;
+    }
+
+    updateCategory(editingCategory._id, newCategory, dispatch);
+    setShowAddModal(false);
+    resetForm();
   };
 
   const handleEditCategory = (category) => {
@@ -229,359 +149,373 @@ const AdminCategories = () => {
     setNewCategory({
       name: category.name,
       description: category.description,
-      icon: category.icon,
-      parentId: category.parentId || null,
+      tags: category.tags || [],
+      image: category.image || "",
+      attributes: category.attributes || [],
     });
     setShowAddModal(true);
   };
 
   const handleDeleteCategory = (categoryId) => {
-    if (
-      window.confirm(
-        'Are you sure you want to delete this category? This will also delete all subcategories and move products to "Uncategorized".'
-      )
-    ) {
-      setCategories((prev) => prev.filter((cat) => cat.id !== categoryId));
+    const category = categories.find((cat) => cat._id === categoryId);
+
+    if (category?.productCount > 0) {
+      if (
+        !window.confirm(
+          `This category contains ${category.productCount} products. Are you sure?`
+        )
+      ) {
+        return;
+      }
+    } else {
+      if (!window.confirm("Are you sure you want to delete this category?")) {
+        return;
+      }
     }
+
+    deleteCategory(categoryId, dispatch);
+  };
+
+  const addTag = () => {
+    if (currentTag.trim() && !newCategory.tags.includes(currentTag.trim())) {
+      setNewCategory((prev) => ({
+        ...prev,
+        tags: [...prev.tags, currentTag.trim()],
+      }));
+      setCurrentTag("");
+    }
+  };
+
+  const removeTag = (tagToRemove) => {
+    setNewCategory((prev) => ({
+      ...prev,
+      tags: prev.tags.filter((tag) => tag !== tagToRemove),
+    }));
+  };
+
+  const addOption = () => {
+    if (
+      currentOption.trim() &&
+      !currentAttribute.options.includes(currentOption.trim())
+    ) {
+      setCurrentAttribute((prev) => ({
+        ...prev,
+        options: [...prev.options, currentOption.trim()],
+      }));
+      setCurrentOption("");
+    }
+  };
+
+  const removeOption = (optionToRemove) => {
+    setCurrentAttribute((prev) => ({
+      ...prev,
+      options: prev.options.filter((option) => option !== optionToRemove),
+    }));
+  };
+
+  const addAttribute = () => {
+    if (!currentAttribute.name.trim() || !currentAttribute.label.trim()) {
+      alert("Please enter attribute name and label");
+      return;
+    }
+
+    const attributeToAdd = {
+      ...currentAttribute,
+      _id: Date.now().toString(),
+      name: currentAttribute.name.toLowerCase().replace(/\s+/g, "_"),
+    };
+
+    if (editingAttributeIndex >= 0) {
+      setNewCategory((prev) => ({
+        ...prev,
+        attributes: prev.attributes.map((attr, index) =>
+          index === editingAttributeIndex ? attributeToAdd : attr
+        ),
+      }));
+      setEditingAttributeIndex(-1);
+    } else {
+      setNewCategory((prev) => ({
+        ...prev,
+        attributes: [...prev.attributes, attributeToAdd],
+      }));
+    }
+
+    setCurrentAttribute({
+      name: "",
+      label: "",
+      type: "text",
+      unit: "",
+      options: [],
+      isRequired: false,
+      isFilterable: true,
+    });
+    setCurrentOption("");
+  };
+
+  const editAttribute = (index) => {
+    const attr = newCategory.attributes[index];
+    setCurrentAttribute(attr);
+    setEditingAttributeIndex(index);
+  };
+
+  const removeAttribute = (index) => {
+    setNewCategory((prev) => ({
+      ...prev,
+      attributes: prev.attributes.filter((_, i) => i !== index),
+    }));
   };
 
   const filteredCategories = categories.filter(
     (category) =>
       category.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      category.subcategories.some((sub) =>
-        sub.name.toLowerCase().includes(searchTerm.toLowerCase())
+      category.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      category.tags?.some((tag) =>
+        tag.toLowerCase().includes(searchTerm.toLowerCase())
       )
   );
 
-  const totalProducts = categories.reduce(
-    (sum, cat) => sum + cat.productCount,
-    0
-  );
-  const totalLowStock = categories.reduce(
-    (sum, cat) => sum + cat.lowStockCount,
-    0
-  );
-
   return (
-    <AdminLayout>
-      <div className="space-y-6">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900 flex items-center">
-              <FolderOpen className="w-8 h-8 mr-3 text-blue-600" />
-              Categories Management
-            </h1>
-            <p className="text-gray-600 mt-1">
-              Organize your products into categories and subcategories
-            </p>
-          </div>
-
-          <div className="flex space-x-3">
-            <button
-              onClick={() => setShowAddModal(true)}
-              className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-            >
-              <Plus className="w-4 h-4 mr-2" />
-              Add Category
-            </button>
-          </div>
+    <AdminLayout className="max-w-7xl mx-auto p-6 space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900 flex items-center">
+            <FolderOpen className="w-8 h-8 mr-3 text-blue-600" />
+            Categories Management
+          </h1>
+          <p className="text-gray-600 mt-1">
+            Manage product categories and their dynamic attributes
+          </p>
         </div>
 
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">
-                  Total Categories
-                </p>
-                <p className="text-2xl font-bold text-gray-900 mt-1">
-                  {categories.length}
-                </p>
-              </div>
-              <FolderOpen className="w-8 h-8 text-blue-600" />
-            </div>
-          </div>
+        <button
+          onClick={() => setShowAddModal(true)}
+          className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+          disabled={isCreating}
+        >
+          <Plus className="w-4 h-4 mr-2" />
+          {isCreating ? "Creating..." : "Add Category"}
+        </button>
+      </div>
 
-          <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">
-                  Total Products
-                </p>
-                <p className="text-2xl font-bold text-gray-900 mt-1">
-                  {totalProducts.toLocaleString()}
-                </p>
-              </div>
-              <Package className="w-8 h-8 text-green-600" />
-            </div>
-          </div>
-
-          <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">
-                  Low Stock Items
-                </p>
-                <p className="text-2xl font-bold text-red-600 mt-1">
-                  {totalLowStock}
-                </p>
-              </div>
-              <AlertTriangle className="w-8 h-8 text-red-600" />
-            </div>
-          </div>
-        </div>
-
-        {/* Search and Filter */}
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-          <div className="flex items-center justify-between mb-6">
-            <div className="flex items-center space-x-4">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                <input
-                  type="text"
-                  placeholder="Search categories..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
-              </div>
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-600">
+                Total Categories
+              </p>
+              <p className="text-2xl font-bold text-gray-900 mt-1">
+                {totalCategories}
+              </p>
             </div>
+            <FolderOpen className="w-8 h-8 text-blue-600" />
+          </div>
+        </div>
 
-            <div className="flex items-center space-x-2">
-              <div className="flex bg-gray-100 rounded-lg p-1">
-                <button
-                  onClick={() => setViewMode("tree")}
-                  className={`p-2 rounded-md transition-colors ${
-                    viewMode === "tree"
-                      ? "bg-white shadow-sm"
-                      : "hover:bg-gray-200"
-                  }`}
-                >
-                  <List className="w-4 h-4" />
-                </button>
-                <button
-                  onClick={() => setViewMode("grid")}
-                  className={`p-2 rounded-md transition-colors ${
-                    viewMode === "grid"
-                      ? "bg-white shadow-sm"
-                      : "hover:bg-gray-200"
-                  }`}
-                >
-                  <Grid3X3 className="w-4 h-4" />
-                </button>
-              </div>
+        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-600">
+                Total Products
+              </p>
+              <p className="text-2xl font-bold text-gray-900 mt-1">
+                {totalProducts.toLocaleString()}
+              </p>
+            </div>
+            <Package className="w-8 h-8 text-green-600" />
+          </div>
+        </div>
+
+        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-600">
+                Low Stock Items
+              </p>
+              <p className="text-2xl font-bold text-red-600 mt-1">
+                {totalLowStock}
+              </p>
+            </div>
+            <AlertTriangle className="w-8 h-8 text-red-600" />
+          </div>
+        </div>
+      </div>
+
+      {/* Categories Table */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100">
+        <div className="p-6 border-b border-gray-100">
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-semibold text-gray-900">
+              All Categories
+            </h2>
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+              <input
+                type="text"
+                placeholder="Search categories..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
             </div>
           </div>
+        </div>
 
-          {viewMode === "tree" ? (
-            /* Tree View */
-            <div className="space-y-2">
-              {filteredCategories.map((category) => (
-                <div
-                  key={category.id}
-                  className="border border-gray-200 rounded-lg"
-                >
-                  {/* Main Category */}
-                  <div
-                    className="flex items-center justify-between p-4 bg-gray-50 hover:bg-gray-100 transition-colors cursor-pointer"
-                    onClick={() => toggleCategory(category.id)}
-                  >
-                    <div className="flex items-center space-x-3">
-                      <button className="flex items-center justify-center w-6 h-6">
-                        {expandedCategories.includes(category.id) ? (
-                          <ChevronDown className="w-4 h-4 text-gray-600" />
-                        ) : (
-                          <ChevronRight className="w-4 h-4 text-gray-600" />
-                        )}
-                      </button>
-                      <span className="text-2xl">{category.icon}</span>
+        <div className="overflow-x-auto">
+          {isFetching ? (
+            <div className="text-center py-8">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+              <p className="text-gray-500 mt-2">Loading categories...</p>
+            </div>
+          ) : (
+            <table className="w-full">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Category
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Description
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Attributes
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Products
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Status
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Actions
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {filteredCategories.map((category) => (
+                  <tr key={category._id} className="hover:bg-gray-50">
+                    <td className="px-6 py-4 whitespace-nowrap">
                       <div>
-                        <h3 className="font-semibold text-gray-900">
-                          {category.name}
-                        </h3>
-                        <p className="text-sm text-gray-600">
-                          {category.description}
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center space-x-4">
-                      <div className="text-right">
                         <div className="text-sm font-medium text-gray-900">
-                          {category.productCount} products
+                          {category.name}
                         </div>
-                        {category.lowStockCount > 0 && (
-                          <div className="text-xs text-red-600 flex items-center">
-                            <AlertTriangle className="w-3 h-3 mr-1" />
-                            {category.lowStockCount} low stock
+                        <div className="text-sm text-gray-500">
+                          /{category.slug}
+                        </div>
+                        {category.tags && category.tags.length > 0 && (
+                          <div className="flex flex-wrap gap-1 mt-1">
+                            {category.tags.slice(0, 2).map((tag, index) => (
+                              <span
+                                key={index}
+                                className="px-2 py-0.5 text-xs bg-blue-100 text-blue-700 rounded"
+                              >
+                                {tag}
+                              </span>
+                            ))}
+                            {category.tags.length > 2 && (
+                              <span className="text-xs text-gray-500">
+                                +{category.tags.length - 2}
+                              </span>
+                            )}
                           </div>
                         )}
                       </div>
-
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="text-sm text-gray-900 max-w-xs truncate">
+                        {category.description}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm text-gray-900">
+                        {category.attributes?.length || 0} attributes
+                      </div>
+                      {category.attributes &&
+                        category.attributes.length > 0 && (
+                          <div className="text-xs text-gray-500 mt-1">
+                            {category.attributes
+                              .slice(0, 2)
+                              .map((attr) => attr.label)
+                              .join(", ")}
+                            {category.attributes.length > 2 && "..."}
+                          </div>
+                        )}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm text-gray-900">
+                        {category.productCount || 0}
+                      </div>
+                      {(category.lowStockCount || 0) > 0 && (
+                        <div className="text-xs text-red-600 flex items-center mt-1">
+                          <AlertTriangle className="w-3 h-3 mr-1" />
+                          {category.lowStockCount} low stock
+                        </div>
+                      )}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span
+                        className={`px-2 py-1 text-xs rounded-full ${
+                          category.isActive
+                            ? "bg-green-100 text-green-800"
+                            : "bg-red-100 text-red-800"
+                        }`}
+                      >
+                        {category.isActive ? "Active" : "Inactive"}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                       <div className="flex space-x-2">
                         <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleEditCategory(category);
-                          }}
-                          className="p-2 text-blue-600 hover:text-blue-800 hover:bg-blue-100 rounded-lg transition-colors"
+                          onClick={() => handleEditCategory(category)}
+                          className="text-blue-600 hover:text-blue-900"
+                          disabled={isUpdating}
                         >
                           <Edit className="w-4 h-4" />
                         </button>
                         <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleDeleteCategory(category.id);
-                          }}
-                          className="p-2 text-red-600 hover:text-red-800 hover:bg-red-100 rounded-lg transition-colors"
+                          onClick={() => handleDeleteCategory(category._id)}
+                          className="text-red-600 hover:text-red-900"
+                          disabled={isDeleting}
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>
                       </div>
-                    </div>
-                  </div>
-
-                  {/* Subcategories */}
-                  {expandedCategories.includes(category.id) && (
-                    <div className="bg-white">
-                      {category.subcategories.map((subcategory, index) => (
-                        <div
-                          key={subcategory.id}
-                          className={`flex items-center justify-between p-4 pl-16 hover:bg-gray-50 transition-colors ${
-                            index < category.subcategories.length - 1
-                              ? "border-b border-gray-100"
-                              : ""
-                          }`}
-                        >
-                          <div className="flex items-center space-x-3">
-                            <div className="w-2 h-2 bg-gray-400 rounded-full"></div>
-                            <div>
-                              <h4 className="font-medium text-gray-900">
-                                {subcategory.name}
-                              </h4>
-                              <p className="text-sm text-gray-600">
-                                /{subcategory.slug}
-                              </p>
-                            </div>
-                          </div>
-
-                          <div className="flex items-center space-x-4">
-                            <div className="text-right">
-                              <div className="text-sm font-medium text-gray-900">
-                                {subcategory.productCount} products
-                              </div>
-                              {subcategory.lowStockCount > 0 && (
-                                <div className="text-xs text-red-600 flex items-center">
-                                  <AlertTriangle className="w-3 h-3 mr-1" />
-                                  {subcategory.lowStockCount} low stock
-                                </div>
-                              )}
-                            </div>
-
-                            <div className="flex space-x-2">
-                              <button className="p-2 text-gray-600 hover:text-blue-600 hover:bg-blue-100 rounded-lg transition-colors">
-                                <Eye className="w-4 h-4" />
-                              </button>
-                              <button className="p-2 text-gray-600 hover:text-blue-600 hover:bg-blue-100 rounded-lg transition-colors">
-                                <Edit className="w-4 h-4" />
-                              </button>
-                              <button className="p-2 text-gray-600 hover:text-red-600 hover:bg-red-100 rounded-lg transition-colors">
-                                <Trash2 className="w-4 h-4" />
-                              </button>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          ) : (
-            /* Grid View */
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filteredCategories.map((category) => (
-                <div
-                  key={category.id}
-                  className="bg-white border border-gray-200 rounded-lg p-6 hover:shadow-md transition-shadow"
-                >
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center space-x-3">
-                      <span className="text-3xl">{category.icon}</span>
-                      <div>
-                        <h3 className="font-semibold text-gray-900">
-                          {category.name}
-                        </h3>
-                        <p className="text-sm text-gray-600 mt-1">
-                          {category.description}
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="flex space-x-1">
-                      <button
-                        onClick={() => handleEditCategory(category)}
-                        className="p-2 text-blue-600 hover:text-blue-800 hover:bg-blue-100 rounded-lg transition-colors"
-                      >
-                        <Edit className="w-4 h-4" />
-                      </button>
-                      <button
-                        onClick={() => handleDeleteCategory(category.id)}
-                        className="p-2 text-red-600 hover:text-red-800 hover:bg-red-100 rounded-lg transition-colors"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className="space-y-3">
-                    <div className="flex justify-between items-center text-sm">
-                      <span className="text-gray-600">Total Products:</span>
-                      <span className="font-medium text-gray-900">
-                        {category.productCount}
-                      </span>
-                    </div>
-
-                    <div className="flex justify-between items-center text-sm">
-                      <span className="text-gray-600">Subcategories:</span>
-                      <span className="font-medium text-gray-900">
-                        {category.subcategories.length}
-                      </span>
-                    </div>
-
-                    {category.lowStockCount > 0 && (
-                      <div className="flex justify-between items-center text-sm">
-                        <span className="text-red-600">Low Stock:</span>
-                        <span className="font-medium text-red-600 flex items-center">
-                          <AlertTriangle className="w-3 h-3 mr-1" />
-                          {category.lowStockCount}
-                        </span>
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="mt-4 pt-4 border-t border-gray-100">
-                    <button className="w-full text-left text-sm text-blue-600 hover:text-blue-800 font-medium">
-                      View subcategories →
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           )}
         </div>
 
-        {/* Add/Edit Category Modal */}
-        {showAddModal && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-xl p-6 w-full max-w-md mx-4">
-              <h2 className="text-xl font-bold text-gray-900 mb-4">
+        {filteredCategories.length === 0 && !isFetching && (
+          <div className="text-center py-8 text-gray-500">
+            <FolderOpen className="w-12 h-12 mx-auto mb-4 text-gray-300" />
+            <p className="text-lg font-medium">No categories found</p>
+            <p className="text-sm">
+              {searchTerm
+                ? `No categories match "${searchTerm}"`
+                : "Get started by adding your first category"}
+            </p>
+          </div>
+        )}
+      </div>
+
+      {/* Add/Edit Category Modal */}
+      {showAddModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+            <div className="p-6 border-b border-gray-100">
+              <h2 className="text-xl font-bold text-gray-900">
                 {editingCategory ? "Edit Category" : "Add New Category"}
               </h2>
+            </div>
 
-              <div className="space-y-4">
+            <div className="p-6 space-y-6">
+              {/* Basic Information */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Category Name *
@@ -602,91 +536,391 @@ const AdminCategories = () => {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Description
-                  </label>
-                  <textarea
-                    value={newCategory.description}
-                    onChange={(e) =>
-                      setNewCategory((prev) => ({
-                        ...prev,
-                        description: e.target.value,
-                      }))
-                    }
-                    rows={3}
-                    className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    placeholder="Category description"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Icon (Emoji)
+                    Image URL (optional)
                   </label>
                   <input
-                    type="text"
-                    value={newCategory.icon}
+                    type="url"
+                    value={newCategory.image}
                     onChange={(e) =>
                       setNewCategory((prev) => ({
                         ...prev,
-                        icon: e.target.value,
+                        image: e.target.value,
                       }))
                     }
                     className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    placeholder="🔧"
+                    placeholder="https://example.com/image.jpg"
                   />
                 </div>
+              </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Parent Category (Optional)
-                  </label>
-                  <select
-                    value={newCategory.parentId || ""}
-                    onChange={(e) =>
-                      setNewCategory((prev) => ({
-                        ...prev,
-                        parentId: e.target.value || null,
-                      }))
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Description
+                </label>
+                <textarea
+                  value={newCategory.description}
+                  onChange={(e) =>
+                    setNewCategory((prev) => ({
+                      ...prev,
+                      description: e.target.value,
+                    }))
+                  }
+                  rows={3}
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="Category description"
+                />
+              </div>
+
+              {/* Tags */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Tags
+                </label>
+                <div className="flex flex-wrap items-center gap-2 mb-3">
+                  {newCategory.tags.map((tag) => (
+                    <span
+                      key={tag}
+                      className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-blue-100 text-blue-800"
+                    >
+                      {tag}
+                      <button
+                        type="button"
+                        onClick={() => removeTag(tag)}
+                        className="ml-2 text-blue-600 hover:text-blue-800"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </span>
+                  ))}
+                </div>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={currentTag}
+                    onChange={(e) => setCurrentTag(e.target.value)}
+                    onKeyPress={(e) =>
+                      e.key === "Enter" && (e.preventDefault(), addTag())
                     }
-                    className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="flex-1 px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="Add tag"
+                  />
+                  <button
+                    type="button"
+                    onClick={addTag}
+                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
                   >
-                    <option value="">None (Main Category)</option>
-                    {categories.map((cat) => (
-                      <option key={cat.id} value={cat.id}>
-                        {cat.name}
-                      </option>
-                    ))}
-                  </select>
+                    Add
+                  </button>
                 </div>
               </div>
 
-              <div className="flex justify-end space-x-3 mt-6">
+              {/* Attributes Section */}
+              <div className="border-t border-gray-200 pt-6">
                 <button
-                  onClick={() => {
-                    setShowAddModal(false);
-                    setEditingCategory(null);
-                    setNewCategory({
-                      name: "",
-                      description: "",
-                      icon: "",
-                      parentId: null,
-                    });
-                  }}
-                  className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+                  type="button"
+                  onClick={() =>
+                    setShowAttributesSection(!showAttributesSection)
+                  }
+                  className="flex items-center justify-between w-full text-left mb-4"
                 >
-                  Cancel
+                  <h3 className="text-lg font-semibold text-gray-900">
+                    Product Attributes ({newCategory.attributes.length})
+                  </h3>
+                  {showAttributesSection ? (
+                    <ChevronUp className="w-5 h-5 text-gray-500" />
+                  ) : (
+                    <ChevronDown className="w-5 h-5 text-gray-500" />
+                  )}
                 </button>
-                <button
-                  onClick={handleAddCategory}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                >
-                  {editingCategory ? "Update" : "Add"} Category
-                </button>
+
+                {showAttributesSection && (
+                  <div className="space-y-6">
+                    {/* Current Attributes */}
+                    {newCategory.attributes.length > 0 && (
+                      <div>
+                        <h4 className="font-medium text-gray-700 mb-3">
+                          Current Attributes:
+                        </h4>
+                        <div className="space-y-2">
+                          {newCategory.attributes.map((attr, index) => (
+                            <div
+                              key={index}
+                              className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
+                            >
+                              <div>
+                                <span className="font-medium text-gray-900">
+                                  {attr.label}
+                                </span>
+                                <span className="text-sm text-gray-500 ml-2">
+                                  ({attr.type}
+                                  {attr.unit ? `, ${attr.unit}` : ""})
+                                </span>
+                                {attr.isRequired && (
+                                  <span className="ml-2 px-2 py-0.5 text-xs bg-red-100 text-red-700 rounded">
+                                    Required
+                                  </span>
+                                )}
+                              </div>
+                              <div className="flex space-x-2">
+                                <button
+                                  type="button"
+                                  onClick={() => editAttribute(index)}
+                                  className="text-blue-600 hover:text-blue-800"
+                                >
+                                  <Edit className="w-4 h-4" />
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => removeAttribute(index)}
+                                  className="text-red-600 hover:text-red-800"
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </button>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Add/Edit Attribute Form */}
+                    <div className="border border-gray-200 rounded-lg p-4">
+                      <h4 className="font-medium text-gray-700 mb-4">
+                        {editingAttributeIndex >= 0
+                          ? "Edit Attribute"
+                          : "Add New Attribute"}
+                      </h4>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Attribute Name *
+                          </label>
+                          <input
+                            type="text"
+                            value={currentAttribute.name}
+                            onChange={(e) =>
+                              setCurrentAttribute((prev) => ({
+                                ...prev,
+                                name: e.target.value
+                                  .toLowerCase()
+                                  .replace(/[^a-z0-9_]/g, "_"),
+                              }))
+                            }
+                            className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            placeholder="voltage, speed, power"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Display Label *
+                          </label>
+                          <input
+                            type="text"
+                            value={currentAttribute.label}
+                            onChange={(e) =>
+                              setCurrentAttribute((prev) => ({
+                                ...prev,
+                                label: e.target.value,
+                              }))
+                            }
+                            className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            placeholder="Voltage, Speed, Power"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Data Type *
+                          </label>
+                          <select
+                            value={currentAttribute.type}
+                            onChange={(e) =>
+                              setCurrentAttribute((prev) => ({
+                                ...prev,
+                                type: e.target.value,
+                              }))
+                            }
+                            className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          >
+                            {attributeTypes.map((type) => (
+                              <option key={type.value} value={type.value}>
+                                {type.label}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Unit (optional)
+                          </label>
+                          <input
+                            type="text"
+                            value={currentAttribute.unit}
+                            onChange={(e) =>
+                              setCurrentAttribute((prev) => ({
+                                ...prev,
+                                unit: e.target.value,
+                              }))
+                            }
+                            className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            placeholder="V, W, rpm, kg"
+                          />
+                        </div>
+                      </div>
+
+                      {/* Options for select/multiselect */}
+                      {(currentAttribute.type === "select" ||
+                        currentAttribute.type === "multiselect") && (
+                        <div className="mb-4">
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Options
+                          </label>
+                          <div className="flex flex-wrap gap-2 mb-2">
+                            {currentAttribute.options.map((option, index) => (
+                              <span
+                                key={index}
+                                className="inline-flex items-center px-2 py-1 rounded text-sm bg-gray-100 text-gray-800"
+                              >
+                                {option}
+                                <button
+                                  type="button"
+                                  onClick={() => removeOption(option)}
+                                  className="ml-2 text-gray-600 hover:text-gray-800"
+                                >
+                                  <X className="w-3 h-3" />
+                                </button>
+                              </span>
+                            ))}
+                          </div>
+                          <div className="flex gap-2">
+                            <input
+                              type="text"
+                              value={currentOption}
+                              onChange={(e) => setCurrentOption(e.target.value)}
+                              onKeyPress={(e) =>
+                                e.key === "Enter" &&
+                                (e.preventDefault(), addOption())
+                              }
+                              className="flex-1 px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                              placeholder="Add option..."
+                            />
+                            <button
+                              type="button"
+                              onClick={addOption}
+                              className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
+                            >
+                              Add
+                            </button>
+                          </div>
+                        </div>
+                      )}
+
+                      <div className="flex items-center space-x-6 mb-4">
+                        <label className="flex items-center">
+                          <input
+                            type="checkbox"
+                            checked={currentAttribute.isRequired}
+                            onChange={(e) =>
+                              setCurrentAttribute((prev) => ({
+                                ...prev,
+                                isRequired: e.target.checked,
+                              }))
+                            }
+                            className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                          />
+                          <span className="ml-2 text-sm text-gray-700">
+                            Required Field
+                          </span>
+                        </label>
+                        <label className="flex items-center">
+                          <input
+                            type="checkbox"
+                            checked={currentAttribute.isFilterable}
+                            onChange={(e) =>
+                              setCurrentAttribute((prev) => ({
+                                ...prev,
+                                isFilterable: e.target.checked,
+                              }))
+                            }
+                            className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                          />
+                          <span className="ml-2 text-sm text-gray-700">
+                            Use in Filters
+                          </span>
+                        </label>
+                      </div>
+
+                      <div className="flex gap-3">
+                        <button
+                          type="button"
+                          onClick={addAttribute}
+                          className="flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                        >
+                          <Save className="w-4 h-4 mr-2" />
+                          {editingAttributeIndex >= 0 ? "Update" : "Add"}{" "}
+                          Attribute
+                        </button>
+                        {editingAttributeIndex >= 0 && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setEditingAttributeIndex(-1);
+                              setCurrentAttribute({
+                                name: "",
+                                label: "",
+                                type: "text",
+                                unit: "",
+                                options: [],
+                                isRequired: false,
+                                isFilterable: true,
+                              });
+                              setCurrentOption("");
+                            }}
+                            className="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors"
+                          >
+                            Cancel Edit
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
+
+            {/* Modal Footer */}
+            <div className="p-6 border-t border-gray-100 flex justify-end space-x-3">
+              <button
+                onClick={() => {
+                  setShowAddModal(false);
+                  resetForm();
+                }}
+                className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+                disabled={isCreating || isUpdating}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={
+                  editingCategory ? handleUpdateCategory : handleAddCategory
+                }
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
+                disabled={isCreating || isUpdating}
+              >
+                {isCreating || isUpdating
+                  ? "Processing..."
+                  : editingCategory
+                  ? "Update"
+                  : "Create"}{" "}
+                Category
+              </button>
+            </div>
           </div>
-        )}
-      </div>
+        </div>
+      )}
     </AdminLayout>
   );
 };

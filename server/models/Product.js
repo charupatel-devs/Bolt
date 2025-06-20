@@ -27,35 +27,6 @@ const reviewSchema = new mongoose.Schema({
   },
 });
 
-const specificationSchema = new mongoose.Schema(
-  {
-    brand: String,
-    model: String,
-    manufacturer: String,
-    partNumber: String,
-    voltage: String,
-    current: String,
-    power: String,
-    resistance: String,
-    capacitance: String,
-    frequency: String,
-    temperature: String,
-    dimensions: String,
-    weight: String,
-    material: String,
-    color: String,
-    warranty: String,
-    certifications: [String],
-    features: [String],
-    applications: [String],
-    packageType: String,
-    mountingType: String,
-    operatingTemperature: String,
-    storageTemperature: String,
-  },
-  { _id: false }
-);
-
 const productSchema = new mongoose.Schema(
   {
     name: {
@@ -83,10 +54,6 @@ const productSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: "Category",
       required: [true, "Please select a category"],
-    },
-    subcategory: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Category",
     },
     price: {
       type: Number,
@@ -130,7 +97,14 @@ const productSchema = new mongoose.Schema(
         },
       },
     ],
-    specifications: specificationSchema,
+
+    // Dynamic specifications stored as key-value pairs
+    specifications: {
+      type: Map,
+      of: mongoose.Schema.Types.Mixed,
+      default: new Map(),
+    },
+
     stock: {
       type: Number,
       required: [true, "Please provide stock quantity"],
@@ -234,11 +208,7 @@ const productSchema = new mongoose.Schema(
 );
 
 // Indexes for better performance
-productSchema.index({
-  name: "text",
-  description: "text",
-  "specifications.brand": "text",
-});
+productSchema.index({ name: "text", description: "text" });
 productSchema.index({ category: 1 });
 productSchema.index({ price: 1 });
 productSchema.index({ averageRating: -1 });
@@ -247,24 +217,12 @@ productSchema.index({ isFeatured: 1 });
 productSchema.index({ isActive: 1 });
 productSchema.index({ sku: 1 });
 productSchema.index({ stock: 1 });
+
+// Create compound indexes for common specification filters
 productSchema.index({ "specifications.brand": 1 });
-
-// Virtual for discount percentage
-productSchema.virtual("discountPercentage").get(function () {
-  if (this.originalPrice && this.price) {
-    return Math.round(
-      ((this.originalPrice - this.price) / this.originalPrice) * 100
-    );
-  }
-  return 0;
-});
-
-// Virtual for stock status
-productSchema.virtual("stockStatus").get(function () {
-  if (this.stock === 0) return "out_of_stock";
-  if (this.stock <= 10) return "low_stock";
-  return "in_stock";
-});
+productSchema.index({ "specifications.voltage": 1 });
+productSchema.index({ "specifications.power": 1 });
+productSchema.index({ "specifications.speed": 1 });
 
 // Virtual for primary image
 productSchema.virtual("primaryImage").get(function () {
@@ -272,154 +230,46 @@ productSchema.virtual("primaryImage").get(function () {
   return primary ? primary.url : this.images[0] ? this.images[0].url : null;
 });
 
-// Pre-save middleware to update availability based on stock
-productSchema.pre("save", function (next) {
-  if (this.stock === 0) {
-    this.availability = "out_of_stock";
-  } else if (this.stock > 0 && this.availability === "out_of_stock") {
-    this.availability = "in_stock";
+// Method to set specification
+productSchema.methods.setSpecification = function (key, value) {
+  if (!this.specifications) {
+    this.specifications = new Map();
   }
-
-  // Calculate discount if originalPrice is set
-  if (this.originalPrice && this.price) {
-    this.discount = Math.round(
-      ((this.originalPrice - this.price) / this.originalPrice) * 100
-    );
-  }
-
-  next();
-});
-
-// Method to calculate average rating
-productSchema.methods.calculateAverageRating = function () {
-  if (this.reviews.length === 0) {
-    this.averageRating = 0;
-    this.numReviews = 0;
-  } else {
-    const totalRating = this.reviews.reduce(
-      (sum, review) => sum + review.rating,
-      0
-    );
-    this.averageRating =
-      Math.round((totalRating / this.reviews.length) * 10) / 10;
-    this.numReviews = this.reviews.length;
-  }
-  return this.save();
+  this.specifications.set(key, value);
+  this.markModified("specifications");
+  return this;
 };
 
-// Method to add review
-productSchema.methods.addReview = function (userId, userName, rating, comment) {
-  // Check if user already reviewed this product
-  const existingReview = this.reviews.find(
-    (review) => review.user.toString() === userId.toString()
-  );
-
-  if (existingReview) {
-    throw new Error("You have already reviewed this product");
-  }
-
-  this.reviews.push({
-    user: userId,
-    name: userName,
-    rating,
-    comment,
-  });
-
-  return this.calculateAverageRating();
+// Method to get specification
+productSchema.methods.getSpecification = function (key) {
+  return this.specifications ? this.specifications.get(key) : undefined;
 };
 
-// Method to update stock
-productSchema.methods.updateStock = function (
-  quantity,
-  operation = "subtract"
+// Method to get all specifications as object
+productSchema.methods.getSpecificationsObject = function () {
+  if (!this.specifications) return {};
+  return Object.fromEntries(this.specifications);
+};
+
+// Static method for advanced filtering
+productSchema.statics.filterBySpecifications = function (
+  categoryId,
+  filters,
+  options = {}
 ) {
-  if (operation === "subtract") {
-    if (this.stock < quantity) {
-      throw new Error("Insufficient stock");
-    }
-    this.stock -= quantity;
-  } else if (operation === "add") {
-    this.stock += quantity;
-  }
-
-  return this.save();
-};
-
-// Method to increment view count
-productSchema.methods.incrementViewCount = function () {
-  this.viewCount += 1;
-  return this.save({ validateBeforeSave: false });
-};
-
-// Method to get price for quantity (considering price breaks)
-productSchema.methods.getPriceForQuantity = function (quantity) {
-  if (!this.priceBreaks || this.priceBreaks.length === 0) {
-    return this.price;
-  }
-
-  // Sort price breaks by quantity in descending order
-  const sortedPriceBreaks = this.priceBreaks.sort(
-    (a, b) => b.quantity - a.quantity
-  );
-
-  // Find the applicable price break
-  for (let priceBreak of sortedPriceBreaks) {
-    if (quantity >= priceBreak.quantity) {
-      return priceBreak.price;
-    }
-  }
-
-  return this.price;
-};
-
-// Static method to get featured products
-productSchema.statics.getFeaturedProducts = function (limit = 10) {
-  return this.find({ isFeatured: true, isActive: true })
-    .populate("category", "name")
-    .sort({ createdAt: -1 })
-    .limit(limit);
-};
-
-// Static method to get best sellers
-productSchema.statics.getBestSellers = function (limit = 10) {
-  return this.find({ isActive: true })
-    .populate("category", "name")
-    .sort({ totalSales: -1 })
-    .limit(limit);
-};
-
-// Static method to get new arrivals
-productSchema.statics.getNewArrivals = function (limit = 10) {
-  return this.find({ isActive: true })
-    .populate("category", "name")
-    .sort({ createdAt: -1 })
-    .limit(limit);
-};
-
-// Static method to search products
-productSchema.statics.searchProducts = function (searchTerm, options = {}) {
   const {
-    category,
-    minPrice,
-    maxPrice,
-    brand,
-    inStock = true,
     sort = "-createdAt",
     limit = 20,
     page = 1,
+    minPrice,
+    maxPrice,
+    inStock = true,
   } = options;
 
-  let query = { isActive: true };
-
-  // Text search
-  if (searchTerm) {
-    query.$text = { $search: searchTerm };
-  }
-
-  // Category filter
-  if (category) {
-    query.category = category;
-  }
+  let query = {
+    category: categoryId,
+    isActive: true,
+  };
 
   // Price range filter
   if (minPrice || maxPrice) {
@@ -428,54 +278,125 @@ productSchema.statics.searchProducts = function (searchTerm, options = {}) {
     if (maxPrice) query.price.$lte = maxPrice;
   }
 
-  // Brand filter
-  if (brand) {
-    query["specifications.brand"] = new RegExp(brand, "i");
-  }
-
   // Stock filter
   if (inStock) {
     query.stock = { $gt: 0 };
   }
 
+  // Add specification filters
+  Object.entries(filters).forEach(([key, value]) => {
+    if (Array.isArray(value)) {
+      // Multiple values (checkbox filters)
+      query[`specifications.${key}`] = { $in: value };
+    } else if (
+      typeof value === "object" &&
+      value.min !== undefined &&
+      value.max !== undefined
+    ) {
+      // Range filter
+      query[`specifications.${key}`] = {
+        $gte: value.min,
+        $lte: value.max,
+      };
+    } else {
+      // Single value
+      query[`specifications.${key}`] = value;
+    }
+  });
+
   const skip = (page - 1) * limit;
 
   return this.find(query)
-    .populate("category", "name")
+    .populate("category", "name slug")
     .sort(sort)
     .skip(skip)
     .limit(limit);
 };
 
-// Static method to get related products
-productSchema.statics.getRelatedProducts = function (
-  productId,
-  categoryId,
-  limit = 4
-) {
-  return this.find({
-    _id: { $ne: productId },
-    category: categoryId,
-    isActive: true,
-    stock: { $gt: 0 },
-  })
-    .populate("category", "name")
-    .sort({ averageRating: -1, totalSales: -1 })
-    .limit(limit);
-};
+// Static method to get filter options for a category
+productSchema.statics.getFilterOptions = async function (categoryId) {
+  const Category = mongoose.model("Category");
+  const category = await Category.findById(categoryId);
 
-// Pre-remove middleware
-productSchema.pre("remove", async function (next) {
-  try {
-    // Remove product from all wishlists
-    await this.model("User").updateMany(
-      { wishlist: this._id },
-      { $pull: { wishlist: this._id } }
-    );
-    next();
-  } catch (error) {
-    next(error);
+  if (!category) {
+    throw new Error("Category not found");
   }
-});
+
+  const filterableAttributes = category.getFilterableAttributes();
+  const filterOptions = {};
+
+  for (const attr of filterableAttributes) {
+    if (attr.type === "select" || attr.type === "multiselect") {
+      // For predefined options
+      filterOptions[attr.name] = {
+        type: attr.filterConfig.filterType,
+        label: attr.label,
+        options: attr.options.map((opt) => ({
+          value: opt,
+          label: opt,
+          count: 0,
+        })),
+      };
+    } else if (attr.type === "range" || attr.type === "number") {
+      // Get min/max values from products
+      const aggregation = await this.aggregate([
+        {
+          $match: {
+            category: mongoose.Types.ObjectId(categoryId),
+            isActive: true,
+          },
+        },
+        {
+          $group: {
+            _id: null,
+            min: { $min: `$specifications.${attr.name}` },
+            max: { $max: `$specifications.${attr.name}` },
+          },
+        },
+      ]);
+
+      const range = aggregation[0] || { min: 0, max: 100 };
+      filterOptions[attr.name] = {
+        type: "range",
+        label: attr.label,
+        unit: attr.unit,
+        min: range.min,
+        max: range.max,
+      };
+    } else {
+      // For text/other types, get unique values
+      const uniqueValues = await this.distinct(`specifications.${attr.name}`, {
+        category: categoryId,
+        isActive: true,
+      });
+
+      filterOptions[attr.name] = {
+        type: attr.filterConfig.filterType,
+        label: attr.label,
+        options: uniqueValues.map((val) => ({
+          value: val,
+          label: val,
+          count: 0,
+        })),
+      };
+    }
+  }
+
+  // Get counts for each option
+  for (const [attrName, filterData] of Object.entries(filterOptions)) {
+    if (filterData.options) {
+      for (const option of filterData.options) {
+        const count = await this.countDocuments({
+          category: categoryId,
+          isActive: true,
+          [`specifications.${attrName}`]: option.value,
+        });
+        option.count = count;
+      }
+    }
+  }
+
+  return filterOptions;
+};
 
 module.exports = mongoose.model("Product", productSchema);

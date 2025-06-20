@@ -30,14 +30,11 @@ const router = express.Router();
 // Get all categories
 router.get("/", getAllCategories);
 
-// Get category tree structure
-router.get("/tree", getCategoryTree);
-
 // Search categories
 router.get("/search", searchCategories);
 
 // Get single category details
-router.get("/:id", getCategoryById);
+// router.get("/:id", getCategoryById);
 
 // Get products in a category (with optional auth for personalization)
 router.get("/:id/products", optionalAuth, getCategoryProducts);
@@ -51,7 +48,7 @@ router.get("/:id/subcategories", getSubcategories);
 
 // Create new category
 router.post(
-  "/",
+  "/create",
   isAuthenticated,
   isAdmin,
   logActivity("create_category"),
@@ -60,7 +57,7 @@ router.post(
 
 // Update existing category
 router.put(
-  "/:id",
+  "/update/:id",
   isAuthenticated,
   isAdmin,
   logActivity("update_category"),
@@ -69,7 +66,7 @@ router.put(
 
 // Delete category
 router.delete(
-  "/:id",
+  "delete/:id",
   isAuthenticated,
   isAdmin,
   logActivity("delete_category"),
