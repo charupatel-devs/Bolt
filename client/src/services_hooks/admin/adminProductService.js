@@ -96,7 +96,7 @@ export const getAllProducts = async (dispatch, params = {}) => {
     // Build query parameters
     const queryParams = new URLSearchParams({
       page: page.toString(),
-      limit: limit.toString(),
+      limit: "5",
       sortBy,
       sortOrder,
     });

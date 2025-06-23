@@ -326,6 +326,16 @@ const AdminProductsManagement = () => {
               </div>
             )}
           </div>
+          {/* Show "View All" message if there are more products */}
+          {products.length === 5 && (
+            <div className="mt-4 text-center">
+              <NavLink to="/admin/products/all">
+                <button className="text-blue-600 hover:text-blue-800 text-sm font-medium">
+                  Showing 5 most recent products • View all products →
+                </button>
+              </NavLink>
+            </div>
+          )}
         </div>
 
         {/* Quick Actions */}

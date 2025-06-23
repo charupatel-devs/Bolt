@@ -697,12 +697,18 @@ exports.deleteOrder = catchAsync(async (req, res, next) => {
 // @route   GET /api/admin/products
 // @access  Private/Admin
 exports.getAllProducts = catchAsync(async (req, res, next) => {
+  console.log("🔍 Incoming Query:", req.query);
+
   const features = new APIFeatures(
     Product.find().populate("category", "name"),
     req.query
-  ).applyAllFilters();
+  )
+    .sort()
+    .limitFields()
+    .paginate();
 
   const products = await features.query;
+  console.log("🚀 Products fetched:", products.length);
   const totalProducts = await Product.countDocuments();
 
   // Calculate pagination info

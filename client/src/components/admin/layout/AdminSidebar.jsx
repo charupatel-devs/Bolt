@@ -38,7 +38,8 @@ const AdminSidebar = ({ isOpen, onToggle }) => {
       label: "Products",
       icon: Package,
       submenu: [
-        { label: "All Products", path: "/admin/products" },
+        { label: "Products Management", path: "/admin/products" },
+        { label: "All Products", path: "/admin/products/list" },
         { label: "Add Product", path: "/admin/products/add" },
         { label: "Categories", path: "/admin/products/categories" },
         {

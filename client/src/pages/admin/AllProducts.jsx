@@ -17,169 +17,117 @@ import {
   Trash2,
   XCircle,
 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
 import AdminLayout from "../../components/admin/layout/AdminLayout";
+import { getAllProducts } from "../../services_hooks/admin/adminProductService";
+import { SetProductFilters } from "../../store/admin/adminProductSlice";
 
 const AllProducts = () => {
-  const [searchTerm, setSearchTerm] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState("");
-  const [selectedSubcategory, setSelectedSubcategory] = useState("");
-  const [sortBy, setSortBy] = useState("name");
-  const [sortOrder, setSortOrder] = useState("asc");
+  const dispatch = useDispatch();
+
+  // Redux state
+  const { products, pagination, filters, isFetching, error, errMsg } =
+    useSelector((state) => state.products);
+
+  // Local UI states
   const [viewMode, setViewMode] = useState("table");
   const [showFilters, setShowFilters] = useState(true);
   const [selectedProducts, setSelectedProducts] = useState([]);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(25);
+  const [searchTerm, setSearchTerm] = useState(filters.search || "");
+  const [selectedCategory, setSelectedCategory] = useState(
+    filters.category || ""
+  );
+  const [selectedSubcategory, setSelectedSubcategory] = useState("");
+  const [sortBy, setSortBy] = useState(filters.sortBy || "createdAt");
+  const [sortOrder, setSortOrder] = useState(filters.sortOrder || "desc");
+  const [itemsPerPage, setItemsPerPage] = useState(pagination.limit || 5);
 
-  // Filter states
-  const [filters, setFilters] = useState({
-    stockStatus: [],
-    priceRange: { min: "", max: "" },
-    manufacturer: [],
-    inStock: false,
-    newProduct: false,
-    onSale: false,
+  // Local filter states (for client-side filtering)
+  const [localFilters, setLocalFilters] = useState({
+    stockStatus: filters.status ? filters.status.split(",") : [],
+    priceRange: { min: filters.priceMin || "", max: filters.priceMax || "" },
+    manufacturer: filters.manufacturer || [],
+    inStock: filters.inStock || false,
+    newProduct: filters.newProduct || false,
+    onSale: filters.onSale || false,
   });
 
-  // Sample products data
-  const products = [
-    {
-      id: 1,
-      name: "Arduino Uno R3 Microcontroller Board",
-      sku: "ARD-UNO-R3-001",
-      category: "Electronics Components",
-      subcategory: "Microcontrollers",
-      manufacturer: "Arduino",
-      model: "UNO-R3",
-      price: 25.99,
-      costPrice: 18.5,
-      stock: 145,
-      minStock: 20,
-      status: "active",
-      rating: 4.8,
-      reviews: 1247,
-      image:
-        "https://images.unsplash.com/photo-1553406830-ef2513450d76?w=100&h=100&fit=crop",
-      dateAdded: "2024-01-15",
-      isNew: false,
-      isOnSale: true,
-    },
-    {
-      id: 2,
-      name: "Raspberry Pi 4 Model B 8GB RAM",
-      sku: "RPI-4-8GB-002",
-      category: "Electronics Components",
-      subcategory: "Single Board Computers",
-      manufacturer: "Raspberry Pi Foundation",
-      model: "Pi-4-8GB",
-      price: 89.99,
-      costPrice: 65.0,
-      stock: 12,
-      minStock: 15,
-      status: "low",
-      rating: 4.9,
-      reviews: 892,
-      image:
-        "https://images.unsplash.com/photo-1591799264318-7e6ef8ddb7ea?w=100&h=100&fit=crop",
-      dateAdded: "2024-02-20",
-      isNew: true,
-      isOnSale: false,
-    },
-    {
-      id: 3,
-      name: "ESP32 Development Board WiFi Bluetooth",
-      sku: "ESP32-DEV-003",
-      category: "Electronics Components",
-      subcategory: "Microcontrollers",
-      manufacturer: "Espressif",
-      model: "ESP32-WROOM",
-      price: 15.99,
-      costPrice: 8.5,
-      stock: 0,
-      minStock: 10,
-      status: "out",
-      rating: 4.6,
-      reviews: 567,
-      image:
-        "https://images.unsplash.com/photo-1518770660439-4636190af475?w=100&h=100&fit=crop",
-      dateAdded: "2024-01-08",
-      isNew: false,
-      isOnSale: true,
-    },
-    {
-      id: 4,
-      name: "STM32 Nucleo-64 Development Board",
-      sku: "STM32-NUCLEO-004",
-      category: "Electronics Components",
-      subcategory: "Microcontrollers",
-      manufacturer: "STMicroelectronics",
-      model: "NUCLEO-F401RE",
-      price: 35.5,
-      costPrice: 22.0,
-      stock: 78,
-      minStock: 15,
-      status: "active",
-      rating: 4.7,
-      reviews: 324,
-      image:
-        "https://images.unsplash.com/photo-1588508065123-287b28e013da?w=100&h=100&fit=crop",
-      dateAdded: "2024-02-10",
-      isNew: true,
-      isOnSale: false,
-    },
-    {
-      id: 5,
-      name: "DHT22 Temperature Humidity Sensor",
-      sku: "DHT22-TEMP-005",
-      category: "Sensors & Detectors",
-      subcategory: "Temperature Sensors",
-      manufacturer: "Aosong",
-      model: "DHT22",
-      price: 8.99,
-      costPrice: 4.5,
-      stock: 234,
-      minStock: 50,
-      status: "active",
-      rating: 4.4,
-      reviews: 1156,
-      image:
-        "https://images.unsplash.com/photo-1581092160562-40aa08e78837?w=100&h=100&fit=crop",
-      dateAdded: "2024-01-25",
-      isNew: false,
-      isOnSale: false,
-    },
-  ];
+  // Fetch products from API
+  const fetchProducts = async () => {
+    try {
+      console.log("🔄 Fetching products...");
+      await getAllProducts(dispatch, {
+        page: pagination.currentPage,
+        limit: itemsPerPage,
+        search: searchTerm,
+        category: selectedCategory,
+        status: localFilters.stockStatus.join(","),
+        sortBy,
+        sortOrder,
+      });
+      console.log("✅ Products fetch completed");
+    } catch (err) {
+      console.error("💥 Failed to fetch products:", err);
+    }
+  };
 
-  const categories = [
-    {
-      name: "Electronics Components",
-      subcategories: [
-        "Microcontrollers",
-        "Single Board Computers",
-        "Resistors",
-        "Capacitors",
-      ],
-    },
-    {
-      name: "Sensors & Detectors",
-      subcategories: [
-        "Temperature Sensors",
-        "Pressure Sensors",
-        "Proximity Sensors",
-      ],
-    },
-    {
-      name: "Power Management",
-      subcategories: [
-        "Voltage Regulators",
-        "Power Supplies",
-        "Battery Management",
-      ],
-    },
-  ];
+  // Sync Redux filters with local state changes
+  useEffect(() => {
+    dispatch(
+      SetProductFilters({
+        search: searchTerm,
+        category: selectedCategory,
+        status: localFilters.stockStatus.join(","),
+        sortBy,
+        sortOrder,
+        priceMin: localFilters.priceRange.min,
+        priceMax: localFilters.priceRange.max,
+        manufacturer: localFilters.manufacturer,
+        inStock: localFilters.inStock,
+        newProduct: localFilters.newProduct,
+        onSale: localFilters.onSale,
+      })
+    );
+  }, [searchTerm, selectedCategory, localFilters, sortBy, sortOrder]);
 
-  const manufacturers = [...new Set(products.map((p) => p.manufacturer))];
+  // Handle search with debouncing
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      if (searchTerm !== filters.search) {
+        dispatch(SetProductFilters({ search: searchTerm }));
+        fetchProducts();
+      }
+    }, 500);
+    return () => clearTimeout(timeoutId);
+  }, [searchTerm]);
+
+  // Fetch products when pagination or items per page changes
+  useEffect(() => {
+    fetchProducts();
+  }, [pagination.currentPage, itemsPerPage]);
+
+  // Derive categories and manufacturers
+  const categories = useMemo(() => {
+    const uniqueCategories = [...new Set(products.map((p) => p.category))].map(
+      (name) => ({
+        name,
+        subcategories: [
+          ...new Set(
+            products
+              .filter((p) => p.category === name)
+              .map((p) => p.subcategory)
+          ),
+        ],
+      })
+    );
+    return uniqueCategories;
+  }, [products]);
+
+  const manufacturers = useMemo(
+    () => [...new Set(products.map((p) => p.manufacturer))],
+    [products]
+  );
 
   const getStatusColor = (status) => {
     switch (status) {
@@ -220,47 +168,25 @@ const AllProducts = () => {
     }
   };
 
+  // Apply client-side filters
   const filteredProducts = useMemo(() => {
-    let filtered = products.filter((product) => {
-      // Search filter
-      const searchMatch =
-        product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        product.sku.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        product.manufacturer.toLowerCase().includes(searchTerm.toLowerCase());
-
-      // Category filter
-      const categoryMatch =
-        !selectedCategory || product.category === selectedCategory;
+    return products.filter((product) => {
       const subcategoryMatch =
         !selectedSubcategory || product.subcategory === selectedSubcategory;
-
-      // Stock status filter
-      const stockStatusMatch =
-        filters.stockStatus.length === 0 ||
-        filters.stockStatus.includes(product.status);
-
-      // Price range filter
       const priceMatch =
-        (!filters.priceRange.min ||
-          product.price >= parseFloat(filters.priceRange.min)) &&
-        (!filters.priceRange.max ||
-          product.price <= parseFloat(filters.priceRange.max));
-
-      // Manufacturer filter
+        (!localFilters.priceRange.min ||
+          product.price >= parseFloat(localFilters.priceRange.min)) &&
+        (!localFilters.priceRange.max ||
+          product.price <= parseFloat(localFilters.priceRange.max));
       const manufacturerMatch =
-        filters.manufacturer.length === 0 ||
-        filters.manufacturer.includes(product.manufacturer);
-
-      // Additional filters
-      const inStockMatch = !filters.inStock || product.stock > 0;
-      const newProductMatch = !filters.newProduct || product.isNew;
-      const onSaleMatch = !filters.onSale || product.isOnSale;
+        localFilters.manufacturer.length === 0 ||
+        localFilters.manufacturer.includes(product.manufacturer);
+      const inStockMatch = !localFilters.inStock || product.stock > 0;
+      const newProductMatch = !localFilters.newProduct || product.isNew;
+      const onSaleMatch = !localFilters.onSale || product.isOnSale;
 
       return (
-        searchMatch &&
-        categoryMatch &&
         subcategoryMatch &&
-        stockStatusMatch &&
         priceMatch &&
         manufacturerMatch &&
         inStockMatch &&
@@ -268,41 +194,11 @@ const AllProducts = () => {
         onSaleMatch
       );
     });
+  }, [products, selectedSubcategory, localFilters]);
 
-    // Sorting
-    filtered.sort((a, b) => {
-      let aValue = a[sortBy];
-      let bValue = b[sortBy];
+  const paginatedProducts = filteredProducts; // API handles pagination
 
-      if (typeof aValue === "string") {
-        aValue = aValue.toLowerCase();
-        bValue = bValue.toLowerCase();
-      }
-
-      if (sortOrder === "asc") {
-        return aValue < bValue ? -1 : aValue > bValue ? 1 : 0;
-      } else {
-        return aValue > bValue ? -1 : aValue < bValue ? 1 : 0;
-      }
-    });
-
-    return filtered;
-  }, [
-    products,
-    searchTerm,
-    selectedCategory,
-    selectedSubcategory,
-    filters,
-    sortBy,
-    sortOrder,
-  ]);
-
-  const paginatedProducts = useMemo(() => {
-    const startIndex = (currentPage - 1) * itemsPerPage;
-    return filteredProducts.slice(startIndex, startIndex + itemsPerPage);
-  }, [filteredProducts, currentPage, itemsPerPage]);
-
-  const totalPages = Math.ceil(filteredProducts.length / itemsPerPage);
+  const totalPages = pagination.totalPages || 1;
 
   const handleSort = (field) => {
     if (sortBy === field) {
@@ -342,6 +238,26 @@ const AllProducts = () => {
     ));
   };
 
+  if (isFetching) {
+    return (
+      <AdminLayout>
+        <div className="flex justify-center items-center h-64">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+        </div>
+      </AdminLayout>
+    );
+  }
+
+  if (error) {
+    return (
+      <AdminLayout>
+        <div className="text-red-600 text-center p-6">
+          Error: {errMsg || "Failed to load products"}
+        </div>
+      </AdminLayout>
+    );
+  }
+
   return (
     <AdminLayout>
       <div className="space-y-6">
@@ -353,7 +269,7 @@ const AllProducts = () => {
               All Products
             </h1>
             <p className="text-gray-600 mt-1">
-              Showing {filteredProducts.length} of {products.length} products
+              Showing {filteredProducts.length} products
             </p>
           </div>
 
@@ -465,21 +381,14 @@ const AllProducts = () => {
                       <label key={status} className="flex items-center">
                         <input
                           type="checkbox"
-                          checked={filters.stockStatus.includes(status)}
+                          checked={localFilters.stockStatus.includes(status)}
                           onChange={(e) => {
-                            if (e.target.checked) {
-                              setFilters((prev) => ({
-                                ...prev,
-                                stockStatus: [...prev.stockStatus, status],
-                              }));
-                            } else {
-                              setFilters((prev) => ({
-                                ...prev,
-                                stockStatus: prev.stockStatus.filter(
-                                  (s) => s !== status
-                                ),
-                              }));
-                            }
+                            setLocalFilters((prev) => ({
+                              ...prev,
+                              stockStatus: e.target.checked
+                                ? [...prev.stockStatus, status]
+                                : prev.stockStatus.filter((s) => s !== status),
+                            }));
                           }}
                           className="mr-2"
                         />
@@ -498,9 +407,9 @@ const AllProducts = () => {
                     <input
                       type="number"
                       placeholder="Min"
-                      value={filters.priceRange.min}
+                      value={localFilters.priceRange.min}
                       onChange={(e) =>
-                        setFilters((prev) => ({
+                        setLocalFilters((prev) => ({
                           ...prev,
                           priceRange: {
                             ...prev.priceRange,
@@ -513,9 +422,9 @@ const AllProducts = () => {
                     <input
                       type="number"
                       placeholder="Max"
-                      value={filters.priceRange.max}
+                      value={localFilters.priceRange.max}
                       onChange={(e) =>
-                        setFilters((prev) => ({
+                        setLocalFilters((prev) => ({
                           ...prev,
                           priceRange: {
                             ...prev.priceRange,
@@ -538,24 +447,18 @@ const AllProducts = () => {
                       <label key={manufacturer} className="flex items-center">
                         <input
                           type="checkbox"
-                          checked={filters.manufacturer.includes(manufacturer)}
+                          checked={localFilters.manufacturer.includes(
+                            manufacturer
+                          )}
                           onChange={(e) => {
-                            if (e.target.checked) {
-                              setFilters((prev) => ({
-                                ...prev,
-                                manufacturer: [
-                                  ...prev.manufacturer,
-                                  manufacturer,
-                                ],
-                              }));
-                            } else {
-                              setFilters((prev) => ({
-                                ...prev,
-                                manufacturer: prev.manufacturer.filter(
-                                  (m) => m !== manufacturer
-                                ),
-                              }));
-                            }
+                            setLocalFilters((prev) => ({
+                              ...prev,
+                              manufacturer: e.target.checked
+                                ? [...prev.manufacturer, manufacturer]
+                                : prev.manufacturer.filter(
+                                    (m) => m !== manufacturer
+                                  ),
+                            }));
                           }}
                           className="mr-2"
                         />
@@ -574,9 +477,9 @@ const AllProducts = () => {
                     <label className="flex items-center">
                       <input
                         type="checkbox"
-                        checked={filters.inStock}
+                        checked={localFilters.inStock}
                         onChange={(e) =>
-                          setFilters((prev) => ({
+                          setLocalFilters((prev) => ({
                             ...prev,
                             inStock: e.target.checked,
                           }))
@@ -588,9 +491,9 @@ const AllProducts = () => {
                     <label className="flex items-center">
                       <input
                         type="checkbox"
-                        checked={filters.newProduct}
+                        checked={localFilters.newProduct}
                         onChange={(e) =>
-                          setFilters((prev) => ({
+                          setLocalFilters((prev) => ({
                             ...prev,
                             newProduct: e.target.checked,
                           }))
@@ -602,9 +505,9 @@ const AllProducts = () => {
                     <label className="flex items-center">
                       <input
                         type="checkbox"
-                        checked={filters.onSale}
+                        checked={localFilters.onSale}
                         onChange={(e) =>
-                          setFilters((prev) => ({
+                          setLocalFilters((prev) => ({
                             ...prev,
                             onSale: e.target.checked,
                           }))
@@ -620,7 +523,7 @@ const AllProducts = () => {
               <div className="flex justify-end mt-4">
                 <button
                   onClick={() => {
-                    setFilters({
+                    setLocalFilters({
                       stockStatus: [],
                       priceRange: { min: "", max: "" },
                       manufacturer: [],
@@ -631,6 +534,19 @@ const AllProducts = () => {
                     setSearchTerm("");
                     setSelectedCategory("");
                     setSelectedSubcategory("");
+                    dispatch(
+                      SetProductFilters({
+                        search: "",
+                        category: "",
+                        status: "",
+                        priceMin: "",
+                        priceMax: "",
+                        manufacturer: [],
+                        inStock: false,
+                        newProduct: false,
+                        onSale: false,
+                      })
+                    );
                   }}
                   className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
                 >
@@ -679,24 +595,21 @@ const AllProducts = () => {
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-4">
                 <span className="text-sm text-gray-600">
-                  Showing {(currentPage - 1) * itemsPerPage + 1} -{" "}
+                  Showing {(pagination.currentPage - 1) * itemsPerPage + 1} -{" "}
                   {Math.min(
-                    currentPage * itemsPerPage,
+                    pagination.currentPage * itemsPerPage,
                     filteredProducts.length
                   )}{" "}
                   of {filteredProducts.length} results
                 </span>
                 <select
                   value={itemsPerPage}
-                  onChange={(e) => {
-                    setItemsPerPage(Number(e.target.value));
-                    setCurrentPage(1);
-                  }}
+                  onChange={(e) => setItemsPerPage(Number(e.target.value))}
                   className="px-3 py-1 border border-gray-200 rounded text-sm"
                 >
+                  <option value={5}>5 per page</option>
+                  <option value={10}>10 per page</option>
                   <option value={25}>25 per page</option>
-                  <option value={50}>50 per page</option>
-                  <option value={100}>100 per page</option>
                 </select>
               </div>
 
@@ -711,7 +624,7 @@ const AllProducts = () => {
                   <option value="sku">SKU</option>
                   <option value="price">Price</option>
                   <option value="stock">Stock</option>
-                  <option value="dateAdded">Date Added</option>
+                  <option value="createdAt">Date Added</option>
                   <option value="rating">Rating</option>
                 </select>
                 <button
@@ -1018,13 +931,19 @@ const AllProducts = () => {
             <div className="px-6 py-4 border-t border-gray-200">
               <div className="flex items-center justify-between">
                 <div className="text-sm text-gray-600">
-                  Page {currentPage} of {totalPages}
+                  Page {pagination.currentPage} of {totalPages}
                 </div>
 
                 <div className="flex items-center space-x-2">
                   <button
-                    onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
-                    disabled={currentPage === 1}
+                    onClick={() =>
+                      dispatch(
+                        SetProductFilters({
+                          currentPage: Math.max(1, pagination.currentPage - 1),
+                        })
+                      )
+                    }
+                    disabled={pagination.currentPage === 1}
                     className="px-3 py-2 text-sm border border-gray-200 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     Previous
@@ -1036,9 +955,11 @@ const AllProducts = () => {
                       return (
                         <button
                           key={page}
-                          onClick={() => setCurrentPage(page)}
+                          onClick={() =>
+                            dispatch(SetProductFilters({ currentPage: page }))
+                          }
                           className={`w-8 h-8 text-sm rounded-lg ${
-                            currentPage === page
+                            pagination.currentPage === page
                               ? "bg-blue-600 text-white"
                               : "text-gray-600 hover:bg-gray-100"
                           }`}
@@ -1051,9 +972,16 @@ const AllProducts = () => {
 
                   <button
                     onClick={() =>
-                      setCurrentPage(Math.min(totalPages, currentPage + 1))
+                      dispatch(
+                        SetProductFilters({
+                          currentPage: Math.min(
+                            totalPages,
+                            pagination.currentPage + 1
+                          ),
+                        })
+                      )
                     }
-                    disabled={currentPage === totalPages}
+                    disabled={pagination.currentPage === totalPages}
                     className="px-3 py-2 text-sm border border-gray-200 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     Next
