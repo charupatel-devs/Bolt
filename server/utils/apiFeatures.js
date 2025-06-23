@@ -57,10 +57,9 @@ class APIFeatures {
   }
 
   search() {
-    if (this.queryString.keyword || this.queryString.search) {
-      const searchTerm = this.queryString.keyword || this.queryString.search;
-
-      this.query = this.query.find({
+    const searchTerm = this.queryString.keyword || this.queryString.search;
+    if (searchTerm && searchTerm.trim() !== "") {
+      const searchCondition = {
         $or: [
           { name: { $regex: searchTerm, $options: "i" } },
           { description: { $regex: searchTerm, $options: "i" } },
@@ -68,7 +67,10 @@ class APIFeatures {
           { "specifications.model": { $regex: searchTerm, $options: "i" } },
           { tags: { $in: [new RegExp(searchTerm, "i")] } },
         ],
-      });
+      };
+
+      // Add $and if previous conditions exist
+      this.query = this.query.find({ $and: [searchCondition] });
     }
     return this;
   }

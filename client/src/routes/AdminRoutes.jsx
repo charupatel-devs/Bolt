@@ -4,16 +4,16 @@ import AdminDashboard from "../pages/admin/AdminDashboard";
 import AdminLogin from "../pages/admin/AdminLogin";
 
 // Product Pages
-import ProductList from "../components/admin/products/ProductList";
 import AdminAddProduct from "../pages/admin/AdminAddProducts";
 import AdminCategories from "../pages/admin/AdminCategories";
-import AdminProducts from "../pages/admin/AdminProducts";
 
 // Order Pages
 import AllOrders from "../pages/admin/AdminAllOrders";
 import Orders from "../pages/admin/AdminOrders";
 import PendingOrders from "../pages/admin/AdminPendingOrders";
+import AdminProductsManagement from "../pages/admin/AdminProductsManagement";
 import AdminSettings from "../pages/admin/AdminSettings";
+import AllProducts from "../pages/admin/AllProducts";
 import CustomerAnalytics from "../pages/admin/CustomerAnalytics";
 import CustomerGroups from "../pages/admin/CustomerGroups";
 import CustomerReviews from "../pages/admin/CustomerReviews";
@@ -58,11 +58,11 @@ const AdminRoutes = () => {
         <Route path="/dashboard" element={<AdminDashboard />} />
 
         {/* 📦 PRODUCTS ROUTES */}
-        <Route path="/products" element={<AdminProducts />} />
-        <Route path="/products/list" element={<ProductList />} />
+        <Route path="/products" element={<AdminProductsManagement />} />
+        <Route path="/products/list" element={<AllProducts />} />
         <Route path="/products/add" element={<AdminAddProduct />} />
         <Route path="/products/categories" element={<AdminCategories />} />
-        <Route path="/products/low-stock" element={<ProductList />} />
+        <Route path="/products/low-stock" element={<AllProducts />} />
         {/* <Route path="/products/:id" element={<AdminProductDetails />} /> */}
         {/* <Route path="/products/edit/:id" element={<AdminProductForm />} /> */}
         {/* <Route path="/products/bulk-upload" element={<AdminBulkUpload />} /> */}

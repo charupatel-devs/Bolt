@@ -18,9 +18,9 @@ import {
   XCircle,
 } from "lucide-react";
 import { useMemo, useState } from "react";
-import AdminLayout from "../layout/AdminLayout";
+import AdminLayout from "../../components/admin/layout/AdminLayout";
 
-const ProductList = () => {
+const AllProducts = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("");
   const [selectedSubcategory, setSelectedSubcategory] = useState("");
@@ -1068,4 +1068,4 @@ const ProductList = () => {
   );
 };
 
-export default ProductList;
+export default AllProducts;

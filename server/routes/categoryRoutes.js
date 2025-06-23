@@ -66,7 +66,7 @@ router.put(
 
 // Delete category
 router.delete(
-  "delete/:id",
+  "/delete/:id",
   isAuthenticated,
   isAdmin,
   logActivity("delete_category"),

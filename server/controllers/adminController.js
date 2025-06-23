@@ -7,6 +7,91 @@ const AppError = require("../utils/appError");
 const generateToken = require("../utils/generateToken");
 const sendEmail = require("../utils/sendEmail");
 const APIFeatures = require("../utils/apiFeatures");
+const multer = require("multer");
+const path = require("path");
+const csv = require("csv-parser");
+const fs = require("fs");
+
+// CSV parser function
+const parseCsvFile = (filePath) => {
+  return new Promise((resolve, reject) => {
+    const results = [];
+
+    fs.createReadStream(filePath)
+      .pipe(csv())
+      .on("data", (data) => {
+        // Transform CSV row to product object
+        const product = {
+          name: data.name,
+          sku: data.sku,
+          description: data.description,
+          category: data.category,
+          price: parseFloat(data.price) || 0,
+          originalPrice: parseFloat(data.originalPrice) || 0,
+          stock: parseInt(data.stock) || 0,
+          minOrderQuantity: parseInt(data.minOrderQuantity) || 1,
+          maxOrderQuantity: parseInt(data.maxOrderQuantity) || 1,
+          weight: parseFloat(data.weight) || 0,
+          tags: data.tags ? data.tags.split(",").map((tag) => tag.trim()) : [],
+          dimensions: {
+            length: parseFloat(data.length) || 0,
+            width: parseFloat(data.width) || 0,
+            height: parseFloat(data.height) || 0,
+            unit: "mm",
+          },
+        };
+
+        // Parse specifications (columns starting with spec_)
+        const specifications = {};
+        Object.keys(data).forEach((key) => {
+          if (key.startsWith("spec_")) {
+            const specName = key.replace("spec_", "");
+            specifications[specName] = data[key];
+          }
+        });
+
+        if (Object.keys(specifications).length > 0) {
+          product.specifications = specifications;
+        }
+
+        results.push(product);
+      })
+      .on("end", () => {
+        resolve(results);
+      })
+      .on("error", (error) => {
+        reject(error);
+      });
+  });
+};
+// Configure multer for file uploads
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, "uploads/products/"); // Make sure this directory exists
+  },
+  filename: function (req, file, cb) {
+    const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
+    cb(
+      null,
+      file.fieldname + "-" + uniqueSuffix + path.extname(file.originalname)
+    );
+  },
+});
+
+const upload = multer({
+  storage: storage,
+  limits: {
+    fileSize: 5 * 1024 * 1024, // 5MB limit per file
+  },
+  fileFilter: function (req, file, cb) {
+    // Check if file is an image
+    if (file.mimetype.startsWith("image/")) {
+      cb(null, true);
+    } else {
+      cb(new Error("Only image files are allowed!"), false);
+    }
+  },
+});
 const {
   createSendAdminToken,
   clearAuthCookies,
@@ -615,12 +700,7 @@ exports.getAllProducts = catchAsync(async (req, res, next) => {
   const features = new APIFeatures(
     Product.find().populate("category", "name"),
     req.query
-  )
-    .filter()
-    .sort()
-    .limitFields()
-    .paginate()
-    .search();
+  ).applyAllFilters();
 
   const products = await features.query;
   const totalProducts = await Product.countDocuments();
@@ -629,6 +709,15 @@ exports.getAllProducts = catchAsync(async (req, res, next) => {
   const page = req.query.page * 1 || 1;
   const limit = req.query.limit * 1 || 10;
 
+  // ✅ Calculate stats for frontend
+  const stats = await Promise.all([
+    Product.countDocuments(), // Total products
+    Product.distinct("category").then((categories) => categories.length), // Unique categories
+    Product.countDocuments({ stock: { $gt: 0, $lte: 10 } }), // Low stock
+    Product.countDocuments({ stock: 0 }), // Out of stock
+  ]);
+
+  // ✅ Option 1: Keep current format but add stats
   res.status(200).json({
     success: true,
     results: products.length,
@@ -639,6 +728,12 @@ exports.getAllProducts = catchAsync(async (req, res, next) => {
       hasNextPage: page < Math.ceil(totalProducts / limit),
       hasPrevPage: page > 1,
     },
+    stats: {
+      totalProducts: stats[0],
+      categories: stats[1],
+      lowStockItems: stats[2],
+      outOfStock: stats[3],
+    },
     products,
   });
 });
@@ -646,18 +741,155 @@ exports.getAllProducts = catchAsync(async (req, res, next) => {
 // @desc    Create new product
 // @route   POST /api/admin/products
 // @access  Private/Admin
-exports.createProduct = catchAsync(async (req, res, next) => {
-  // Add created by admin info
-  req.body.createdBy = req.user._id;
+// @desc    Create new product
+// @route   POST /api/admin/products
+// @access  Private/Admin
+exports.createProduct = [
+  // Handle multiple image uploads - this parses FormData
+  upload.array("images", 10), // Allow up to 10 images
 
-  const product = await Product.create(req.body);
+  catchAsync(async (req, res, next) => {
+    try {
+      console.log("📦 Request body:", req.body);
+      console.log("📸 Request files:", req.files);
+      console.log("📋 Content-Type:", req.headers["content-type"]);
 
-  res.status(201).json({
-    success: true,
-    message: "Product created successfully",
-    product,
-  });
-});
+      // Now req.body should have the FormData fields
+      let productData = { ...req.body };
+
+      // ✅ Handle specifications sent as a single JSON string
+      let specifications = {};
+      if (
+        productData.specifications &&
+        typeof productData.specifications === "string"
+      ) {
+        try {
+          specifications = JSON.parse(productData.specifications);
+        } catch (err) {
+          console.warn("⚠️ Failed to parse specifications:", err.message);
+          specifications = {};
+        }
+      }
+
+      let dimensions = {};
+      if (
+        productData.dimensions &&
+        typeof productData.dimensions === "string"
+      ) {
+        try {
+          dimensions = JSON.parse(productData.dimensions);
+        } catch (err) {
+          console.warn("⚠️ Failed to parse dimensions:", err.message);
+          dimensions = {};
+        }
+      }
+
+      // Parse tags if it's a string
+      if (productData.tags && typeof productData.tags === "string") {
+        try {
+          productData.tags = JSON.parse(productData.tags);
+        } catch (error) {
+          productData.tags = [];
+        }
+      }
+
+      // Handle uploaded images
+      const images = [];
+      if (req.files && req.files.length > 0) {
+        req.files.forEach((file, index) => {
+          images.push({
+            url: `/uploads/products/${file.filename}`,
+            filename: file.filename,
+            originalName: file.originalname,
+            size: file.size,
+            mimeType: file.mimetype,
+            isMain: index === 0, // First image is main image
+          });
+        });
+      }
+
+      // Prepare final data
+      const finalData = {
+        name: productData.name,
+        sku: productData.sku,
+        description: productData.description,
+        category: productData.category,
+        price: parseFloat(productData.price) || 0,
+        originalPrice: parseFloat(productData.originalPrice) || 0,
+        stock: parseInt(productData.stock) || 0,
+        minOrderQuantity: parseInt(productData.minOrderQuantity) || 1,
+        maxOrderQuantity: productData.maxOrderQuantity
+          ? parseInt(productData.maxOrderQuantity)
+          : null,
+        weight: parseFloat(productData.weight) || 0,
+        specifications,
+        dimensions: Object.keys(dimensions).length > 0 ? dimensions : undefined,
+        images,
+        tags: productData.tags || [],
+        createdBy: req.user._id,
+      };
+
+      console.log("🚀 Final product data:", finalData);
+      console.log("📋 Specifications:", specifications);
+
+      // Validate required fields
+      if (!finalData.name) {
+        return res.status(400).json({
+          success: false,
+          message: "Product name is required",
+        });
+      }
+      if (!finalData.sku) {
+        return res.status(400).json({
+          success: false,
+          message: "Product SKU is required",
+        });
+      }
+      if (!finalData.description) {
+        return res.status(400).json({
+          success: false,
+          message: "Product description is required",
+        });
+      }
+      if (!finalData.category) {
+        return res.status(400).json({
+          success: false,
+          message: "Product category is required",
+        });
+      }
+
+      // Create the product
+      const product = await Product.create(finalData);
+
+      console.log("✅ Product created successfully:", product._id);
+
+      res.status(201).json({
+        success: true,
+        message: "Product created successfully",
+        data: product,
+      });
+    } catch (error) {
+      console.error("💥 Error in createProduct:", error);
+
+      // Handle mongoose validation errors
+      if (error.name === "ValidationError") {
+        const errors = Object.values(error.errors).map((err) => err.message);
+        return res.status(400).json({
+          success: false,
+          message: "Validation failed",
+          errors: errors,
+        });
+      }
+
+      // Send proper error response
+      return res.status(500).json({
+        success: false,
+        message: error.message || "Internal server error",
+        error: process.env.NODE_ENV === "development" ? error.stack : undefined,
+      });
+    }
+  }),
+];
 
 // @desc    Update product
 // @route   PUT /api/admin/products/:id
@@ -710,30 +942,59 @@ exports.deleteProduct = catchAsync(async (req, res, next) => {
 // @route   POST /api/admin/products/bulk-upload
 // @access  Private/Admin
 exports.bulkUploadProducts = catchAsync(async (req, res, next) => {
-  const { products } = req.body;
+  const csvFile = req.file;
 
-  if (!products || !Array.isArray(products)) {
-    return next(new AppError("Please provide an array of products", 400));
+  console.log("📁 Received file:", csvFile);
+
+  if (!csvFile) {
+    return next(new AppError("Please provide a CSV file", 400));
   }
 
-  // Add created by admin info to all products
-  const productsWithAdmin = products.map((product) => ({
-    ...product,
-    createdBy: req.user._id,
-  }));
+  try {
+    // Parse the CSV file
+    const products = await parseCsvFile(csvFile.path);
 
-  const createdProducts = await Product.insertMany(productsWithAdmin, {
-    ordered: false, // Continue inserting even if some fail
-  });
+    console.log("📋 Parsed products:", products.length);
 
-  res.status(201).json({
-    success: true,
-    message: `${createdProducts.length} products uploaded successfully`,
-    count: createdProducts.length,
-    products: createdProducts,
-  });
+    if (!products || !Array.isArray(products) || products.length === 0) {
+      return next(new AppError("No valid products found in CSV", 400));
+    }
+
+    // Add created by admin info to all products
+    const productsWithAdmin = products.map((product) => ({
+      ...product,
+      createdBy: req.user._id,
+    }));
+
+    // Insert products into database
+    const createdProducts = await Product.insertMany(productsWithAdmin, {
+      ordered: false, // Continue inserting even if some fail
+    });
+
+    // Clean up uploaded file
+    fs.unlink(csvFile.path, (err) => {
+      if (err) console.error("Error deleting temp file:", err);
+    });
+
+    res.status(201).json({
+      success: true,
+      message: `${createdProducts.length} products uploaded successfully`,
+      count: createdProducts.length,
+      products: createdProducts,
+    });
+  } catch (parseError) {
+    console.error("Error parsing CSV:", parseError);
+
+    // Clean up uploaded file on error
+    fs.unlink(csvFile.path, (err) => {
+      if (err) console.error("Error deleting temp file:", err);
+    });
+
+    return next(
+      new AppError("Error parsing CSV file: " + parseError.message, 400)
+    );
+  }
 });
-
 // @desc    Get low stock products
 // @route   GET /api/admin/products/low-stock
 // @access  Private/Admin

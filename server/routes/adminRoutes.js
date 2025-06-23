@@ -30,6 +30,8 @@ const {
 } = require("../middlewares/auth");
 
 const router = express.Router();
+const multer = require("multer");
+const upload = multer({ dest: "uploads/" }); // or configure as needed
 
 // ===========================================
 // PUBLIC ADMIN ROUTES
@@ -97,11 +99,12 @@ router.delete("/orders/:id", logActivity("delete_order"), deleteOrder);
 // ===========================================
 
 router.get("/products", getAllProducts);
-router.post("/products", logActivity("create_product"), createProduct);
+router.post("/products/create", logActivity("create_product"), createProduct);
 router.put("/products/:id", logActivity("update_product"), updateProduct);
 router.delete("/products/:id", logActivity("delete_product"), deleteProduct);
 router.post(
   "/products/bulk-upload",
+  upload.single("csvFile"), // Add this middleware
   logActivity("bulk_upload_products"),
   bulkUploadProducts
 );

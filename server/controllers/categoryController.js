@@ -480,6 +480,36 @@ exports.updateCategory = catchAsync(async (req, res, next) => {
     }
   }
 
+  // Process attributes to ensure proper structure
+  let processedAttributes;
+  if (attributes) {
+    // If attributes is an array, use it directly
+    if (Array.isArray(attributes)) {
+      processedAttributes = attributes.map((attr) => {
+        // Remove any MongoDB-generated _id if it's a string
+        const { _id, ...cleanAttr } = attr;
+        return {
+          ...cleanAttr,
+          // Only include _id if it's a valid ObjectId, otherwise let Mongoose generate it
+          ...(attr._id && typeof attr._id !== "string"
+            ? { _id: attr._id }
+            : {}),
+        };
+      });
+    } else {
+      // If attributes is a single object, wrap it in an array
+      const { _id, ...cleanAttr } = attributes;
+      processedAttributes = [
+        {
+          ...cleanAttr,
+          ...(attributes._id && typeof attributes._id !== "string"
+            ? { _id: attributes._id }
+            : {}),
+        },
+      ];
+    }
+  }
+
   // Update fields
   const updateData = {
     ...(name && { name: name.trim() }),
@@ -489,7 +519,7 @@ exports.updateCategory = catchAsync(async (req, res, next) => {
     ...(isFeatured !== undefined && { isFeatured }),
     ...(isActive !== undefined && { isActive }),
     ...(sortOrder !== undefined && { sortOrder }),
-    ...(attributes && { attributes }),
+    ...(processedAttributes && { attributes: processedAttributes }),
     updatedBy: req.user?._id,
   };
 
