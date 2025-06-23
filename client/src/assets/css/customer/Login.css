@@ -1,0 +1,165 @@
+/* Container layout */
+.login-container {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  min-height: 100vh;
+  background: linear-gradient(to bottom, #2c2f48, #000);
+  padding: 2rem;
+}
+
+
+/* Login box styling */
+.login-box {
+  width: 500px;
+  margin: auto; /* vertically center within column */
+  background-color: white;
+  padding: 2rem;
+  border-radius: 12px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+}
+
+
+/* DigiKey heading */
+.login-box h1 {
+  font-size: 3rem;
+  color: #e60012;
+  text-align: center;
+  margin-bottom: 1rem;
+  font-weight: bold;
+  max-width: 500px;
+}
+
+/* Login title */
+.login-title {
+  font-size: 1.4rem;
+  color: #222;
+  text-align: center;
+  margin-bottom: 1.5rem;
+  font-weight: bold;
+}
+
+/* Form layout */
+.form-group {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 1.2rem;
+}
+
+.form-group label {
+  margin-bottom: 5px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: #333;
+}
+
+.form-group input {
+  padding: 10px;
+  font-size: 1rem;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  transition: border-color 0.3s ease;
+}
+
+.form-group input:focus {
+  outline: none;
+  border-color: #e60012;
+}
+
+/* Eye icon inside password field */
+.form-group span {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #888;
+  cursor: pointer;
+}
+
+/* Login button */
+.login-btn {
+  width: 100%;
+  padding: 10px;
+  background-color: #e60012;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 1rem;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.login-btn:hover {
+  background-color: #cc0000;
+}
+
+/* Forgot password */
+.login-box a {
+  color: #0000cc;
+  font-size: 0.9rem;
+  text-decoration: none;
+}
+
+.login-box a:hover {
+  text-decoration: underline;
+}
+
+/* Divider line */
+hr {
+  margin: 1.5rem 0;
+  border: none;
+  border-top: 1px solid #eee;
+}
+
+/* Register link */
+.register-link {
+  text-align: center;
+  font-size: 0.9rem;
+}
+
+.register-link a {
+  color: #cc0000;
+  font-weight: bold;
+  text-decoration: underline;
+}
+
+/* Footer */
+.login-box p {
+  font-size: 0.75rem;
+  text-align: center;
+  margin-top: 1.5rem;
+  color: #999;
+}
+
+/* Footer moved outside login-box */
+.login-footer {
+  font-size: 0.75rem;
+  text-align: center;
+  margin-top: 1.5rem;
+  color: #999;
+}
+.login-footer a {
+  color: #666;
+  text-decoration: none;
+}
+.login-footer a:hover {
+  text-decoration: underline;
+}
+
+/* Logo black background wrapper */
+.login-logo-wrapper {
+  background-color: #000;
+  padding: 1rem 0;
+  margin: -2rem -1.98rem 1rem -1.98rem;
+  border-radius: 8px 8px 0 0;
+  text-align: center;
+}
+
+/* Updated logo style */
+.login-logo {
+  color: #e60012;
+  font-size: 2.5rem;
+  font-weight: bold;
+  margin: 0;
+}
