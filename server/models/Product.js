@@ -215,7 +215,7 @@ productSchema.index({ averageRating: -1 });
 productSchema.index({ createdAt: -1 });
 productSchema.index({ isFeatured: 1 });
 productSchema.index({ isActive: 1 });
-productSchema.index({ sku: 1 });
+// productSchema.index({ sku: 1 });
 productSchema.index({ stock: 1 });
 
 // Create compound indexes for common specification filters
