@@ -11,6 +11,7 @@ const multer = require("multer");
 const path = require("path");
 const csv = require("csv-parser");
 const fs = require("fs");
+const uploadDir = "/tmp/uploads/products";
 
 // CSV parser function
 const parseCsvFile = (filePath) => {
@@ -64,10 +65,15 @@ const parseCsvFile = (filePath) => {
       });
   });
 };
-// Configure multer for file uploads
+// ✅ Ensure directory exists
+if (!fs.existsSync(uploadDir)) {
+  fs.mkdirSync(uploadDir, { recursive: true });
+}
+
+// ✅ Configure multer for file uploads
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
-    cb(null, "uploads/products/"); // Make sure this directory exists
+    cb(null, uploadDir); // ✅ Writable in Vercel
   },
   filename: function (req, file, cb) {
     const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
@@ -84,7 +90,6 @@ const upload = multer({
     fileSize: 5 * 1024 * 1024, // 5MB limit per file
   },
   fileFilter: function (req, file, cb) {
-    // Check if file is an image
     if (file.mimetype.startsWith("image/")) {
       cb(null, true);
     } else {
