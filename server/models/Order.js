@@ -180,6 +180,12 @@ const orderSchema = new mongoose.Schema(
 );
 
 // Indexes for better performance
+orderSchema.index({ user: 1 });
+orderSchema.index({ orderNumber: 1 });
+orderSchema.index({ status: 1 });
+orderSchema.index({ createdAt: -1 });
+orderSchema.index({ "paymentInfo.status": 1 });
+orderSchema.index({ trackingNumber: 1 });
 
 // Virtual for total items count
 orderSchema.virtual("totalItems").get(function () {
@@ -488,9 +494,11 @@ orderSchema.post("save", async function (doc, next) {
     // Update product total sales when order status changes to delivered
     if (doc.isModified("status") && doc.status === "delivered") {
       for (const item of doc.items) {
-        await doc.model("Product").findByIdAndUpdate(item.product, {
-          $inc: { totalSales: item.quantity },
-        });
+        await doc
+          .model("Product")
+          .findByIdAndUpdate(item.product, {
+            $inc: { totalSales: item.quantity },
+          });
       }
     }
     next();
