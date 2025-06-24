@@ -1,3 +1,4 @@
+import api from "../api"; // ✅ Make sure this path is correct
 import toast from "react-hot-toast";
 import {
   UserLoginStart,
@@ -5,10 +6,12 @@ import {
   UserLoginFailure,
   UserLogoutStart,
   UserLogoutSuccess,
-} from "../../store/user/userAuthSlice"; // 👈 Make sure you have this slice
-import api from "../api";
+  UserRegisterStart,
+  UserRegisterSuccess,
+  UserRegisterFailure,
+} from "../../store/customer/userAuthSlice";
 
-// Toast configurations
+// ✅ Toast Configurations
 const ErrorToastOptions = {
   duration: 4000,
   style: {
@@ -25,7 +28,7 @@ const SuccessToastOptions = {
   },
 };
 
-// Parse error helper
+// ✅ Parse error helper
 const parseError = (error) => {
   if (error.response) {
     return error.response.data.message || "Invalid credentials";
@@ -74,7 +77,7 @@ export const userLogout = async (dispatch) => {
   try {
     toast.loading("Logging out...", { id: "user-logout" });
 
-    await api.post("/user/logout"); // HttpOnly cookie gets cleared
+    await api.post("/user/logout"); // Clears HttpOnly cookie
 
     dispatch(UserLogoutSuccess());
 
@@ -93,37 +96,21 @@ export const userLogout = async (dispatch) => {
     });
 
     return true;
-  }
-};
-
-// 👤 GET USER PROFILE
-export const getUserProfile = async () => {
-  try {
-    const { data } = await api.get("/user/profile");
-    return data;
-  } catch (error) {
-    throw new Error("Failed to fetch user profile");
-  }
-};
-
-// 🔍 VALIDATE USER TOKEN (SESSION)
-export const validateUserToken = async () => {
-  try {
-    const { data } = await api.get("/user/validate-token");
-    return data;
-  } catch (error) {
-    throw new Error("User session invalid or expired");
   }
 };
 
 // 📝 REGISTER NEW USER
-export const userRegister = async (credentials) => {
+export const userRegister = async (dispatch, credentials) => {
+  dispatch(UserRegisterStart());
+
   try {
     const { data } = await api.post("/user/register", {
       name: credentials.name,
       email: credentials.email,
       password: credentials.password,
     });
+
+    dispatch(UserRegisterSuccess(data));
 
     toast.success("Registered successfully!", {
       id: "user-register",
@@ -139,6 +126,27 @@ export const userRegister = async (credentials) => {
       ...ErrorToastOptions,
     });
 
-    throw new Error(errorMessage);
+    dispatch(UserRegisterFailure(errorMessage));
+    throw error;
+  }
+};
+
+// 👤 GET USER PROFILE
+export const getUserProfile = async () => {
+  try {
+    const { data } = await api.get("/user/profile");
+    return data;
+  } catch (error) {
+    throw new Error("Failed to fetch user profile");
+  }
+};
+
+// 🔍 VALIDATE USER TOKEN
+export const validateUserToken = async () => {
+  try {
+    const { data } = await api.get("/user/validate-token");
+    return data;
+  } catch (error) {
+    throw new Error("User session invalid or expired");
   }
 };

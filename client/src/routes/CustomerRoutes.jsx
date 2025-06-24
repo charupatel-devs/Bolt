@@ -5,6 +5,7 @@ import Login from "../components/customer/auth/Login";
 import Register from "../components/customer/auth/Register";
 import ForgotPassword from "../components/customer/auth/ForgotPassword";
 import CustomerProducts from "../pages/customer/CustomerProducts";
+import Dashboard from "../pages/customer/Dashboard";
 const CustomerRoutes = () => {
   return (
     <Routes>
@@ -13,6 +14,7 @@ const CustomerRoutes = () => {
       <Route path="register" element={<Register />} />
       <Route path="forgot-password" element={<ForgotPassword />} />
       <Route path="customer-products" element={< CustomerProducts/>} />
+      <Route path="/customer/dashboard" element={<Dashboard />} />
 
     </Routes>
   );

@@ -1,13 +1,10 @@
 import { configureStore } from "@reduxjs/toolkit";
-import adminAuthReducer from "./admin/adminAuthSlice";
-import adminCategoriesReducer from "./admin/adminCategorySlice";
-import adminProductReducer from "./admin/adminProductSlice";
+import adminAuthReducer from "../store/admin/adminAuthSlice";
+import userAuthReducer from "../store/customer/userAuthSlice";
 
 export default configureStore({
   reducer: {
     adminAuth: adminAuthReducer,
-    categories: adminCategoriesReducer,
-    products: adminProductReducer, // Assuming you have an adminProductReducer
-    // Add other reducers here as you create them
+    userAuth: userAuthReducer, 
   },
 });
