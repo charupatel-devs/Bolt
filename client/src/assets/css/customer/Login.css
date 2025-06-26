@@ -96,13 +96,9 @@
 
 /* Forgot password */
 .login-box a {
-  color: #0000cc;
+ 
   font-size: 0.9rem;
   text-decoration: none;
-}
-
-.login-box a:hover {
-  text-decoration: underline;
 }
 
 /* Divider line */

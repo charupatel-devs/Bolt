@@ -15,7 +15,7 @@ const ForgotPassword = () => {
     <div className="login-container">
       <div className="login-box">
         <div className="login-logo-wrapper">
-          <Link to="/customer/home" style={{ textDecoration: "none" }}>
+          <Link to="/customer/" style={{ textDecoration: "none" }}>
             <h1 className="login-logo">BollentElectric</h1>
           </Link>
         </div>

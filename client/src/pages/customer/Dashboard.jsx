@@ -1,23 +1,26 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { useNavigate } from "react-router-dom";
-import { userLogout } from "../../services_hooks/customer/userAuthApi"; 
-import "../../assets/css/customer/Dashboard.css"; 
+import { logoutUser } from "../../services_hooks/customer/userAuthApi"; // ✅ only correct import
+import "../../assets/css/customer/Dashboard.css";
+
 const Dashboard = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const { user } = useSelector((state) => state.userAuth);
 
   // Redirect to login if not logged in
-  if (!user) {
-    navigate("/customer/login");
-    return null;
-  }
+  useEffect(() => {
+    if (!user) {
+      navigate("/customer/login");
+    }
+  }, [user, navigate]);
 
   const handleLogout = () => {
-    userLogout(dispatch);
-    navigate("/customer/login");
+    logoutUser(dispatch);
   };
+
+  if (!user) return null;
 
   return (
     <div className="dashboard-container">

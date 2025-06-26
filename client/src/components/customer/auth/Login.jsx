@@ -3,7 +3,7 @@ import "../../../assets/css/customer/Login.css";
 import { Link, useNavigate } from "react-router-dom";
 import { FaEye, FaEyeSlash } from "react-icons/fa";
 import { useDispatch, useSelector } from "react-redux";
-import { userLogin } from "../../../services_hooks/customer/userAuthApi"; // ✅ fixed path
+import { loginUser } from "../../../services_hooks/customer/userAuthApi"; // ✅ Corrected import
 
 const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
@@ -12,20 +12,18 @@ const Login = () => {
 
   const dispatch = useDispatch();
   const navigate = useNavigate();
-
   const { loading, error } = useSelector((state) => state.userAuth);
 
   const handleLogin = async (e) => {
     e.preventDefault();
-
     console.log(" Sending credentials:", { email, password });
 
     try {
-      const res = await userLogin(dispatch, { email, password });
-      console.log("Login Successful:", res);
-      navigate("/customer/dashboard");
+      const response = await loginUser(dispatch, { email, password }); // ✅ Corrected call
+      console.log("Login Successful:", response);
+      navigate("dashboard");
     } catch (err) {
-      console.log(" Login Failed:", err);
+      console.error(" Login Failed:", err.message);
     }
   };
 
@@ -33,7 +31,7 @@ const Login = () => {
     <div className="login-container">
       <div className="login-box">
         <div className="login-logo-wrapper">
-          <Link to="/customer/home" style={{ textDecoration: "none" }}>
+          <Link to="/customer/" className="login-logo-link">
             <h1 className="login-logo">BollentElectric</h1>
           </Link>
         </div>
@@ -52,7 +50,7 @@ const Login = () => {
             />
           </div>
 
-          <div className="form-group" style={{ position: "relative" }}>
+          <div className="form-group password-group">
             <label>Password</label>
             <input
               type={showPassword ? "text" : "password"}
@@ -75,16 +73,13 @@ const Login = () => {
         </form>
 
         {error && (
-          <p style={{ color: "red", textAlign: "center", marginTop: "1rem" }}>
-            {error}
+          <p className="login-error-msg">
+            {typeof error === "string" ? error : "Login failed. Try again."}
           </p>
         )}
 
-        <div style={{ textAlign: "center", marginTop: "1rem" }}>
-          <Link
-            to="/customer/forgot-password"
-            style={{ color: "blue", fontSize: "0.9rem" }}
-          >
+        <div className="login-links">
+          <Link to="/customer/forgot-password" className="forgot-password-link">
             Forgot Password
           </Link>
         </div>
@@ -93,21 +88,18 @@ const Login = () => {
 
         <div className="register-link">
           Don’t have an account?{" "}
-          <Link
-            to="/customer/register"
-            style={{ color: "red", fontWeight: "bold" }}
-          >
+          <Link to="/customer/register" className="register-now-link">
             Register Now
           </Link>
         </div>
       </div>
 
-      <p className="login-footer">
+      <footer className="login-footer">
         Copyright © 1995–2025, BollentElectric.
         <br />
         <a href="#">Terms & Conditions</a> |{" "}
         <a href="#">Privacy Statement</a>
-      </p>
+      </footer>
     </div>
   );
 };

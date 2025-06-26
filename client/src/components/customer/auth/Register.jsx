@@ -2,31 +2,36 @@ import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import "../../../assets/css/customer/Register.css";
 import { useDispatch } from "react-redux";
-import { userRegister } from "../../../services_hooks/customer/userAuthApi"; // ✅ fix path
+import { registerUser } from "../../../services_hooks/customer/userAuthApi";
 
 const Register = () => {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [phone, setPhone] = useState(""); 
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
   const handleRegister = async (e) => {
     e.preventDefault();
-
+    if (isSubmitting) return;
     if (password !== confirmPassword) {
-      alert(" Passwords do not match!");
+      alert("Passwords do not match!");
       return;
     }
 
+    setIsSubmitting(true);
     try {
-      const res = await userRegister({ name, email, password }); // ✅ call API
-      console.log(" Registration successful:", res);
-      navigate("/customer/login"); 
+      await registerUser(dispatch, { name, email, password, confirmPassword, phone });
+      console.log("Registration successful");
+      navigate("/customer/login");
     } catch (err) {
       console.error("Registration failed:", err.message);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -34,14 +39,13 @@ const Register = () => {
     <div className="reg-container">
       <div className="reg-box">
         <div className="reg-logo-wrapper">
-          <Link to="/customer/home" style={{ textDecoration: "none" }}>
+          <Link to="/customer/" style={{ textDecoration: "none" }}>
             <h1 className="reg-logo">BollentElectric</h1>
           </Link>
         </div>
         <h2>Create Your Account</h2>
 
         <form className="reg-form" onSubmit={handleRegister}>
-          {/* Name */}
           <div className="form-group">
             <label>Name</label>
             <input
@@ -53,7 +57,6 @@ const Register = () => {
             />
           </div>
 
-          {/* Email */}
           <div className="form-group">
             <label>Email Address</label>
             <input
@@ -65,7 +68,6 @@ const Register = () => {
             />
           </div>
 
-          {/* Password */}
           <div className="form-group">
             <label>Password</label>
             <input
@@ -77,7 +79,6 @@ const Register = () => {
             />
           </div>
 
-          {/* Confirm Password */}
           <div className="form-group">
             <label>Confirm Password</label>
             <input
@@ -89,28 +90,32 @@ const Register = () => {
             />
           </div>
 
-          {/* Phone Number (optional, not sent to API) */}
           <div className="form-group">
             <label>Phone Number</label>
-            <input type="tel" placeholder="Enter phone number" />
+            <input
+              type="tel"
+              placeholder="Enter phone number"
+              required
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+            />
           </div>
 
-          {/* Terms */}
           <div className="form-group checkbox-group">
-            <input type="checkbox" id="terms" required />
+            <input type="checkbox" id="terms" required disabled={isSubmitting} />
             <label htmlFor="terms">
               I agree to the <a href="#">Terms & Conditions</a> and{" "}
               <a href="#">Privacy Policy</a>.
             </label>
           </div>
 
-          <button className="reg-btn" type="submit">
-            Create Account
+          <button className="reg-btn" type="submit" disabled={isSubmitting}>
+            {isSubmitting ? "Registering..." : "Create Account"}
           </button>
         </form>
 
         <p className="reg-footer">
-          Already have an account? <Link to="/customer/login">Login</Link>
+          Already have an account? <Link to="login">Login</Link>
         </p>
       </div>
     </div>

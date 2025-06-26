@@ -1,4 +1,4 @@
-// client/src/services_hooks/customer/productService.js
+// src/services/customer/productService.js
 import api from "../api";
 import toast from "react-hot-toast";
 import {
@@ -15,7 +15,7 @@ const ErrorToastOptions = {
   },
 };
 
-// ✅ Get all customer products
+// ✅ Get products for customer
 export const getCustomerProducts = async (dispatch, params = {}) => {
   try {
     dispatch(ProductActionStart());
@@ -55,34 +55,6 @@ export const getCustomerProducts = async (dispatch, params = {}) => {
       error.response?.statusText ||
       error.message ||
       "Failed to load products";
-
-    dispatch(ProductActionFailure(errorMessage));
-    toast.error(errorMessage, ErrorToastOptions);
-    throw error;
-  }
-};
-
-// ✅ Get single customer product by slug or ID
-export const getSingleCustomerProduct = async (dispatch, slug) => {
-  try {
-    dispatch(ProductActionStart());
-
-    const { data } = await api.get(`/products/${slug}`);
-
-    dispatch(
-      ProductActionSuccess({
-        type: "GET_SINGLE_CUSTOMER_PRODUCT",
-        payload: data,
-      })
-    );
-
-    return data;
-  } catch (error) {
-    const errorMessage =
-      error.response?.data?.message ||
-      error.response?.statusText ||
-      error.message ||
-      "Failed to load product";
 
     dispatch(ProductActionFailure(errorMessage));
     toast.error(errorMessage, ErrorToastOptions);

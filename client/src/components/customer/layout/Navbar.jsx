@@ -48,7 +48,7 @@ const Navbar = () => {
       <nav className="custom-navbar">
         {/* Left: Logo */}
         <div className="navbar-left">
-          <Link to="/" className="navbar-logo">
+          <Link to="/customer/" className="navbar-logo">
             <span className="logo-text">BollentElectric</span>
           </Link>
         </div>

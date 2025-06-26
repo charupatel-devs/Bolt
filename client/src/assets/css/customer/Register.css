@@ -64,19 +64,30 @@
   border-color: #e60012;
 }
 
-/* Checkbox */
+/* ✅ Align checkbox inline with label text */
 .checkbox-group {
-  flex-direction: row;
+  display: flex;
   align-items: center;
+  gap: 10px;
+  margin-top: 1rem;
+  flex-wrap: wrap;
 }
 
-.checkbox-group input {
-  width: auto;
-  margin-right: 8px;
+.checkbox-group input[type="checkbox"] {
+  margin: 0;
+  flex-shrink: 0;
 }
 
+/* ✅ Style the label text */
+.checkbox-group label {
+  margin: 0;
+  font-weight: 500;
+  color: #555;
+}
+
+/* ✅ Style links inside label */
 .checkbox-group label a {
-  color: #0066cc;
+  color: #cc0000;
   text-decoration: underline;
 }
 
