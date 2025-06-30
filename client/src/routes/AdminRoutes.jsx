@@ -9,8 +9,10 @@ import AdminCategories from "../pages/admin/AdminCategories";
 
 // Order Pages
 import AllOrders from "../pages/admin/AdminAllOrders";
+import AdminEditProduct from "../pages/admin/AdminEditProduct";
 import Orders from "../pages/admin/AdminOrders";
 import PendingOrders from "../pages/admin/AdminPendingOrders";
+import AdminProductDetail from "../pages/admin/AdminProductDetail";
 import AdminProductsManagement from "../pages/admin/AdminProductsManagement";
 import AdminSettings from "../pages/admin/AdminSettings";
 import AllProducts from "../pages/admin/AllProducts";
@@ -61,11 +63,15 @@ const AdminRoutes = () => {
         <Route path="/products" element={<AdminProductsManagement />} />
         <Route path="/products/list" element={<AllProducts />} />
         <Route path="/products/add" element={<AdminAddProduct />} />
+        <Route
+          path="/products/add/bulk"
+          element={<AdminAddProduct initialMode="bulk" />}
+        />
+
         <Route path="/products/categories" element={<AdminCategories />} />
         <Route path="/products/low-stock" element={<AllProducts />} />
-        {/* <Route path="/products/:id" element={<AdminProductDetails />} /> */}
-        {/* <Route path="/products/edit/:id" element={<AdminProductForm />} /> */}
-        {/* <Route path="/products/bulk-upload" element={<AdminBulkUpload />} /> */}
+        <Route path="/products/:id" element={<AdminProductDetail />} />
+        <Route path="/products/edit/:id" element={<AdminEditProduct />} />
 
         {/* 🛒 ORDERS ROUTES */}
         <Route path="/orders" element={<Orders />} />

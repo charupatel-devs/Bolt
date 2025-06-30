@@ -17,6 +17,7 @@ import api from "../api"; // Adjust path if needed
 
 // Get all categories
 export const fetchCategories = async (dispatch) => {
+  console.log("Fetching categories...");
   dispatch(fetchCategoriesStart());
   try {
     const { data } = await api.get("/categories");

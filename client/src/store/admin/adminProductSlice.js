@@ -4,6 +4,8 @@ const productSlice = createSlice({
   name: "products",
   initialState: {
     products: [],
+    currentProduct: [], // Added for single product storage
+    currentCategory: [],
     stats: {
       totalProducts: 0,
       categories: 0,
@@ -30,24 +32,18 @@ const productSlice = createSlice({
     errMsg: "",
   },
   reducers: {
-    // Generic Start Action
-    ProductActionStart: (state, action) => {
+    ProductActionStart: (state) => {
       state.isFetching = true;
       state.error = false;
       state.errMsg = "";
     },
-
-    // Generic Failure Action
     ProductActionFailure: (state, action) => {
       state.isFetching = false;
       state.error = true;
       state.errMsg = action.payload;
     },
-
-    // Success Actions with specific logic
     ProductActionSuccess: (state, action) => {
       const { type, payload } = action.payload;
-
       state.isFetching = false;
       state.error = false;
       state.errMsg = "";
@@ -58,12 +54,16 @@ const productSlice = createSlice({
           state.stats = payload.stats;
           state.pagination = payload.pagination;
           break;
+        case "GET_SINGLE_PRODUCT": // New case
+          state.currentCategory = payload.category;
 
+          state.currentProduct = payload.product;
+
+          break;
         case "ADD_PRODUCT":
           state.products.unshift(payload);
           state.stats.totalProducts += 1;
           break;
-
         case "UPDATE_PRODUCT":
           const updateIndex = state.products.findIndex(
             (product) => product.id === payload.id
@@ -71,8 +71,11 @@ const productSlice = createSlice({
           if (updateIndex !== -1) {
             state.products[updateIndex] = payload;
           }
+          // Also update currentProduct if it's the same product
+          if (state.currentProduct && state.currentProduct.id === payload.id) {
+            state.currentProduct = payload;
+          }
           break;
-
         case "DELETE_PRODUCT":
           state.products = state.products.filter(
             (product) => product.id !== payload
@@ -81,24 +84,22 @@ const productSlice = createSlice({
             0,
             state.stats.totalProducts - 1
           );
+          // Clear current product if it's the deleted one
+          if (state.currentProduct && state.currentProduct.id === payload) {
+            state.currentProduct = null;
+          }
           break;
-
         case "BULK_IMPORT":
         case "EXPORT_PRODUCTS":
-          // These actions just need to stop loading
           break;
-
         default:
           break;
       }
     },
-
-    // Filter Actions
     SetProductFilters: (state, action) => {
       state.filters = { ...state.filters, ...action.payload };
     },
-
-    ClearProductFilters: (state, action) => {
+    ClearProductFilters: (state) => {
       state.filters = {
         search: "",
         category: "",
@@ -107,20 +108,12 @@ const productSlice = createSlice({
         sortOrder: "desc",
       };
     },
-
-    // Clear Error
-    ClearProductError: (state, action) => {
+    ClearProductError: (state) => {
       state.error = false;
       state.errMsg = "";
       state.isFetching = false;
     },
-
-    // Reset Products State
-    ResetProductsState: (state, action) => {
-      return {
-        ...productSlice.getInitialState(),
-      };
-    },
+    ResetProductsState: () => productSlice.getInitialState(),
   },
 });
 

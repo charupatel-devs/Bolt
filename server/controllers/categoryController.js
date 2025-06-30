@@ -411,8 +411,7 @@ exports.getSubcategories = catchAsync(async (req, res, next) => {
 // @route   POST /api/admin/categories
 // @access  Private/Admin
 exports.createCategory = catchAsync(async (req, res, next) => {
-  const { name, description, tags, image, isFeatured, sortOrder, attributes } =
-    req.body;
+  const { name, description, tags, image, attributes, isFeatured } = req.body;
 
   // Validation
   if (!name) {
@@ -435,7 +434,7 @@ exports.createCategory = catchAsync(async (req, res, next) => {
     tags: tags || [],
     image,
     isFeatured: isFeatured || false,
-    sortOrder: sortOrder || 0,
+    sortOrder: 0,
     attributes: attributes || [],
     createdBy: req.user?._id,
   });

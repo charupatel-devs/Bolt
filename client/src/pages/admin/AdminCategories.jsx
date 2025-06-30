@@ -82,8 +82,8 @@ const AdminCategories = () => {
 
   // Fetch categories on component mount
   useEffect(() => {
+    console.log("Fetching categories...");
     fetchCategories(dispatch);
-    console.log(dispatch);
   }, [dispatch]);
 
   // Handle success/error messages
@@ -105,6 +105,7 @@ const AdminCategories = () => {
       tags: [],
       image: "",
       attributes: [],
+      isFeatured: false,
     });
     setCurrentTag("");
     setCurrentAttribute({

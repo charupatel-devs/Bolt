@@ -100,8 +100,16 @@ router.delete("/orders/:id", logActivity("delete_order"), deleteOrder);
 
 router.get("/products", getAllProducts);
 router.post("/products/create", logActivity("create_product"), createProduct);
-router.put("/products/:id", logActivity("update_product"), updateProduct);
-router.delete("/products/:id", logActivity("delete_product"), deleteProduct);
+router.put(
+  "/products/update/:id",
+  logActivity("update_product"),
+  updateProduct
+);
+router.delete(
+  "/products/delete/:id",
+  logActivity("delete_product"),
+  deleteProduct
+);
 router.post(
   "/products/bulk-upload",
   upload.single("csvFile"), // Add this middleware

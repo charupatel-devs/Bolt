@@ -33,12 +33,27 @@ class APIFeatures {
   }
 
   sort() {
-    if (this.queryString.sort) {
-      const sortBy = this.queryString.sort.split(",").join(" ");
-      this.query = this.query.sort(sortBy);
-    } else {
-      this.query = this.query.sort("-createdAt");
-    }
+    const allowedFields = [
+      "price",
+      "name",
+      "createdAt",
+      "averageRating",
+      "stock",
+    ];
+    const allowedOrders = ["asc", "desc"];
+
+    const sortBy = allowedFields.includes(this.queryString.sortBy)
+      ? this.queryString.sortBy
+      : "createdAt";
+
+    const sortOrder = allowedOrders.includes(this.queryString.sortOrder)
+      ? this.queryString.sortOrder
+      : "desc";
+
+    this.query = this.query
+      .collation({ locale: "en", strength: 2 }) // 👈 Enables proper name sorting
+      .sort({ [sortBy]: sortOrder });
+
     return this;
   }
 

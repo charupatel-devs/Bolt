@@ -1,6 +1,4 @@
 import {
-  Banknote,
-  BarChart,
   Building2,
   ChevronDown,
   ChevronRight,
@@ -42,11 +40,6 @@ const AdminSidebar = ({ isOpen, onToggle }) => {
         { label: "All Products", path: "/admin/products/list" },
         { label: "Add Product", path: "/admin/products/add" },
         { label: "Categories", path: "/admin/products/categories" },
-        {
-          label: "Low Stock Alert",
-          path: "/admin/products/low-stock",
-          badge: "12",
-        },
       ],
     },
     {
@@ -83,17 +76,17 @@ const AdminSidebar = ({ isOpen, onToggle }) => {
         { label: "Purchase Orders", path: "/admin/inventory/purchase-orders" },
       ],
     },
-    {
-      key: "analytics",
-      label: "Analytics",
-      icon: BarChart,
-      submenu: [
-        { label: "Sales Reports", path: "/admin/analytics/sales" },
-        { label: "Product Performance", path: "/admin/analytics/products" },
-        { label: "Customer Analytics", path: "/admin/analytics/customers" },
-        // { label: "Traffic Reports", path: "/admin/analytics/traffic" },
-      ],
-    },
+    // {
+    //   key: "analytics",
+    //   label: "Analytics",
+    //   icon: BarChart,
+    //   submenu: [
+    //     { label: "Sales Reports", path: "/admin/analytics/sales" },
+    //     { label: "Product Performance", path: "/admin/analytics/products" },
+    //     { label: "Customer Analytics", path: "/admin/analytics/customers" },
+    //     // { label: "Traffic Reports", path: "/admin/analytics/traffic" },
+    //   ],
+    // },
     // {
     //   key: "marketing",
     //   label: "Marketing",
@@ -110,22 +103,22 @@ const AdminSidebar = ({ isOpen, onToggle }) => {
       label: "Shipping",
       icon: Truck,
       submenu: [
-        { label: "Shipping Methods", path: "/admin/shipping/methods" },
-        { label: "Shipping Zones", path: "/admin/shipping/zones" },
+        // { label: "Shipping Methods", path: "/admin/shipping/methods" },
+        // { label: "Shipping Zones", path: "/admin/shipping/zones" },
         { label: "Track Shipments", path: "/admin/shipping/tracking" },
       ],
     },
-    {
-      key: "finance",
-      label: "Finance",
-      icon: Banknote,
-      submenu: [
-        // { label: "Revenue Reports", path: "/admin/finance/revenue" },
-        // { label: "Tax Management", path: "/admin/finance/tax" },
-        { label: "Payment Methods", path: "/admin/finance/payments" },
-        { label: "Refunds", path: "/admin/finance/refunds" },
-      ],
-    },
+    // {
+    //   key: "finance",
+    //   label: "Finance",
+    //   icon: Banknote,
+    //   submenu: [
+    //     // { label: "Revenue Reports", path: "/admin/finance/revenue" },
+    //     // { label: "Tax Management", path: "/admin/finance/tax" },
+    //     { label: "Payment Methods", path: "/admin/finance/payments" },
+    //     { label: "Refunds", path: "/admin/finance/refunds" },
+    //   ],
+    // },
     {
       key: "settings",
       label: "Settings",

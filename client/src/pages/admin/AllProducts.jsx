@@ -5,29 +5,26 @@ import {
   ChevronDown,
   ChevronUp,
   Download,
-  Edit,
-  Eye,
   Grid3X3,
   List,
-  MoreHorizontal,
   Package,
   Search,
   SlidersHorizontal,
-  Star,
-  Trash2,
   XCircle,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
+import { NavLink } from "react-router-dom";
 import AdminLayout from "../../components/admin/layout/AdminLayout";
-import { getAllProducts } from "../../services_hooks/admin/adminProductService";
+import {
+  deleteProductService,
+  getAllProducts,
+} from "../../services_hooks/admin/adminProductService";
 import { SetProductFilters } from "../../store/admin/adminProductSlice";
 
 const AllProducts = () => {
   const dispatch = useDispatch();
-
-  // Redux state
-  const { products, pagination, filters, isFetching, error, errMsg } =
+  const { products, pagination, stats, filters, isFetching, error, errMsg } =
     useSelector((state) => state.products);
 
   // Local UI states
@@ -38,96 +35,50 @@ const AllProducts = () => {
   const [selectedCategory, setSelectedCategory] = useState(
     filters.category || ""
   );
-  const [selectedSubcategory, setSelectedSubcategory] = useState("");
   const [sortBy, setSortBy] = useState(filters.sortBy || "createdAt");
   const [sortOrder, setSortOrder] = useState(filters.sortOrder || "desc");
   const [itemsPerPage, setItemsPerPage] = useState(pagination.limit || 5);
-
-  // Local filter states (for client-side filtering)
+  const [pageNo, setPageNo] = useState(pagination.currentPage || 1);
+  // Local filter states
   const [localFilters, setLocalFilters] = useState({
     stockStatus: filters.status ? filters.status.split(",") : [],
     priceRange: { min: filters.priceMin || "", max: filters.priceMax || "" },
-    manufacturer: filters.manufacturer || [],
     inStock: filters.inStock || false,
     newProduct: filters.newProduct || false,
     onSale: filters.onSale || false,
   });
 
-  // Fetch products from API
+  // Fetch products
   const fetchProducts = async () => {
     try {
-      console.log("🔄 Fetching products...");
+      console.log("Fetching products with filters:");
       await getAllProducts(dispatch, {
-        page: pagination.currentPage,
+        page: pageNo,
         limit: itemsPerPage,
-        search: searchTerm,
+        // search: searchTerm,
         category: selectedCategory,
         status: localFilters.stockStatus.join(","),
-        sortBy,
+        sortBy: sortBy,
         sortOrder,
       });
-      console.log("✅ Products fetch completed");
     } catch (err) {
-      console.error("💥 Failed to fetch products:", err);
+      console.error("Failed to fetch products:", err);
     }
   };
-
-  // Sync Redux filters with local state changes
-  useEffect(() => {
-    dispatch(
-      SetProductFilters({
-        search: searchTerm,
-        category: selectedCategory,
-        status: localFilters.stockStatus.join(","),
-        sortBy,
-        sortOrder,
-        priceMin: localFilters.priceRange.min,
-        priceMax: localFilters.priceRange.max,
-        manufacturer: localFilters.manufacturer,
-        inStock: localFilters.inStock,
-        newProduct: localFilters.newProduct,
-        onSale: localFilters.onSale,
-      })
-    );
-  }, [searchTerm, selectedCategory, localFilters, sortBy, sortOrder]);
-
-  // Handle search with debouncing
-  useEffect(() => {
-    const timeoutId = setTimeout(() => {
-      if (searchTerm !== filters.search) {
-        dispatch(SetProductFilters({ search: searchTerm }));
-        fetchProducts();
-      }
-    }, 500);
-    return () => clearTimeout(timeoutId);
-  }, [searchTerm]);
-
-  // Fetch products when pagination or items per page changes
   useEffect(() => {
     fetchProducts();
-  }, [pagination.currentPage, itemsPerPage]);
+  }, [pageNo, itemsPerPage, selectedCategory, localFilters, sortBy, sortOrder]);
 
-  // Derive categories and manufacturers
+  // Derive categories
   const categories = useMemo(() => {
-    const uniqueCategories = [...new Set(products.map((p) => p.category))].map(
-      (name) => ({
-        name,
-        subcategories: [
-          ...new Set(
-            products
-              .filter((p) => p.category === name)
-              .map((p) => p.subcategory)
-          ),
-        ],
-      })
-    );
-    return uniqueCategories;
+    return [...new Set(products.map((p) => p.category?.name))].filter(Boolean);
   }, [products]);
 
-  const manufacturers = useMemo(
-    () => [...new Set(products.map((p) => p.manufacturer))],
-    [products]
-  );
+  // Status helpers
+  const getStockStatus = (stock) => {
+    if (stock === 0) return "out";
+    return stock <= 10 ? "low" : "active";
+  };
 
   const getStatusColor = (status) => {
     switch (status) {
@@ -167,77 +118,42 @@ const AllProducts = () => {
         return "Unknown";
     }
   };
+  const handleDeleteProduct = async (productId) => {
+    if (window.confirm("Are you sure you want to delete this product?")) {
+      try {
+        await deleteProductService(dispatch, productId);
+        console.log("✅ Product deleted successfully");
+      } catch (err) {
+        console.error("💥 Failed to delete product:", err);
+      }
+    }
+  };
 
-  // Apply client-side filters
+  // Apply filters
   const filteredProducts = useMemo(() => {
-    return products.filter((product) => {
-      const subcategoryMatch =
-        !selectedSubcategory || product.subcategory === selectedSubcategory;
+    // Filter by search term (case-insensitive)
+    const searchFiltered = products.filter(
+      (product) =>
+        product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        product.sku.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+    // Apply other filters as before
+    return searchFiltered.filter((product) => {
       const priceMatch =
         (!localFilters.priceRange.min ||
           product.price >= parseFloat(localFilters.priceRange.min)) &&
         (!localFilters.priceRange.max ||
           product.price <= parseFloat(localFilters.priceRange.max));
-      const manufacturerMatch =
-        localFilters.manufacturer.length === 0 ||
-        localFilters.manufacturer.includes(product.manufacturer);
       const inStockMatch = !localFilters.inStock || product.stock > 0;
-      const newProductMatch = !localFilters.newProduct || product.isNew;
+      const newProductMatch = !localFilters.newProduct || product.isNewArrival;
       const onSaleMatch = !localFilters.onSale || product.isOnSale;
-
-      return (
-        subcategoryMatch &&
-        priceMatch &&
-        manufacturerMatch &&
-        inStockMatch &&
-        newProductMatch &&
-        onSaleMatch
-      );
+      return priceMatch && inStockMatch && newProductMatch && onSaleMatch;
     });
-  }, [products, selectedSubcategory, localFilters]);
+  }, [products, searchTerm, localFilters]);
 
-  const paginatedProducts = filteredProducts; // API handles pagination
+  const paginatedProducts = filteredProducts;
 
-  const totalPages = pagination.totalPages || 1;
-
-  const handleSort = (field) => {
-    if (sortBy === field) {
-      setSortOrder(sortOrder === "asc" ? "desc" : "asc");
-    } else {
-      setSortBy(field);
-      setSortOrder("asc");
-    }
-  };
-
-  const handleSelectProduct = (productId) => {
-    setSelectedProducts((prev) =>
-      prev.includes(productId)
-        ? prev.filter((id) => id !== productId)
-        : [...prev, productId]
-    );
-  };
-
-  const handleSelectAll = () => {
-    if (selectedProducts.length === paginatedProducts.length) {
-      setSelectedProducts([]);
-    } else {
-      setSelectedProducts(paginatedProducts.map((p) => p.id));
-    }
-  };
-
-  const renderStars = (rating) => {
-    return [...Array(5)].map((_, i) => (
-      <Star
-        key={i}
-        className={`w-3 h-3 ${
-          i < Math.floor(rating)
-            ? "text-yellow-400 fill-current"
-            : "text-gray-300"
-        }`}
-      />
-    ));
-  };
-
+  // Loading and error states
   if (isFetching) {
     return (
       <AdminLayout>
@@ -269,10 +185,10 @@ const AllProducts = () => {
               All Products
             </h1>
             <p className="text-gray-600 mt-1">
-              Showing {filteredProducts.length} products
+              Showing {filteredProducts.length} of {stats.totalProducts}{" "}
+              products
             </p>
           </div>
-
           <div className="flex space-x-3">
             <button className="flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">
               <Download className="w-4 h-4 mr-2" />
@@ -292,7 +208,7 @@ const AllProducts = () => {
           </div>
         </div>
 
-        {/* Search and View Controls */}
+        {/* Search and Filters */}
         <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center space-x-4 flex-1">
@@ -309,36 +225,16 @@ const AllProducts = () => {
 
               <select
                 value={selectedCategory}
-                onChange={(e) => {
-                  setSelectedCategory(e.target.value);
-                  setSelectedSubcategory("");
-                }}
+                onChange={(e) => setSelectedCategory(e.target.value)}
                 className="px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               >
                 <option value="">All Categories</option>
-                {categories.map((cat) => (
-                  <option key={cat.name} value={cat.name}>
-                    {cat.name}
+                {categories.map((name) => (
+                  <option key={name} value={name}>
+                    {name}
                   </option>
                 ))}
               </select>
-
-              {selectedCategory && (
-                <select
-                  value={selectedSubcategory}
-                  onChange={(e) => setSelectedSubcategory(e.target.value)}
-                  className="px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                >
-                  <option value="">All Subcategories</option>
-                  {categories
-                    .find((cat) => cat.name === selectedCategory)
-                    ?.subcategories.map((sub) => (
-                      <option key={sub} value={sub}>
-                        {sub}
-                      </option>
-                    ))}
-                </select>
-              )}
             </div>
 
             <div className="flex items-center space-x-2">
@@ -437,37 +333,6 @@ const AllProducts = () => {
                   </div>
                 </div>
 
-                {/* Manufacturer Filter */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Manufacturer
-                  </label>
-                  <div className="space-y-2 max-h-24 overflow-y-auto">
-                    {manufacturers.map((manufacturer) => (
-                      <label key={manufacturer} className="flex items-center">
-                        <input
-                          type="checkbox"
-                          checked={localFilters.manufacturer.includes(
-                            manufacturer
-                          )}
-                          onChange={(e) => {
-                            setLocalFilters((prev) => ({
-                              ...prev,
-                              manufacturer: e.target.checked
-                                ? [...prev.manufacturer, manufacturer]
-                                : prev.manufacturer.filter(
-                                    (m) => m !== manufacturer
-                                  ),
-                            }));
-                          }}
-                          className="mr-2"
-                        />
-                        <span className="text-sm">{manufacturer}</span>
-                      </label>
-                    ))}
-                  </div>
-                </div>
-
                 {/* Additional Options */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -500,7 +365,7 @@ const AllProducts = () => {
                         }
                         className="mr-2"
                       />
-                      <span className="text-sm">New Products</span>
+                      <span className="text-sm">New Arrivals</span>
                     </label>
                     <label className="flex items-center">
                       <input
@@ -526,14 +391,12 @@ const AllProducts = () => {
                     setLocalFilters({
                       stockStatus: [],
                       priceRange: { min: "", max: "" },
-                      manufacturer: [],
                       inStock: false,
                       newProduct: false,
                       onSale: false,
                     });
                     setSearchTerm("");
                     setSelectedCategory("");
-                    setSelectedSubcategory("");
                     dispatch(
                       SetProductFilters({
                         search: "",
@@ -541,7 +404,6 @@ const AllProducts = () => {
                         status: "",
                         priceMin: "",
                         priceMax: "",
-                        manufacturer: [],
                         inStock: false,
                         newProduct: false,
                         onSale: false,
@@ -598,13 +460,23 @@ const AllProducts = () => {
                   Showing {(pagination.currentPage - 1) * itemsPerPage + 1} -{" "}
                   {Math.min(
                     pagination.currentPage * itemsPerPage,
-                    filteredProducts.length
+                    stats.totalProducts
                   )}{" "}
-                  of {filteredProducts.length} results
+                  of {stats.totalProducts} results
                 </span>
                 <select
                   value={itemsPerPage}
-                  onChange={(e) => setItemsPerPage(Number(e.target.value))}
+                  onChange={(e) => {
+                    const newLimit = Number(e.target.value);
+                    setItemsPerPage(newLimit);
+                    // Reset to first page when changing page size
+                    // dispatch(
+                    //   SetProductFilters({
+                    //     limit: newLimit,
+                    //     currentPage: 1, // Reset to first page
+                    //   })
+                    // );
+                  }}
                   className="px-3 py-1 border border-gray-200 rounded text-sm"
                 >
                   <option value={5}>5 per page</option>
@@ -625,7 +497,6 @@ const AllProducts = () => {
                   <option value="price">Price</option>
                   <option value="stock">Stock</option>
                   <option value="createdAt">Date Added</option>
-                  <option value="rating">Rating</option>
                 </select>
                 <button
                   onClick={() =>
@@ -657,7 +528,17 @@ const AllProducts = () => {
                             paginatedProducts.length &&
                           paginatedProducts.length > 0
                         }
-                        onChange={handleSelectAll}
+                        onChange={() => {
+                          if (
+                            selectedProducts.length === paginatedProducts.length
+                          ) {
+                            setSelectedProducts([]);
+                          } else {
+                            setSelectedProducts(
+                              paginatedProducts.map((p) => p.id)
+                            );
+                          }
+                        }}
                         className="rounded"
                       />
                     </th>
@@ -703,120 +584,128 @@ const AllProducts = () => {
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Status
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    {/* <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Rating
-                    </th>
+                    </th> */}
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Actions
                     </th>
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {paginatedProducts.map((product) => (
-                    <tr key={product.id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4">
-                        <input
-                          type="checkbox"
-                          checked={selectedProducts.includes(product.id)}
-                          onChange={() => handleSelectProduct(product.id)}
-                          className="rounded"
-                        />
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="flex items-center">
-                          <img
-                            src={product.image}
-                            alt={product.name}
-                            className="w-12 h-12 rounded-lg object-cover mr-4"
+                  {paginatedProducts.map((product) => {
+                    const status = getStockStatus(product.stock);
+                    return (
+                      <tr key={product.id} className="hover:bg-gray-50">
+                        <td className="px-6 py-4">
+                          <input
+                            type="checkbox"
+                            checked={selectedProducts.includes(product.id)}
+                            onChange={() => {
+                              setSelectedProducts((prev) =>
+                                prev.includes(product.id)
+                                  ? prev.filter((id) => id !== product.id)
+                                  : [...prev, product.id]
+                              );
+                            }}
+                            className="rounded"
                           />
-                          <div>
-                            <div className="text-sm font-medium text-gray-900 mb-1">
-                              {product.name}
-                              {product.isNew && (
-                                <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                                  New
-                                </span>
-                              )}
-                              {product.isOnSale && (
-                                <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                                  Sale
-                                </span>
-                              )}
-                            </div>
-                            <div className="text-sm text-gray-500">
-                              {product.manufacturer}
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="flex items-center">
+                            {product.primaryImage ? (
+                              <img
+                                src={product.primaryImage}
+                                alt={product.name}
+                                className="w-12 h-12 rounded-lg object-cover mr-4"
+                              />
+                            ) : (
+                              <div className="bg-gray-200 border-2 border-dashed rounded-xl w-12 h-12 mr-4" />
+                            )}
+                            <div>
+                              <div className="text-sm font-medium text-gray-900 mb-1">
+                                {product.name}
+                                {product.isNewArrival && (
+                                  <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                    New
+                                  </span>
+                                )}
+                                {product.isOnSale && (
+                                  <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                                    Sale
+                                  </span>
+                                )}
+                              </div>
                             </div>
                           </div>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 text-sm text-gray-900">
-                        {product.sku}
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="text-sm text-gray-900">
-                          {product.category}
-                        </div>
-                        <div className="text-sm text-gray-500">
-                          {product.subcategory}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 text-sm text-gray-900 font-medium">
-                        ${product.price}
-                      </td>
-                      <td className="px-6 py-4">
-                        <span
-                          className={`text-sm font-medium ${
-                            product.stock === 0
-                              ? "text-red-600"
-                              : product.stock <= product.minStock
-                              ? "text-yellow-600"
-                              : "text-green-600"
-                          }`}
-                        >
-                          {product.stock}
-                        </span>
-                        <div className="text-xs text-gray-500">
-                          Min: {product.minStock}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4">
-                        <span
-                          className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(
-                            product.status
-                          )}`}
-                        >
-                          {getStatusIcon(product.status)}
-                          <span className="ml-1">
-                            {getStatusText(product.status)}
+                        </td>
+                        <td className="px-6 py-4 text-sm text-gray-900">
+                          {product.sku}
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="text-sm text-gray-900">
+                            {product.category?.name}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 text-sm text-gray-900 font-medium">
+                          ${product.price}
+                        </td>
+                        <td className="px-6 py-4">
+                          <span
+                            className={`text-sm font-medium ${
+                              product.stock === 0
+                                ? "text-red-600"
+                                : product.stock <= 10
+                                ? "text-yellow-600"
+                                : "text-green-600"
+                            }`}
+                          >
+                            {product.stock}
                           </span>
-                        </span>
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="flex items-center space-x-1">
-                          {renderStars(product.rating)}
-                          <span className="text-sm text-gray-600 ml-2">
-                            {product.rating} ({product.reviews})
+                          {/* <div className="text-xs text-gray-500">
+                            Min: {product.minOrderQuantity}
+                          </div> */}
+                        </td>
+                        <td className="px-6 py-4">
+                          <span
+                            className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(
+                              status
+                            )}`}
+                          >
+                            {getStatusIcon(status)}
+                            <span className="ml-1">
+                              {getStatusText(status)}
+                            </span>
                           </span>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="flex items-center space-x-2">
-                          <button className="p-2 text-blue-600 hover:text-blue-800 hover:bg-blue-100 rounded-lg transition-colors">
-                            <Eye className="w-4 h-4" />
-                          </button>
-                          <button className="p-2 text-green-600 hover:text-green-800 hover:bg-green-100 rounded-lg transition-colors">
-                            <Edit className="w-4 h-4" />
-                          </button>
-                          <button className="p-2 text-red-600 hover:text-red-800 hover:bg-red-100 rounded-lg transition-colors">
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                          <button className="p-2 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors">
-                            <MoreHorizontal className="w-4 h-4" />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
+                        </td>
+                        {/* <td className="px-6 py-4">
+                          <div className="flex items-center space-x-1">
+                            {renderStars(product.averageRating || 0)}
+                            <span className="text-sm text-gray-600 ml-2">
+                              {product.averageRating?.toFixed(1) || 0} (
+                              {product.numReviews || 0})
+                            </span>
+                          </div>
+                        </td> */}
+                        <td className="px-6 py-4">
+                          <div className="flex items-center space-x-2">
+                            <NavLink
+                              to={`/admin/products/edit/${product.id}`}
+                              className="text-blue-600 hover:text-blue-800 text-sm font-medium mr-3"
+                            >
+                              Edit
+                            </NavLink>
+                            <button
+                              onClick={() => handleDeleteProduct(product.id)}
+                              className="text-red-600 hover:text-red-800 text-sm font-medium"
+                            >
+                              Delete
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
@@ -824,125 +713,149 @@ const AllProducts = () => {
             /* Grid View */
             <div className="p-6">
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                {paginatedProducts.map((product) => (
-                  <div
-                    key={product.id}
-                    className="border border-gray-200 rounded-lg overflow-hidden hover:shadow-md transition-shadow"
-                  >
-                    <div className="relative">
-                      <img
-                        src={product.image}
-                        alt={product.name}
-                        className="w-full h-48 object-cover"
-                      />
-                      <div className="absolute top-2 left-2">
-                        <input
-                          type="checkbox"
-                          checked={selectedProducts.includes(product.id)}
-                          onChange={() => handleSelectProduct(product.id)}
-                          className="rounded"
-                        />
+                {paginatedProducts.map((product) => {
+                  const status = getStockStatus(product.stock);
+                  return (
+                    <div
+                      key={product.id}
+                      className="border border-gray-200 rounded-lg overflow-hidden hover:shadow-md transition-shadow"
+                    >
+                      <div className="relative">
+                        {product.primaryImage ? (
+                          <img
+                            src={product.primaryImage}
+                            alt={product.name}
+                            className="w-full h-48 object-cover"
+                          />
+                        ) : (
+                          <div className="bg-gray-200 border-2 border-dashed w-full h-48" />
+                        )}
+                        <div className="absolute top-2 left-2">
+                          <input
+                            type="checkbox"
+                            checked={selectedProducts.includes(product.id)}
+                            onChange={() => {
+                              setSelectedProducts((prev) =>
+                                prev.includes(product.id)
+                                  ? prev.filter((id) => id !== product.id)
+                                  : [...prev, product.id]
+                              );
+                            }}
+                            className="rounded"
+                          />
+                        </div>
+                        <div className="absolute top-2 right-2 flex flex-col space-y-1">
+                          {product.isNewArrival && (
+                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                              New
+                            </span>
+                          )}
+                          {product.isOnSale && (
+                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                              Sale
+                            </span>
+                          )}
+                        </div>
                       </div>
-                      <div className="absolute top-2 right-2 flex flex-col space-y-1">
-                        {product.isNew && (
-                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                            New
+                      <div className="p-4">
+                        <div className="mb-2">
+                          <h3 className="text-sm font-medium text-gray-900 line-clamp-2 mb-1">
+                            {product.name}
+                          </h3>
+                          <p className="text-xs text-gray-500">{product.sku}</p>
+                        </div>
+                        {/* <div className="mb-2">
+                          <div className="flex items-center space-x-1 mb-1">
+                            {renderStars(product.averageRating || 0)}
+                          </div>
+                          <p className="text-xs text-gray-600">
+                            {product.averageRating?.toFixed(1) || 0} (
+                            {product.numReviews || 0} reviews)
+                          </p>
+                        </div> */}
+                        <div className="mb-3">
+                          <div className="flex items-center justify-between mb-1">
+                            <span className="text-lg font-bold text-gray-900">
+                              ${product.price}
+                            </span>
+                            <span
+                              className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${getStatusColor(
+                                status
+                              )}`}
+                            >
+                              {getStatusText(status)}
+                            </span>
+                          </div>
+                          <p className="text-xs text-gray-600">
+                            Stock:{" "}
+                            <span
+                              className={`font-medium ${
+                                product.stock === 0
+                                  ? "text-red-600"
+                                  : product.stock <= 10
+                                  ? "text-yellow-600"
+                                  : "text-green-600"
+                              }`}
+                            >
+                              {product.stock}
+                            </span>
+                          </p>
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <NavLink
+                            to={`/admin/products/edit/${product.id}`}
+                            className="text-blue-600 hover:text-blue-800 text-sm font-medium mr-3"
+                          >
+                            Edit
+                          </NavLink>
+                          <button
+                            onClick={() => handleDeleteProduct(product.id)}
+                            className="text-red-600 hover:text-red-800 text-sm font-medium"
+                          >
+                            Delete
+                          </button>
+                          {/* <span className="text-xs text-gray-500">
+                            {product.category?.name}
                           </span>
-                        )}
-                        {product.isOnSale && (
-                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                            Sale
-                          </span>
-                        )}
+                          <div className="flex space-x-1">
+                            <button className="p-1 text-blue-600 hover:text-blue-800 hover:bg-blue-100 rounded transition-colors">
+                              <Eye className="w-3 h-3" />
+                            </button>
+
+                            <NavLink
+                              to={`/admin/products/edit/${product?.id}`}
+                              className="p-1 text-green-600 hover:text-green-800 hover:bg-green-100 rounded transition-colors"
+                            >
+                              <Edit className="w-3 h-3" />
+                            </NavLink>
+
+                            <button
+                              onClick={() => handleDeleteProduct(product.id)}
+                              className="p-1 text-red-600 hover:text-red-800 hover:bg-red-100 rounded transition-colors"
+                            >
+                              <Trash2 className="w-3 h-3" />
+                            </button>
+                          </div> */}
+                        </div>
                       </div>
                     </div>
-
-                    <div className="p-4">
-                      <div className="mb-2">
-                        <h3 className="text-sm font-medium text-gray-900 line-clamp-2 mb-1">
-                          {product.name}
-                        </h3>
-                        <p className="text-xs text-gray-500">{product.sku}</p>
-                      </div>
-
-                      <div className="mb-2">
-                        <div className="flex items-center space-x-1 mb-1">
-                          {renderStars(product.rating)}
-                        </div>
-                        <p className="text-xs text-gray-600">
-                          {product.rating} ({product.reviews} reviews)
-                        </p>
-                      </div>
-
-                      <div className="mb-3">
-                        <div className="flex items-center justify-between mb-1">
-                          <span className="text-lg font-bold text-gray-900">
-                            ${product.price}
-                          </span>
-                          <span
-                            className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${getStatusColor(
-                              product.status
-                            )}`}
-                          >
-                            {getStatusText(product.status)}
-                          </span>
-                        </div>
-                        <p className="text-xs text-gray-600">
-                          Stock:{" "}
-                          <span
-                            className={`font-medium ${
-                              product.stock === 0
-                                ? "text-red-600"
-                                : product.stock <= product.minStock
-                                ? "text-yellow-600"
-                                : "text-green-600"
-                            }`}
-                          >
-                            {product.stock}
-                          </span>
-                        </p>
-                      </div>
-
-                      <div className="flex justify-between items-center">
-                        <span className="text-xs text-gray-500">
-                          {product.manufacturer}
-                        </span>
-                        <div className="flex space-x-1">
-                          <button className="p-1 text-blue-600 hover:text-blue-800 hover:bg-blue-100 rounded transition-colors">
-                            <Eye className="w-3 h-3" />
-                          </button>
-                          <button className="p-1 text-green-600 hover:text-green-800 hover:bg-green-100 rounded transition-colors">
-                            <Edit className="w-3 h-3" />
-                          </button>
-                          <button className="p-1 text-red-600 hover:text-red-800 hover:bg-red-100 rounded transition-colors">
-                            <Trash2 className="w-3 h-3" />
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           )}
 
           {/* Pagination */}
-          {totalPages > 1 && (
+          {pagination.totalPages > 1 && (
             <div className="px-6 py-4 border-t border-gray-200">
               <div className="flex items-center justify-between">
                 <div className="text-sm text-gray-600">
-                  Page {pagination.currentPage} of {totalPages}
+                  Page {pagination.currentPage} of {pagination.totalPages}
                 </div>
 
                 <div className="flex items-center space-x-2">
                   <button
-                    onClick={() =>
-                      dispatch(
-                        SetProductFilters({
-                          currentPage: Math.max(1, pagination.currentPage - 1),
-                        })
-                      )
-                    }
+                    onClick={() => setPageNo(pagination.currentPage - 1)}
                     disabled={pagination.currentPage === 1}
                     className="px-3 py-2 text-sm border border-gray-200 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
@@ -950,38 +863,30 @@ const AllProducts = () => {
                   </button>
 
                   <div className="flex space-x-1">
-                    {[...Array(Math.min(5, totalPages))].map((_, i) => {
-                      const page = i + 1;
-                      return (
-                        <button
-                          key={page}
-                          onClick={() =>
-                            dispatch(SetProductFilters({ currentPage: page }))
-                          }
-                          className={`w-8 h-8 text-sm rounded-lg ${
-                            pagination.currentPage === page
-                              ? "bg-blue-600 text-white"
-                              : "text-gray-600 hover:bg-gray-100"
-                          }`}
-                        >
-                          {page}
-                        </button>
-                      );
-                    })}
+                    {Array.from(
+                      { length: Math.min(5, pagination.totalPages) },
+                      (_, i) => {
+                        const page = i + 1;
+                        return (
+                          <button
+                            key={page}
+                            onClick={() => setPageNo(page)}
+                            className={`w-8 h-8 text-sm rounded-lg ${
+                              pagination.currentPage === page
+                                ? "bg-blue-600 text-white"
+                                : "text-gray-600 hover:bg-gray-100"
+                            }`}
+                          >
+                            {page}
+                          </button>
+                        );
+                      }
+                    )}
                   </div>
 
                   <button
-                    onClick={() =>
-                      dispatch(
-                        SetProductFilters({
-                          currentPage: Math.min(
-                            totalPages,
-                            pagination.currentPage + 1
-                          ),
-                        })
-                      )
-                    }
-                    disabled={pagination.currentPage === totalPages}
+                    onClick={() => setPageNo(pagination.currentPage + 1)}
+                    disabled={pagination.currentPage === pagination.totalPages}
                     className="px-3 py-2 text-sm border border-gray-200 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     Next
