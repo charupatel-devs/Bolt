@@ -210,25 +210,31 @@ orderSchema.virtual("statusDisplay").get(function () {
   return statusMap[this.status] || this.status;
 });
 
-// Pre-save middleware to generate order number
-orderSchema.pre("save", async function (next) {
-  if (this.isNew) {
-    // Generate unique order number
+// Remove the existing pre-save hook and replace with:
+
+// Add this pre-validate hook at the top of your model
+orderSchema.pre("validate", function (next) {
+  // Generate order number if missing
+  if (!this.orderNumber) {
     const timestamp = Date.now().toString();
     const random = Math.floor(Math.random() * 1000)
       .toString()
       .padStart(3, "0");
     this.orderNumber = `EM${timestamp.slice(-8)}${random}`;
+  }
+  next();
+});
 
-    // Set invoice number and date for completed payments
-    if (
-      this.paymentInfo &&
-      this.paymentInfo.status === "completed" &&
-      !this.invoiceNumber
-    ) {
-      this.invoiceNumber = `INV-${this.orderNumber}`;
-      this.invoiceDate = new Date();
-    }
+// Keep the existing pre-save hook for other operations
+orderSchema.pre("save", function (next) {
+  // Set invoice number and date for completed payments
+  if (
+    this.paymentInfo &&
+    this.paymentInfo.status === "completed" &&
+    !this.invoiceNumber
+  ) {
+    this.invoiceNumber = `INV-${this.orderNumber}`;
+    this.invoiceDate = new Date();
   }
 
   // Update status timestamps
@@ -246,7 +252,6 @@ orderSchema.pre("save", async function (next) {
         break;
     }
   }
-
   next();
 });
 
@@ -494,11 +499,9 @@ orderSchema.post("save", async function (doc, next) {
     // Update product total sales when order status changes to delivered
     if (doc.isModified("status") && doc.status === "delivered") {
       for (const item of doc.items) {
-        await doc
-          .model("Product")
-          .findByIdAndUpdate(item.product, {
-            $inc: { totalSales: item.quantity },
-          });
+        await doc.model("Product").findByIdAndUpdate(item.product, {
+          $inc: { totalSales: item.quantity },
+        });
       }
     }
     next();

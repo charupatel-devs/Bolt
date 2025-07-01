@@ -3,16 +3,15 @@ const Product = require("../models/Product");
 const catchAsync = require("../utils/catchAsync");
 const AppError = require("../utils/appError");
 const APIFeatures = require("../utils/apiFeatures");
-
 // @desc    Get all categories
 // @route   GET /api/admin/categories
 // @access  Private/Admin
 exports.getAllCategories = catchAsync(async (req, res, next) => {
   const { search, isActive, isFeatured, tag, sortBy = "name" } = req.query;
 
+  // Build the query object
   let query = {};
 
-  // Search filter
   if (search) {
     query.$or = [
       { name: { $regex: search, $options: "i" } },
@@ -21,24 +20,85 @@ exports.getAllCategories = catchAsync(async (req, res, next) => {
     ];
   }
 
-  // Active filter
   if (isActive !== undefined) {
     query.isActive = isActive === "true";
   }
 
-  // Featured filter
   if (isFeatured !== undefined) {
     query.isFeatured = isFeatured === "true";
   }
 
-  // Tag filter
   if (tag) {
     query.tags = { $in: [tag] };
   }
 
-  const categories = await Category.find(query)
-    .populate("createdBy", "name email")
-    .sort({ [sortBy]: 1 });
+  // Aggregation pipeline to get categories with product counts
+  const categories = await Category.aggregate([
+    // Stage 1: Filter categories based on query
+    { $match: query },
+
+    // Stage 2: Join with products collection
+    {
+      $lookup: {
+        from: "products", // Name of the products collection
+        localField: "_id", // Category ID field
+        foreignField: "category", // Field in Product that references Category
+        as: "products", // Temporary array of matching products
+      },
+    },
+
+    // Stage 3: Add product count field
+    {
+      $addFields: {
+        productCount: { $size: "$products" }, // Count products in the array
+      },
+    },
+
+    // Stage 4: Remove temporary products array
+    { $unset: "products" },
+
+    // Stage 5: Join with users collection for createdBy
+    {
+      $lookup: {
+        from: "users", // Name of the users collection
+        localField: "createdBy", // User ID field in Category
+        foreignField: "_id", // ID field in User
+        as: "createdBy", // Will be an array
+      },
+    },
+
+    // Stage 6: Unwind createdBy array (while preserving categories without createdBy)
+    {
+      $unwind: {
+        path: "$createdBy",
+        preserveNullAndEmptyArrays: true,
+      },
+    },
+
+    // Stage 7: Project only necessary fields (including attributes)
+    {
+      $project: {
+        name: 1,
+        description: 1,
+        tags: 1,
+        image: 1,
+        isFeatured: 1,
+        isActive: 1,
+        attributes: 1, // Ensure attributes are included
+        createdAt: 1,
+        updatedAt: 1,
+        productCount: 1,
+        createdBy: {
+          // Subset of user fields
+          name: 1,
+          email: 1,
+        },
+      },
+    },
+
+    // Stage 8: Sorting
+    { $sort: { [sortBy]: 1 } },
+  ]);
 
   res.status(200).json({
     success: true,
@@ -427,7 +487,33 @@ exports.createCategory = catchAsync(async (req, res, next) => {
     return next(new AppError("Category with this name already exists", 400));
   }
 
-  // Create category
+  let processedAttributes = [];
+  if (attributes) {
+    if (Array.isArray(attributes)) {
+      processedAttributes = attributes.map((attr) => {
+        const { _id, ...cleanAttr } = attr;
+        return {
+          ...cleanAttr,
+          // Preserve only non-string _id (valid ObjectIDs)
+          ...(attr._id && typeof attr._id !== "string"
+            ? { _id: attr._id }
+            : {}),
+        };
+      });
+    } else {
+      const { _id, ...cleanAttr } = attributes;
+      processedAttributes = [
+        {
+          ...cleanAttr,
+          ...(attributes._id && typeof attributes._id !== "string"
+            ? { _id: attributes._id }
+            : {}),
+        },
+      ];
+    }
+  }
+
+  // Use processedAttributes in creation
   const category = await Category.create({
     name: name.trim(),
     description,
@@ -435,7 +521,7 @@ exports.createCategory = catchAsync(async (req, res, next) => {
     image,
     isFeatured: isFeatured || false,
     sortOrder: 0,
-    attributes: attributes || [],
+    attributes: processedAttributes, // Use processed array
     createdBy: req.user?._id,
   });
 

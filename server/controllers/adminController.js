@@ -718,7 +718,7 @@ exports.getAllProducts = catchAsync(async (req, res, next) => {
   // ✅ Calculate stats for frontend
   const stats = await Promise.all([
     Product.countDocuments(), // Total products
-    Product.distinct("category").then((categories) => categories.length), // Unique categories
+    Category.countDocuments(), // Directly count all categories
     Product.countDocuments({ stock: { $gt: 0, $lte: 10 } }), // Low stock
     Product.countDocuments({ stock: 0 }), // Out of stock
   ]);

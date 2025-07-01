@@ -316,7 +316,10 @@ productSchema.statics.filterBySpecifications = function (
     .skip(skip)
     .limit(limit);
 };
-
+productSchema.methods.getPriceForQuantity = function (quantity) {
+  // Basic example: same price per item, can customize for discounts later
+  return this.price * quantity;
+};
 // Static method to get filter options for a category
 productSchema.statics.getFilterOptions = async function (categoryId) {
   const Category = mongoose.model("Category");

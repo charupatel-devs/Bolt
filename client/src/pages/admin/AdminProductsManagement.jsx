@@ -38,7 +38,7 @@ const AdminProductsManagement = () => {
       // Service function now handles all dispatch logic
       await getAllProducts(dispatch, {
         page: pagination.currentPage,
-        limit: pagination.limit,
+        limit: 5,
         category: filters.category,
         status: filters.status,
         sortBy: filters.sortBy,
@@ -214,8 +214,7 @@ const AdminProductsManagement = () => {
           </div>
         </div>
 
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="flex flex-row flex-nowrap gap-6 overflow-x-auto">
           {statsData.map((stat, index) => (
             <div
               key={index}
@@ -231,6 +230,42 @@ const AdminProductsManagement = () => {
               </div>
             </div>
           ))}
+        </div>
+
+        {/* Quick Actions */}
+        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+          <h2 className="text-lg font-semibold text-gray-900 mb-4">
+            Quick Actions
+          </h2>
+          <div className="flex flex-row flex-nowrap gap-4 overflow-x-auto">
+            <NavLink
+              to="/admin/products/add"
+              className="flex items-center p-4 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors group"
+            >
+              <Plus className="w-5 h-5 text-blue-600 mr-3" />
+              <span className="text-blue-800 font-medium">Add New Product</span>
+            </NavLink>
+
+            <NavLink
+              to="/admin/products/add/bulk"
+              className="flex items-center p-4 bg-green-50 rounded-lg hover:bg-green-100 transition-colors group"
+            >
+              <Upload className="w-5 h-5 text-green-600 mr-3" />
+              <span className="text-green-800 font-medium">Bulk Import</span>
+            </NavLink>
+
+            <button className="flex items-center p-4 bg-orange-50 rounded-lg hover:bg-orange-100 transition-colors group">
+              <AlertTriangle className="w-5 h-5 text-orange-600 mr-3" />
+              <span className="text-orange-800 font-medium">
+                Low Stock Alert
+              </span>
+            </button>
+
+            <button className="flex items-center p-4 bg-purple-50 rounded-lg hover:bg-purple-100 transition-colors group">
+              <Download className="w-5 h-5 text-purple-600 mr-3" />
+              <span className="text-purple-800 font-medium">Export Data</span>
+            </button>
+          </div>
         </div>
 
         {/* Search Bar */}
@@ -342,49 +377,13 @@ const AdminProductsManagement = () => {
           {/* Show "View All" message if there are more products */}
           {products.length === 5 && (
             <div className="mt-4 text-center">
-              <NavLink to="/admin/products/all">
+              <NavLink to="/admin/products/list">
                 <button className="text-blue-600 hover:text-blue-800 text-sm font-medium">
                   Showing 5 most recent products • View all products →
                 </button>
               </NavLink>
             </div>
           )}
-        </div>
-
-        {/* Quick Actions */}
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">
-            Quick Actions
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <button className="flex items-center p-4 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors group">
-              <NavLink to="/admin/products/add">
-                <Plus className="w-5 h-5 text-blue-600 mr-3" />
-                <span className="text-blue-800 font-medium">
-                  Add New Product
-                </span>{" "}
-              </NavLink>
-            </button>
-
-            <button className="flex items-center p-4 bg-green-50 rounded-lg hover:bg-green-100 transition-colors group">
-              <NavLink to="/admin/products/add/bulk">
-                <Upload className="w-5 h-5 text-green-600 mr-3" />
-                <span className="text-green-800 font-medium">Bulk Import</span>
-              </NavLink>
-            </button>
-
-            <button className="flex items-center p-4 bg-orange-50 rounded-lg hover:bg-orange-100 transition-colors group">
-              <AlertTriangle className="w-5 h-5 text-orange-600 mr-3" />
-              <span className="text-orange-800 font-medium">
-                Low Stock Alert
-              </span>
-            </button>
-
-            <button className="flex items-center p-4 bg-purple-50 rounded-lg hover:bg-purple-100 transition-colors group">
-              <Download className="w-5 h-5 text-purple-600 mr-3" />
-              <span className="text-purple-800 font-medium">Export Data</span>
-            </button>
-          </div>
         </div>
       </div>
     </AdminLayout>

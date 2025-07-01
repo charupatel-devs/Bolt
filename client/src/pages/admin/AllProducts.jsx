@@ -153,17 +153,6 @@ const AllProducts = () => {
 
   const paginatedProducts = filteredProducts;
 
-  // Loading and error states
-  if (isFetching) {
-    return (
-      <AdminLayout>
-        <div className="flex justify-center items-center h-64">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
-        </div>
-      </AdminLayout>
-    );
-  }
-
   if (error) {
     return (
       <AdminLayout>
@@ -449,236 +438,236 @@ const AllProducts = () => {
             </div>
           </div>
         )}
+        {!isFetching ? (
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100">
+            {/* Results Info and Sorting */}
+            <div className="p-6 border-b border-gray-200">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-4">
+                  <span className="text-sm text-gray-600">
+                    Showing {(pagination.currentPage - 1) * itemsPerPage + 1} -{" "}
+                    {Math.min(
+                      pagination.currentPage * itemsPerPage,
+                      stats.totalProducts
+                    )}{" "}
+                    of {stats.totalProducts} results
+                  </span>
+                  <select
+                    value={itemsPerPage}
+                    onChange={(e) => {
+                      const newLimit = Number(e.target.value);
+                      setItemsPerPage(newLimit);
+                      // Reset to first page when changing page size
+                      // dispatch(
+                      //   SetProductFilters({
+                      //     limit: newLimit,
+                      //     currentPage: 1, // Reset to first page
+                      //   })
+                      // );
+                    }}
+                    className="px-3 py-1 border border-gray-200 rounded text-sm"
+                  >
+                    <option value={5}>5 per page</option>
+                    <option value={10}>10 per page</option>
+                    <option value={25}>25 per page</option>
+                  </select>
+                </div>
 
-        {/* Products Display */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100">
-          {/* Results Info and Sorting */}
-          <div className="p-6 border-b border-gray-200">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-4">
-                <span className="text-sm text-gray-600">
-                  Showing {(pagination.currentPage - 1) * itemsPerPage + 1} -{" "}
-                  {Math.min(
-                    pagination.currentPage * itemsPerPage,
-                    stats.totalProducts
-                  )}{" "}
-                  of {stats.totalProducts} results
-                </span>
-                <select
-                  value={itemsPerPage}
-                  onChange={(e) => {
-                    const newLimit = Number(e.target.value);
-                    setItemsPerPage(newLimit);
-                    // Reset to first page when changing page size
-                    // dispatch(
-                    //   SetProductFilters({
-                    //     limit: newLimit,
-                    //     currentPage: 1, // Reset to first page
-                    //   })
-                    // );
-                  }}
-                  className="px-3 py-1 border border-gray-200 rounded text-sm"
-                >
-                  <option value={5}>5 per page</option>
-                  <option value={10}>10 per page</option>
-                  <option value={25}>25 per page</option>
-                </select>
-              </div>
-
-              <div className="flex items-center space-x-2">
-                <span className="text-sm text-gray-600">Sort by:</span>
-                <select
-                  value={sortBy}
-                  onChange={(e) => setSortBy(e.target.value)}
-                  className="px-3 py-1 border border-gray-200 rounded text-sm"
-                >
-                  <option value="name">Name</option>
-                  <option value="sku">SKU</option>
-                  <option value="price">Price</option>
-                  <option value="stock">Stock</option>
-                  <option value="createdAt">Date Added</option>
-                </select>
-                <button
-                  onClick={() =>
-                    setSortOrder(sortOrder === "asc" ? "desc" : "asc")
-                  }
-                  className="p-1 text-gray-600 hover:text-gray-800"
-                >
-                  {sortOrder === "asc" ? (
-                    <ChevronUp className="w-4 h-4" />
-                  ) : (
-                    <ChevronDown className="w-4 h-4" />
-                  )}
-                </button>
+                <div className="flex items-center space-x-2">
+                  <span className="text-sm text-gray-600">Sort by:</span>
+                  <select
+                    value={sortBy}
+                    onChange={(e) => setSortBy(e.target.value)}
+                    className="px-3 py-1 border border-gray-200 rounded text-sm"
+                  >
+                    <option value="name">Name</option>
+                    <option value="sku">SKU</option>
+                    <option value="price">Price</option>
+                    <option value="stock">Stock</option>
+                    <option value="createdAt">Date Added</option>
+                  </select>
+                  <button
+                    onClick={() =>
+                      setSortOrder(sortOrder === "asc" ? "desc" : "asc")
+                    }
+                    className="p-1 text-gray-600 hover:text-gray-800"
+                  >
+                    {sortOrder === "asc" ? (
+                      <ChevronUp className="w-4 h-4" />
+                    ) : (
+                      <ChevronDown className="w-4 h-4" />
+                    )}
+                  </button>
+                </div>
               </div>
             </div>
-          </div>
 
-          {viewMode === "table" ? (
-            /* Table View */
-            <div className="overflow-x-auto">
-              <table className="min-w-full">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-6 py-3 text-left">
-                      <input
-                        type="checkbox"
-                        checked={
-                          selectedProducts.length ===
-                            paginatedProducts.length &&
-                          paginatedProducts.length > 0
-                        }
-                        onChange={() => {
-                          if (
-                            selectedProducts.length === paginatedProducts.length
-                          ) {
-                            setSelectedProducts([]);
-                          } else {
-                            setSelectedProducts(
-                              paginatedProducts.map((p) => p.id)
-                            );
+            {viewMode === "table" ? (
+              /* Table View */
+              <div className="overflow-x-auto">
+                <table className="min-w-full">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-6 py-3 text-left">
+                        <input
+                          type="checkbox"
+                          checked={
+                            selectedProducts.length ===
+                              paginatedProducts.length &&
+                            paginatedProducts.length > 0
                           }
-                        }}
-                        className="rounded"
-                      />
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      <button
-                        onClick={() => handleSort("name")}
-                        className="flex items-center space-x-1 hover:text-gray-700"
-                      >
-                        <span>Product</span>
-                        <ArrowUpDown className="w-3 h-3" />
-                      </button>
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      <button
-                        onClick={() => handleSort("sku")}
-                        className="flex items-center space-x-1 hover:text-gray-700"
-                      >
-                        <span>SKU</span>
-                        <ArrowUpDown className="w-3 h-3" />
-                      </button>
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Category
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      <button
-                        onClick={() => handleSort("price")}
-                        className="flex items-center space-x-1 hover:text-gray-700"
-                      >
-                        <span>Price</span>
-                        <ArrowUpDown className="w-3 h-3" />
-                      </button>
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      <button
-                        onClick={() => handleSort("stock")}
-                        className="flex items-center space-x-1 hover:text-gray-700"
-                      >
-                        <span>Stock</span>
-                        <ArrowUpDown className="w-3 h-3" />
-                      </button>
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Status
-                    </th>
-                    {/* <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          onChange={() => {
+                            if (
+                              selectedProducts.length ===
+                              paginatedProducts.length
+                            ) {
+                              setSelectedProducts([]);
+                            } else {
+                              setSelectedProducts(
+                                paginatedProducts.map((p) => p.id)
+                              );
+                            }
+                          }}
+                          className="rounded"
+                        />
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        <button
+                          onClick={() => handleSort("name")}
+                          className="flex items-center space-x-1 hover:text-gray-700"
+                        >
+                          <span>Product</span>
+                          <ArrowUpDown className="w-3 h-3" />
+                        </button>
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        <button
+                          onClick={() => handleSort("sku")}
+                          className="flex items-center space-x-1 hover:text-gray-700"
+                        >
+                          <span>SKU</span>
+                          <ArrowUpDown className="w-3 h-3" />
+                        </button>
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Category
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        <button
+                          onClick={() => handleSort("price")}
+                          className="flex items-center space-x-1 hover:text-gray-700"
+                        >
+                          <span>Price</span>
+                          <ArrowUpDown className="w-3 h-3" />
+                        </button>
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        <button
+                          onClick={() => handleSort("stock")}
+                          className="flex items-center space-x-1 hover:text-gray-700"
+                        >
+                          <span>Stock</span>
+                          <ArrowUpDown className="w-3 h-3" />
+                        </button>
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Status
+                      </th>
+                      {/* <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Rating
                     </th> */}
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Actions
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {paginatedProducts.map((product) => {
-                    const status = getStockStatus(product.stock);
-                    return (
-                      <tr key={product.id} className="hover:bg-gray-50">
-                        <td className="px-6 py-4">
-                          <input
-                            type="checkbox"
-                            checked={selectedProducts.includes(product.id)}
-                            onChange={() => {
-                              setSelectedProducts((prev) =>
-                                prev.includes(product.id)
-                                  ? prev.filter((id) => id !== product.id)
-                                  : [...prev, product.id]
-                              );
-                            }}
-                            className="rounded"
-                          />
-                        </td>
-                        <td className="px-6 py-4">
-                          <div className="flex items-center">
-                            {product.primaryImage ? (
-                              <img
-                                src={product.primaryImage}
-                                alt={product.name}
-                                className="w-12 h-12 rounded-lg object-cover mr-4"
-                              />
-                            ) : (
-                              <div className="bg-gray-200 border-2 border-dashed rounded-xl w-12 h-12 mr-4" />
-                            )}
-                            <div>
-                              <div className="text-sm font-medium text-gray-900 mb-1">
-                                {product.name}
-                                {product.isNewArrival && (
-                                  <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                                    New
-                                  </span>
-                                )}
-                                {product.isOnSale && (
-                                  <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                                    Sale
-                                  </span>
-                                )}
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Actions
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {paginatedProducts.map((product) => {
+                      const status = getStockStatus(product.stock);
+                      return (
+                        <tr key={product.id} className="hover:bg-gray-50">
+                          <td className="px-6 py-4">
+                            <input
+                              type="checkbox"
+                              checked={selectedProducts.includes(product.id)}
+                              onChange={() => {
+                                setSelectedProducts((prev) =>
+                                  prev.includes(product.id)
+                                    ? prev.filter((id) => id !== product.id)
+                                    : [...prev, product.id]
+                                );
+                              }}
+                              className="rounded"
+                            />
+                          </td>
+                          <td className="px-6 py-4">
+                            <div className="flex items-center">
+                              {product.primaryImage ? (
+                                <img
+                                  src={product.primaryImage}
+                                  alt={product.name}
+                                  className="w-12 h-12 rounded-lg object-cover mr-4"
+                                />
+                              ) : (
+                                <div className="bg-gray-200 border-2 border-dashed rounded-xl w-12 h-12 mr-4" />
+                              )}
+                              <div>
+                                <div className="text-sm font-medium text-gray-900 mb-1">
+                                  {product.name}
+                                  {product.isNewArrival && (
+                                    <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                      New
+                                    </span>
+                                  )}
+                                  {product.isOnSale && (
+                                    <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                                      Sale
+                                    </span>
+                                  )}
+                                </div>
                               </div>
                             </div>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 text-sm text-gray-900">
-                          {product.sku}
-                        </td>
-                        <td className="px-6 py-4">
-                          <div className="text-sm text-gray-900">
-                            {product.category?.name}
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 text-sm text-gray-900 font-medium">
-                          ${product.price}
-                        </td>
-                        <td className="px-6 py-4">
-                          <span
-                            className={`text-sm font-medium ${
-                              product.stock === 0
-                                ? "text-red-600"
-                                : product.stock <= 10
-                                ? "text-yellow-600"
-                                : "text-green-600"
-                            }`}
-                          >
-                            {product.stock}
-                          </span>
-                          {/* <div className="text-xs text-gray-500">
+                          </td>
+                          <td className="px-6 py-4 text-sm text-gray-900">
+                            {product.sku}
+                          </td>
+                          <td className="px-6 py-4">
+                            <div className="text-sm text-gray-900">
+                              {product.category?.name}
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 text-sm text-gray-900 font-medium">
+                            ${product.price}
+                          </td>
+                          <td className="px-6 py-4">
+                            <span
+                              className={`text-sm font-medium ${
+                                product.stock === 0
+                                  ? "text-red-600"
+                                  : product.stock <= 10
+                                  ? "text-yellow-600"
+                                  : "text-green-600"
+                              }`}
+                            >
+                              {product.stock}
+                            </span>
+                            {/* <div className="text-xs text-gray-500">
                             Min: {product.minOrderQuantity}
                           </div> */}
-                        </td>
-                        <td className="px-6 py-4">
-                          <span
-                            className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(
-                              status
-                            )}`}
-                          >
-                            {getStatusIcon(status)}
-                            <span className="ml-1">
-                              {getStatusText(status)}
+                          </td>
+                          <td className="px-6 py-4">
+                            <span
+                              className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(
+                                status
+                              )}`}
+                            >
+                              {getStatusIcon(status)}
+                              <span className="ml-1">
+                                {getStatusText(status)}
+                              </span>
                             </span>
-                          </span>
-                        </td>
-                        {/* <td className="px-6 py-4">
+                          </td>
+                          {/* <td className="px-6 py-4">
                           <div className="flex items-center space-x-1">
                             {renderStars(product.averageRating || 0)}
                             <span className="text-sm text-gray-600 ml-2">
@@ -687,8 +676,123 @@ const AllProducts = () => {
                             </span>
                           </div>
                         </td> */}
-                        <td className="px-6 py-4">
-                          <div className="flex items-center space-x-2">
+                          <td className="px-6 py-4">
+                            <div className="flex items-center space-x-2">
+                              <NavLink
+                                to={`/admin/products/edit/${product.id}`}
+                                className="text-blue-600 hover:text-blue-800 text-sm font-medium mr-3"
+                              >
+                                Edit
+                              </NavLink>
+                              <button
+                                onClick={() => handleDeleteProduct(product.id)}
+                                className="text-red-600 hover:text-red-800 text-sm font-medium"
+                              >
+                                Delete
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              /* Grid View */
+              <div className="p-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                  {paginatedProducts.map((product) => {
+                    const status = getStockStatus(product.stock);
+                    return (
+                      <div
+                        key={product.id}
+                        className="border border-gray-200 rounded-lg overflow-hidden hover:shadow-md transition-shadow"
+                      >
+                        <div className="relative">
+                          {product.primaryImage ? (
+                            <img
+                              src={product.primaryImage}
+                              alt={product.name}
+                              className="w-full h-48 object-cover"
+                            />
+                          ) : (
+                            <div className="bg-gray-200 border-2 border-dashed w-full h-48" />
+                          )}
+                          <div className="absolute top-2 left-2">
+                            <input
+                              type="checkbox"
+                              checked={selectedProducts.includes(product.id)}
+                              onChange={() => {
+                                setSelectedProducts((prev) =>
+                                  prev.includes(product.id)
+                                    ? prev.filter((id) => id !== product.id)
+                                    : [...prev, product.id]
+                                );
+                              }}
+                              className="rounded"
+                            />
+                          </div>
+                          <div className="absolute top-2 right-2 flex flex-col space-y-1">
+                            {product.isNewArrival && (
+                              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                New
+                              </span>
+                            )}
+                            {product.isOnSale && (
+                              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                                Sale
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        <div className="p-4">
+                          <div className="mb-2">
+                            <h3 className="text-sm font-medium text-gray-900 line-clamp-2 mb-1">
+                              {product.name}
+                            </h3>
+                            <p className="text-xs text-gray-500">
+                              {product.sku}
+                            </p>
+                          </div>
+                          {/* <div className="mb-2">
+                          <div className="flex items-center space-x-1 mb-1">
+                            {renderStars(product.averageRating || 0)}
+                          </div>
+                          <p className="text-xs text-gray-600">
+                            {product.averageRating?.toFixed(1) || 0} (
+                            {product.numReviews || 0} reviews)
+                          </p>
+                        </div> */}
+                          <div className="mb-3">
+                            <div className="flex items-center justify-between mb-1">
+                              <span className="text-lg font-bold text-gray-900">
+                                ${product.price}
+                              </span>
+                              <span
+                                className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${getStatusColor(
+                                  status
+                                )}`}
+                              >
+                                {getStatusText(status)}
+                              </span>
+                            </div>
+                            <p className="text-xs text-gray-600">
+                              Stock:{" "}
+                              <span
+                                className={`font-medium ${
+                                  product.stock === 0
+                                    ? "text-red-600"
+                                    : product.stock <= 10
+                                    ? "text-yellow-600"
+                                    : "text-green-600"
+                                }`}
+                              >
+                                {product.stock}
+                              </span>
+                            </p>
+                          </div>
+                          <div className="flex justify-between items-center">
                             <NavLink
                               to={`/admin/products/edit/${product.id}`}
                               className="text-blue-600 hover:text-blue-800 text-sm font-medium mr-3"
@@ -701,120 +805,7 @@ const AllProducts = () => {
                             >
                               Delete
                             </button>
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          ) : (
-            /* Grid View */
-            <div className="p-6">
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                {paginatedProducts.map((product) => {
-                  const status = getStockStatus(product.stock);
-                  return (
-                    <div
-                      key={product.id}
-                      className="border border-gray-200 rounded-lg overflow-hidden hover:shadow-md transition-shadow"
-                    >
-                      <div className="relative">
-                        {product.primaryImage ? (
-                          <img
-                            src={product.primaryImage}
-                            alt={product.name}
-                            className="w-full h-48 object-cover"
-                          />
-                        ) : (
-                          <div className="bg-gray-200 border-2 border-dashed w-full h-48" />
-                        )}
-                        <div className="absolute top-2 left-2">
-                          <input
-                            type="checkbox"
-                            checked={selectedProducts.includes(product.id)}
-                            onChange={() => {
-                              setSelectedProducts((prev) =>
-                                prev.includes(product.id)
-                                  ? prev.filter((id) => id !== product.id)
-                                  : [...prev, product.id]
-                              );
-                            }}
-                            className="rounded"
-                          />
-                        </div>
-                        <div className="absolute top-2 right-2 flex flex-col space-y-1">
-                          {product.isNewArrival && (
-                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                              New
-                            </span>
-                          )}
-                          {product.isOnSale && (
-                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                              Sale
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                      <div className="p-4">
-                        <div className="mb-2">
-                          <h3 className="text-sm font-medium text-gray-900 line-clamp-2 mb-1">
-                            {product.name}
-                          </h3>
-                          <p className="text-xs text-gray-500">{product.sku}</p>
-                        </div>
-                        {/* <div className="mb-2">
-                          <div className="flex items-center space-x-1 mb-1">
-                            {renderStars(product.averageRating || 0)}
-                          </div>
-                          <p className="text-xs text-gray-600">
-                            {product.averageRating?.toFixed(1) || 0} (
-                            {product.numReviews || 0} reviews)
-                          </p>
-                        </div> */}
-                        <div className="mb-3">
-                          <div className="flex items-center justify-between mb-1">
-                            <span className="text-lg font-bold text-gray-900">
-                              ${product.price}
-                            </span>
-                            <span
-                              className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${getStatusColor(
-                                status
-                              )}`}
-                            >
-                              {getStatusText(status)}
-                            </span>
-                          </div>
-                          <p className="text-xs text-gray-600">
-                            Stock:{" "}
-                            <span
-                              className={`font-medium ${
-                                product.stock === 0
-                                  ? "text-red-600"
-                                  : product.stock <= 10
-                                  ? "text-yellow-600"
-                                  : "text-green-600"
-                              }`}
-                            >
-                              {product.stock}
-                            </span>
-                          </p>
-                        </div>
-                        <div className="flex justify-between items-center">
-                          <NavLink
-                            to={`/admin/products/edit/${product.id}`}
-                            className="text-blue-600 hover:text-blue-800 text-sm font-medium mr-3"
-                          >
-                            Edit
-                          </NavLink>
-                          <button
-                            onClick={() => handleDeleteProduct(product.id)}
-                            className="text-red-600 hover:text-red-800 text-sm font-medium"
-                          >
-                            Delete
-                          </button>
-                          {/* <span className="text-xs text-gray-500">
+                            {/* <span className="text-xs text-gray-500">
                             {product.category?.name}
                           </span>
                           <div className="flex space-x-1">
@@ -836,66 +827,73 @@ const AllProducts = () => {
                               <Trash2 className="w-3 h-3" />
                             </button>
                           </div> */}
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-
-          {/* Pagination */}
-          {pagination.totalPages > 1 && (
-            <div className="px-6 py-4 border-t border-gray-200">
-              <div className="flex items-center justify-between">
-                <div className="text-sm text-gray-600">
-                  Page {pagination.currentPage} of {pagination.totalPages}
+                    );
+                  })}
                 </div>
+              </div>
+            )}
 
-                <div className="flex items-center space-x-2">
-                  <button
-                    onClick={() => setPageNo(pagination.currentPage - 1)}
-                    disabled={pagination.currentPage === 1}
-                    className="px-3 py-2 text-sm border border-gray-200 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    Previous
-                  </button>
-
-                  <div className="flex space-x-1">
-                    {Array.from(
-                      { length: Math.min(5, pagination.totalPages) },
-                      (_, i) => {
-                        const page = i + 1;
-                        return (
-                          <button
-                            key={page}
-                            onClick={() => setPageNo(page)}
-                            className={`w-8 h-8 text-sm rounded-lg ${
-                              pagination.currentPage === page
-                                ? "bg-blue-600 text-white"
-                                : "text-gray-600 hover:bg-gray-100"
-                            }`}
-                          >
-                            {page}
-                          </button>
-                        );
-                      }
-                    )}
+            {/* Pagination */}
+            {pagination.totalPages > 1 && (
+              <div className="px-6 py-4 border-t border-gray-200">
+                <div className="flex items-center justify-between">
+                  <div className="text-sm text-gray-600">
+                    Page {pagination.currentPage} of {pagination.totalPages}
                   </div>
 
-                  <button
-                    onClick={() => setPageNo(pagination.currentPage + 1)}
-                    disabled={pagination.currentPage === pagination.totalPages}
-                    className="px-3 py-2 text-sm border border-gray-200 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    Next
-                  </button>
+                  <div className="flex items-center space-x-2">
+                    <button
+                      onClick={() => setPageNo(pagination.currentPage - 1)}
+                      disabled={pagination.currentPage === 1}
+                      className="px-3 py-2 text-sm border border-gray-200 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      Previous
+                    </button>
+
+                    <div className="flex space-x-1">
+                      {Array.from(
+                        { length: Math.min(5, pagination.totalPages) },
+                        (_, i) => {
+                          const page = i + 1;
+                          return (
+                            <button
+                              key={page}
+                              onClick={() => setPageNo(page)}
+                              className={`w-8 h-8 text-sm rounded-lg ${
+                                pagination.currentPage === page
+                                  ? "bg-blue-600 text-white"
+                                  : "text-gray-600 hover:bg-gray-100"
+                              }`}
+                            >
+                              {page}
+                            </button>
+                          );
+                        }
+                      )}
+                    </div>
+
+                    <button
+                      onClick={() => setPageNo(pagination.currentPage + 1)}
+                      disabled={
+                        pagination.currentPage === pagination.totalPages
+                      }
+                      className="px-3 py-2 text-sm border border-gray-200 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      Next
+                    </button>
+                  </div>
                 </div>
               </div>
-            </div>
-          )}
-        </div>
+            )}
+          </div>
+        ) : (
+          <div className="flex justify-center items-center h-64">
+            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+          </div>
+        )}
       </div>
     </AdminLayout>
   );

@@ -47,6 +47,7 @@ const AdminCategories = () => {
 
   const [searchTerm, setSearchTerm] = useState("");
   const [showAddModal, setShowAddModal] = useState(false);
+  const [showAttributeModal, setShowAttributeModal] = useState(false);
   const [editingCategory, setEditingCategory] = useState(null);
   const [showAttributesSection, setShowAttributesSection] = useState(false);
 
@@ -274,6 +275,13 @@ const AdminCategories = () => {
         tag.toLowerCase().includes(searchTerm.toLowerCase())
       )
   );
+  const [viewingAttributes, setViewingAttributes] = useState([]);
+
+  const handleCategoryClick = (category) => {
+    setViewingAttributes(category.attributes || []);
+    setShowAttributesSection(true); // Ensure attributes section is expanded
+    setShowAttributeModal(true);
+  };
 
   return (
     <AdminLayout className="max-w-7xl mx-auto p-6 space-y-6">
@@ -315,7 +323,7 @@ const AdminCategories = () => {
           </div>
         </div>
 
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 ">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600">
@@ -345,7 +353,7 @@ const AdminCategories = () => {
       </div>
 
       {/* Categories Table */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100">
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 mt-6">
         <div className="p-6 border-b border-gray-100">
           <div className="flex items-center justify-between">
             <h2 className="text-lg font-semibold text-gray-900">
@@ -396,15 +404,17 @@ const AdminCategories = () => {
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
                 {filteredCategories.map((category) => (
-                  <tr key={category._id} className="hover:bg-gray-50">
+                  <tr
+                    key={category._id}
+                    className="hover:bg-gray-50cursor-pointer"
+                    onClick={() => handleCategoryClick(category)}
+                  >
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div>
                         <div className="text-sm font-medium text-gray-900">
                           {category.name}
                         </div>
-                        <div className="text-sm text-gray-500">
-                          /{category.slug}
-                        </div>
+
                         {category.tags && category.tags.length > 0 && (
                           <div className="flex flex-wrap gap-1 mt-1">
                             {category.tags.slice(0, 2).map((tag, index) => (
@@ -917,6 +927,70 @@ const AdminCategories = () => {
                   ? "Update"
                   : "Create"}{" "}
                 Category
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {showAttributeModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+            {/* Modal Header */}
+            <div className="p-6 border-b border-gray-100">
+              <h2 className="text-xl font-bold text-gray-900">
+                Category Attributes
+              </h2>
+            </div>
+
+            {/* Attributes Display */}
+            <div className="p-6 space-y-4">
+              {viewingAttributes.length > 0 ? (
+                viewingAttributes.map((attr, index) => (
+                  <div
+                    key={index}
+                    className="border border-gray-200 rounded-lg p-4"
+                  >
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <h3 className="font-bold text-lg">{attr.label}</h3>
+                        <p className="text-sm text-gray-600">
+                          Type: {attr.type} | Required:{" "}
+                          {attr.isRequired ? "Yes" : "No"}
+                        </p>
+                      </div>
+                    </div>
+
+                    {attr.options && attr.options.length > 0 && (
+                      <div className="mt-3">
+                        <h4 className="font-medium text-gray-700">Options:</h4>
+                        <div className="flex flex-wrap gap-2 mt-2">
+                          {attr.options.map((option, idx) => (
+                            <span
+                              key={idx}
+                              className="px-3 py-1 bg-gray-100 rounded-full text-sm"
+                            >
+                              {option}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ))
+              ) : (
+                <p className="text-center py-4 text-gray-500">
+                  No attributes defined for this category
+                </p>
+              )}
+            </div>
+
+            {/* Modal Footer */}
+            <div className="p-6 border-t border-gray-100 flex justify-end">
+              <button
+                onClick={() => setShowAttributeModal(false)}
+                className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200"
+              >
+                Close
               </button>
             </div>
           </div>

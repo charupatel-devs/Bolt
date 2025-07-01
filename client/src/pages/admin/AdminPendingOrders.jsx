@@ -14,128 +14,31 @@ import {
   Search,
   User,
 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
 import AdminLayout from "../../components/admin/layout/AdminLayout";
+import { getOrdersByStatus } from "../../services_hooks/admin/adminOrderService";
 
 const AdminPendingOrders = () => {
+  const dispatch = useDispatch();
+  const { orders, isFetching, error } = useSelector((state) => state.orders);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedOrders, setSelectedOrders] = useState([]);
   const [priorityFilter, setPriorityFilter] = useState("all");
   const [ageFilter, setAgeFilter] = useState("all");
 
-  // Sample pending orders data
-  const pendingOrders = [
-    {
-      id: "#ORD-2024-001",
-      customer: {
-        name: "John Smith",
-        email: "john.smith@email.com",
-        phone: "+1 (555) 123-4567",
-      },
-      items: 3,
-      total: 299.97,
-      paymentStatus: "paid",
-      paymentMethod: "Credit Card",
-      date: "2024-06-18T10:30:00",
-      urgency: "high",
-      estimatedProcessing: "2-4 hours",
-      shippingAddress: "123 Main St, New York, NY 10001",
-      shippingMethod: "Standard Shipping",
-      notes: "Customer requested expedited processing",
-      products: [
-        { name: "Arduino Uno R3", quantity: 1, price: 25.99 },
-        { name: "Breadboard Kit", quantity: 2, price: 12.99 },
-        { name: "Jumper Wires Set", quantity: 1, price: 8.99 },
-      ],
-    },
-    {
-      id: "#ORD-2024-007",
-      customer: {
-        name: "Sarah Mitchell",
-        email: "sarah.m@email.com",
-        phone: "+1 (555) 234-5678",
-      },
-      items: 1,
-      total: 89.99,
-      paymentStatus: "paid",
-      paymentMethod: "PayPal",
-      date: "2024-06-18T09:15:00",
-      urgency: "medium",
-      estimatedProcessing: "1-2 hours",
-      shippingAddress: "456 Oak Avenue, Los Angeles, CA 90210",
-      shippingMethod: "Express Shipping",
-      notes: "",
-      products: [{ name: "Raspberry Pi 4 8GB", quantity: 1, price: 89.99 }],
-    },
-    {
-      id: "#ORD-2024-008",
-      customer: {
-        name: "David Chen",
-        email: "d.chen@company.com",
-        phone: "+1 (555) 345-6789",
-      },
-      items: 5,
-      total: 456.75,
-      paymentStatus: "pending",
-      paymentMethod: "Bank Transfer",
-      date: "2024-06-18T08:45:00",
-      urgency: "low",
-      estimatedProcessing: "4-6 hours",
-      shippingAddress: "789 Tech Park Dr, San Francisco, CA 94105",
-      shippingMethod: "Standard Shipping",
-      notes: "Bulk order for development team",
-      products: [
-        { name: "ESP32 Development Board", quantity: 3, price: 45.99 },
-        { name: "Sensor Kit Pro", quantity: 1, price: 125.99 },
-        { name: "LCD Display 16x2", quantity: 2, price: 19.99 },
-        { name: "Power Supply Module", quantity: 1, price: 24.99 },
-      ],
-    },
-    {
-      id: "#ORD-2024-009",
-      customer: {
-        name: "Lisa Johnson",
-        email: "lisa.j@email.com",
-        phone: "+1 (555) 456-7890",
-      },
-      items: 2,
-      total: 156.5,
-      paymentStatus: "paid",
-      paymentMethod: "Credit Card",
-      date: "2024-06-17T16:20:00",
-      urgency: "high",
-      estimatedProcessing: "1 hour",
-      shippingAddress: "321 Pine Street, Seattle, WA 98101",
-      shippingMethod: "Overnight Shipping",
-      notes: "Express processing requested",
-      products: [
-        { name: "STM32 Nucleo Board", quantity: 1, price: 35.5 },
-        { name: "Development Shield", quantity: 1, price: 67.99 },
-        { name: "USB Cable Set", quantity: 1, price: 12.99 },
-      ],
-    },
-    {
-      id: "#ORD-2024-010",
-      customer: {
-        name: "Robert Williams",
-        email: "r.williams@email.com",
-        phone: "+1 (555) 567-8901",
-      },
-      items: 1,
-      total: 25.99,
-      paymentStatus: "paid",
-      paymentMethod: "Apple Pay",
-      date: "2024-06-17T14:30:00",
-      urgency: "medium",
-      estimatedProcessing: "2-3 hours",
-      shippingAddress: "654 Desert Road, Phoenix, AZ 85001",
-      shippingMethod: "Standard Shipping",
-      notes: "",
-      products: [
-        { name: "Temperature Sensor DHT22", quantity: 1, price: 25.99 },
-      ],
-    },
-  ];
+  const fetchOrders = async () => {
+    try {
+      console.log("Fetching products with filters:");
+      await getOrdersByStatus("pending", dispatch);
+    } catch (err) {
+      console.error("Failed to fetch products:", err);
+    }
+  };
+
+  useEffect(() => {
+    fetchOrders();
+  }, [dispatch]);
 
   const getUrgencyColor = (urgency) => {
     switch (urgency) {
@@ -196,21 +99,20 @@ const AdminPendingOrders = () => {
     return diffHours;
   };
 
-  const filteredOrders = pendingOrders.filter((order) => {
+  // Updated data processing
+  const filteredOrders = orders.filter((order) => {
     const searchMatch =
-      order.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      order.customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      order.customer.email.toLowerCase().includes(searchTerm.toLowerCase());
+      order.orderNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      order.user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      order.user.email.toLowerCase().includes(searchTerm.toLowerCase());
 
-    const priorityMatch =
-      priorityFilter === "all" || order.urgency === priorityFilter;
-
+    // Priority filter removed (sample data doesn't have urgency)
     const ageMatch =
       ageFilter === "all" ||
-      (ageFilter === "new" && getOrderAge(order.date) < 2) ||
-      (ageFilter === "old" && getOrderAge(order.date) >= 24);
+      (ageFilter === "new" && order.orderAge < 2) ||
+      (ageFilter === "old" && order.orderAge >= 24);
 
-    return searchMatch && priorityMatch && ageMatch;
+    return searchMatch && ageMatch;
   });
 
   const handleSelectOrder = (orderId) => {
@@ -235,6 +137,45 @@ const AdminPendingOrders = () => {
     setSelectedOrders([]);
   };
 
+  const handleRefresh = () => {
+    dispatch(fetchOrdersByStatus("pending"));
+  };
+
+  if (isFetching) {
+    return (
+      <AdminLayout>
+        <div className="flex justify-center items-center h-96">
+          <div className="text-center">
+            <RefreshCw className="w-12 h-12 mx-auto text-blue-500 animate-spin" />
+            <p className="mt-4 text-lg font-medium text-gray-700">
+              Loading pending orders...
+            </p>
+          </div>
+        </div>
+      </AdminLayout>
+    );
+  }
+
+  if (error) {
+    return (
+      <AdminLayout>
+        <div className="bg-red-50 border border-red-200 rounded-xl p-8 text-center">
+          <AlertTriangle className="w-16 h-16 mx-auto text-red-500" />
+          <h3 className="mt-4 text-xl font-medium text-red-800">
+            Failed to load orders
+          </h3>
+          <p className="mt-2 text-red-600">{error}</p>
+          <button
+            onClick={handleRefresh}
+            className="mt-4 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+          >
+            Retry
+          </button>
+        </div>
+      </AdminLayout>
+    );
+  }
+
   return (
     <AdminLayout>
       <div className="space-y-6">
@@ -251,7 +192,10 @@ const AdminPendingOrders = () => {
           </div>
 
           <div className="flex space-x-3">
-            <button className="flex items-center px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors">
+            <button
+              onClick={handleRefresh}
+              className="flex items-center px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+            >
               <RefreshCw className="w-4 h-4 mr-2" />
               Refresh
             </button>
@@ -271,7 +215,7 @@ const AdminPendingOrders = () => {
                   Total Pending
                 </p>
                 <p className="text-2xl font-bold text-gray-900 mt-1">
-                  {pendingOrders.length}
+                  {orders.length}
                 </p>
               </div>
               <Clock className="w-8 h-8 text-yellow-600" />
@@ -285,7 +229,7 @@ const AdminPendingOrders = () => {
                   High Priority
                 </p>
                 <p className="text-2xl font-bold text-red-600 mt-1">
-                  {pendingOrders.filter((o) => o.urgency === "high").length}
+                  {orders.filter((o) => o.urgency === "high").length}
                 </p>
               </div>
               <AlertTriangle className="w-8 h-8 text-red-600" />
@@ -300,7 +244,7 @@ const AdminPendingOrders = () => {
                 </p>
                 <p className="text-2xl font-bold text-orange-600 mt-1">
                   {
-                    pendingOrders.filter((o) => o.paymentStatus === "pending")
+                    orders.filter((o) => o.paymentInfo.status === "pending")
                       .length
                   }
                 </p>
@@ -315,7 +259,7 @@ const AdminPendingOrders = () => {
                 <p className="text-sm font-medium text-gray-600">Total Value</p>
                 <p className="text-2xl font-bold text-green-600 mt-1">
                   {formatCurrency(
-                    pendingOrders.reduce((sum, order) => sum + order.total, 0)
+                    orders.reduce((sum, order) => sum + order.totalAmount, 0)
                   )}
                 </p>
               </div>
@@ -340,24 +284,13 @@ const AdminPendingOrders = () => {
               </div>
 
               <select
-                value={priorityFilter}
-                onChange={(e) => setPriorityFilter(e.target.value)}
-                className="px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              >
-                <option value="all">All Priority</option>
-                <option value="high">High Priority</option>
-                <option value="medium">Medium Priority</option>
-                <option value="low">Low Priority</option>
-              </select>
-
-              <select
                 value={ageFilter}
                 onChange={(e) => setAgeFilter(e.target.value)}
                 className="px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               >
                 <option value="all">All Orders</option>
-                <option value="new">New ( 2 hours)</option>
-                <option value="old">Old ( 24 hours)</option>
+                <option value="new">New (&lt; 2 hours)</option>
+                <option value="old">Old (&gt; 24 hours)</option>
               </select>
             </div>
 
@@ -381,51 +314,42 @@ const AdminPendingOrders = () => {
         {/* Orders List */}
         <div className="space-y-4">
           {filteredOrders.map((order) => (
-            <div
-              key={order.id}
-              className="bg-white rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow"
-            >
+            <div key={order._id} className="...">
               <div className="p-6">
                 {/* Order Header */}
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center space-x-4">
                     <input
                       type="checkbox"
-                      checked={selectedOrders.includes(order.id)}
-                      onChange={() => handleSelectOrder(order.id)}
+                      checked={selectedOrders.includes(order._id)}
+                      onChange={() => handleSelectOrder(order._id)}
                       className="rounded"
                     />
                     <div>
                       <div className="flex items-center space-x-3">
                         <h3 className="text-lg font-semibold text-blue-600">
-                          {order.id}
+                          {order.orderNumber}
                         </h3>
-                        <span
-                          className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${getUrgencyColor(
-                            order.urgency
-                          )}`}
-                        >
-                          {order.urgency} priority
-                        </span>
+                        {/* Removed priority badge */}
                         <span
                           className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getPaymentStatusColor(
-                            order.paymentStatus
+                            order.paymentInfo.status
                           )}`}
                         >
-                          {order.paymentStatus}
+                          {order.paymentInfo.status}
                         </span>
                       </div>
                       <p className="text-sm text-gray-600 mt-1">
-                        Ordered {formatDate(order.date)} • Est. processing:{" "}
-                        {order.estimatedProcessing}
+                        Ordered {formatDate(order.createdAt)}
                       </p>
                     </div>
                   </div>
 
                   <div className="flex items-center space-x-2">
                     <span className="text-xl font-bold text-gray-900">
-                      {formatCurrency(order.total)}
+                      {formatCurrency(order.totalAmount)}
                     </span>
+
                     <div className="flex space-x-1">
                       <button className="p-2 text-blue-600 hover:text-blue-800 hover:bg-blue-100 rounded-lg transition-colors">
                         <Eye className="w-4 h-4" />
@@ -450,13 +374,10 @@ const AdminPendingOrders = () => {
                     </h4>
                     <div className="space-y-2">
                       <p className="text-sm font-medium text-gray-900">
-                        {order.customer.name}
+                        {order.user.name}
                       </p>
                       <p className="text-sm text-gray-600">
-                        {order.customer.email}
-                      </p>
-                      <p className="text-sm text-gray-600">
-                        {order.customer.phone}
+                        {order.user.email}
                       </p>
                     </div>
                   </div>
@@ -469,10 +390,20 @@ const AdminPendingOrders = () => {
                     </h4>
                     <div className="space-y-2">
                       <p className="text-sm text-gray-900">
-                        {order.shippingMethod}
+                        {order.shippingAddress.name}
                       </p>
                       <p className="text-sm text-gray-600">
-                        {order.shippingAddress}
+                        {order.shippingAddress.addressLine1}
+                        {order.shippingAddress.addressLine2 &&
+                          `, ${order.shippingAddress.addressLine2}`}
+                      </p>
+                      <p className="text-sm text-gray-600">
+                        {order.shippingAddress.city},{" "}
+                        {order.shippingAddress.state}{" "}
+                        {order.shippingAddress.postalCode}
+                      </p>
+                      <p className="text-sm text-gray-600">
+                        {order.shippingAddress.country}
                       </p>
                     </div>
                   </div>
@@ -485,20 +416,20 @@ const AdminPendingOrders = () => {
                     </h4>
                     <div className="space-y-2">
                       <p className="text-sm text-gray-900">
-                        {order.paymentMethod}
+                        {order.paymentInfo.method.toUpperCase()}
                       </p>
                       <p
                         className={`text-sm font-medium ${
-                          order.paymentStatus === "paid"
+                          order.paymentInfo.status === "paid"
                             ? "text-green-600"
-                            : order.paymentStatus === "pending"
+                            : order.paymentInfo.status === "pending"
                             ? "text-yellow-600"
                             : "text-red-600"
                         }`}
                       >
-                        {order.paymentStatus === "paid"
+                        {order.paymentInfo.status === "paid"
                           ? "✓ Payment confirmed"
-                          : order.paymentStatus === "pending"
+                          : order.paymentInfo.status === "pending"
                           ? "⏳ Payment pending"
                           : "✗ Payment failed"}
                       </p>
@@ -509,25 +440,25 @@ const AdminPendingOrders = () => {
                 {/* Products */}
                 <div className="mt-6">
                   <h4 className="text-sm font-medium text-gray-700 mb-3">
-                    Order Items ({order.items})
+                    Order Items ({order.items.length})
                   </h4>
                   <div className="bg-gray-50 rounded-lg p-4">
                     <div className="space-y-2">
-                      {order.products.map((product, index) => (
+                      {order.items.map((item, index) => (
                         <div
                           key={index}
                           className="flex items-center justify-between"
                         >
                           <div className="flex items-center space-x-3">
                             <span className="text-sm text-gray-600">
-                              ×{product.quantity}
+                              ×{item.quantity}
                             </span>
                             <span className="text-sm font-medium text-gray-900">
-                              {product.name}
+                              {item.name}
                             </span>
                           </div>
                           <span className="text-sm font-medium text-gray-900">
-                            {formatCurrency(product.price * product.quantity)}
+                            {formatCurrency(item.price * item.quantity)}
                           </span>
                         </div>
                       ))}
@@ -536,23 +467,21 @@ const AdminPendingOrders = () => {
                 </div>
 
                 {/* Notes */}
-                {order.notes && (
+                {order.orderNotes && (
                   <div className="mt-4">
                     <h4 className="text-sm font-medium text-gray-700 mb-2">
                       Notes
                     </h4>
                     <p className="text-sm text-gray-600 bg-yellow-50 p-3 rounded-lg border border-yellow-200">
-                      {order.notes}
+                      {order.orderNotes}
                     </p>
                   </div>
                 )}
-
                 {/* Actions */}
                 <div className="mt-6 pt-4 border-t border-gray-200">
                   <div className="flex items-center justify-between">
                     <div className="text-sm text-gray-500">
-                      Age: {getOrderAge(order.date)} hours • Priority:{" "}
-                      {order.urgency}
+                      Age: {order.orderAge} hours
                     </div>
                     <div className="flex space-x-3">
                       <button className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors">
