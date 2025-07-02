@@ -25,8 +25,7 @@ import PaymentMethods from "../pages/admin/PaymentMethods";
 import ProcessingOrders from "../pages/admin/ProcessingOrders";
 import ProductPerformance from "../pages/admin/ProductPerformance";
 import PurchaseOrders from "../pages/admin/PurchaseOrders";
-import Refunds from "../pages/admin/Refunds";
-import Returns from "../pages/admin/Returns";
+import RefundedOrders from "../pages/admin/RefundedOrders";
 import SalesReports from "../pages/admin/SalesReports";
 import ShippedOrders from "../pages/admin/ShippedOrders";
 import ShippingMethods from "../pages/admin/ShippingMethods";
@@ -80,7 +79,7 @@ const AdminRoutes = () => {
         <Route path="/orders/processing" element={<ProcessingOrders />} />
         <Route path="/orders/shipped" element={<ShippedOrders />} />
         <Route path="/orders/delivered" element={<DeliveredOrders />} />
-        <Route path="/orders/returns" element={<Returns />} />
+        <Route path="/orders/returns" element={<RefundedOrders />} />
         {/* <Route path="/orders/:id" element={<AdminOrderDetails />} /> */}
 
         {/* 👥 CUSTOMERS ROUTES (Future) */}
@@ -108,7 +107,7 @@ const AdminRoutes = () => {
 
         {/* 💰 FINANCE ROUTES (Future) */}
         <Route path="/finance/payments" element={<PaymentMethods />} />
-        <Route path="/finance/refunds" element={<Refunds />} />
+        {/* <Route path="/finance/refunds" element={<Refunds />} /> */}
 
         {/* 📢 MARKETING ROUTES (Future) */}
         {/* <Route path="/marketing" element={<AdminMarketing />} />

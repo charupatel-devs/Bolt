@@ -1426,7 +1426,7 @@ exports.getOrdersByStatus = async (req, res) => {
     "processing",
     "shipped",
     "delivered",
-    "returns",
+    "refunded",
   ];
 
   if (!allowedStatuses.includes(status)) {
@@ -1437,6 +1437,76 @@ exports.getOrdersByStatus = async (req, res) => {
     const orders = await Order.find({ status }).populate("user", "name email"); // populates the user who created the order
 
     res.json(orders);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+// controllers/orderController.js
+
+exports.getOrderManagementData = async (req, res) => {
+  try {
+    // Get all recent orders (limit as needed, e.g., 20 most recent)
+    const recentOrders = await Order.find({})
+      .populate("user", "name email")
+      .sort({ createdAt: -1 })
+      .limit(20);
+
+    // Define all statuses you want to show on dashboard
+    const statuses = [
+      "pending",
+      "processing",
+      "shipped",
+      "delivered",
+      "refunded",
+    ];
+
+    // Compute stats for time filters (today, week, month)
+    const now = new Date();
+    const startOfToday = new Date(
+      now.getFullYear(),
+      now.getMonth(),
+      now.getDate()
+    );
+    const startOfWeek = new Date(now);
+    startOfWeek.setDate(now.getDate() - now.getDay());
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+
+    // Helper to get stats in a time range
+    const getStats = async (startDate) => {
+      const match = { createdAt: { $gte: startDate } };
+      const total = await Order.countDocuments(match);
+      const revenueAgg = await Order.aggregate([
+        { $match: { ...match } },
+        { $group: { _id: null, totalRevenue: { $sum: "$totalAmount" } } },
+      ]);
+      const revenue = revenueAgg.length > 0 ? revenueAgg[0].totalRevenue : 0;
+
+      // Status counts
+      const statusCounts = {};
+      for (const s of statuses) {
+        statusCounts[s] = await Order.countDocuments({ ...match, status: s });
+      }
+
+      return {
+        total,
+        revenue,
+        ...statusCounts,
+      };
+    };
+
+    // Gather stats for each time filter
+    const todayStats = await getStats(startOfToday);
+    const weekStats = await getStats(startOfWeek);
+    const monthStats = await getStats(startOfMonth);
+
+    res.json({
+      recentOrders,
+      stats: {
+        today: todayStats,
+        week: weekStats,
+        month: monthStats,
+      },
+    });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }

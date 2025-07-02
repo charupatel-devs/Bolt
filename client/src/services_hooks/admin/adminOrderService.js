@@ -39,7 +39,7 @@ const parseError = (error) => {
 export const getOrdersByStatus = async (status, dispatch) => {
   dispatch(fetchOrdersStart());
   try {
-    const { data } = await api.get(`/orders/admin/orders/${status}`);
+    const { data } = await api.get(`/orders/orders/${status}`);
     dispatch(fetchOrdersSuccess(data));
     return data;
   } catch (error) {
@@ -54,5 +54,16 @@ export const getOrdersByStatus = async (status, dispatch) => {
   }
 };
 
-// Additional admin order functions can be added below
-// (e.g., update order status, manage returns, etc.)
+export const fetchOrderStats = async (dispatch) => {
+  try {
+    const { data } = await api.get("/orders/management");
+    return data;
+  } catch (error) {
+    const errorMessage = parseError(error);
+    toast.error(`Failed to fetch order stats: ${errorMessage}`, {
+      id: "order-stats",
+      ...ErrorToastOptions,
+    });
+    throw error;
+  }
+};

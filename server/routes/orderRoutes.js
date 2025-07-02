@@ -20,6 +20,7 @@ const {
   calculateShipping,
   applyDiscount,
   getOrdersByStatus,
+  getOrderManagementData,
 } = require("../controllers/orderController");
 
 const {
@@ -84,6 +85,7 @@ router.post(
 
 // Get user's orders
 router.get("/my-orders", getUserOrders);
+router.get("/management", isAdmin, getOrderManagementData);
 
 // Get specific order details (only if user owns the order)
 router.get("/:id", canViewOrder, getOrderById);
@@ -123,7 +125,7 @@ router.post("/:id/verify-payment", canViewOrder, verifyPayment);
 
 // Get pending orders
 router.get(
-  "/admin/orders/:status",
+  "/orders/:status",
   isAdmin,
   logActivity("get_orders_by_status"),
   getOrdersByStatus
