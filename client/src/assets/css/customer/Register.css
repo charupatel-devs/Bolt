@@ -155,3 +155,8 @@
   align-items: center;
   gap: 8px;
 }
+.text-error {
+  color: #f87171;
+  margin-top: 0.25rem;
+  font-size: 0.9rem;
+}

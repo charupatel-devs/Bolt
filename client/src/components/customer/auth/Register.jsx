@@ -9,19 +9,39 @@ const Register = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [phone, setPhone] = useState(""); 
+  const [phone, setPhone] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Error states
+  const [passwordError, setPasswordError] = useState("");
+  const [phoneError, setPhoneError] = useState("");
 
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
+  const validatePhone = (num) => /^\d{10,}$/.test(num);
+
   const handleRegister = async (e) => {
     e.preventDefault();
     if (isSubmitting) return;
-    if (password !== confirmPassword) {
-      alert("Passwords do not match!");
+
+    // Password validation
+    if (password.length < 6) {
+      setPasswordError("Password must be at least 6 characters long.");
       return;
     }
+    if (password !== confirmPassword) {
+      setPasswordError("Passwords do not match!");
+      return;
+    }
+    setPasswordError("");
+
+    // Phone number validation
+    if (!validatePhone(phone)) {
+      setPhoneError("Phone number must be at least 10 digits.");
+      return;
+    }
+    setPhoneError("");
 
     setIsSubmitting(true);
     try {
@@ -43,6 +63,7 @@ const Register = () => {
             <h1 className="reg-logo">BollentElectric</h1>
           </Link>
         </div>
+
         <h2>Create Your Account</h2>
 
         <form className="reg-form" onSubmit={handleRegister}>
@@ -75,8 +96,12 @@ const Register = () => {
               placeholder="Create password"
               required
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              onChange={(e) => {
+                setPassword(e.target.value);
+                setPasswordError("");
+              }}
             />
+            {passwordError && <p className="text-error">{passwordError}</p>}
           </div>
 
           <div className="form-group">
@@ -86,7 +111,10 @@ const Register = () => {
               placeholder="Re-enter password"
               required
               value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
+              onChange={(e) => {
+                setConfirmPassword(e.target.value);
+                setPasswordError("");
+              }}
             />
           </div>
 
@@ -97,8 +125,12 @@ const Register = () => {
               placeholder="Enter phone number"
               required
               value={phone}
-              onChange={(e) => setPhone(e.target.value)}
+              onChange={(e) => {
+                setPhone(e.target.value.replace(/\D/, "")); // allow only digits
+                setPhoneError("");
+              }}
             />
+            {phoneError && <p className="text-error">{phoneError}</p>}
           </div>
 
           <div className="form-group checkbox-group">

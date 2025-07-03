@@ -1,91 +1,33 @@
 // client/src/services_hooks/customer/productService.js
+
 import api from "../api";
-import toast from "react-hot-toast";
-import {
-  ProductActionStart,
-  ProductActionSuccess,
-  ProductActionFailure,
-} from "../../store/customer/customerProductSlice";
 
-const ErrorToastOptions = {
-  duration: 4000,
-  style: {
-    background: "#f87171",
-    color: "#fff",
-  },
-};
+// Fetch categories
+export const getCategories = () =>
+  api.get("/categories").then(res => {
+    const data = Array.isArray(res.data)
+      ? res.data
+      : res.data.data || [];
+    return { data };
+  });
 
-// ✅ Get all customer products
-export const getCustomerProducts = async (dispatch, params = {}) => {
-  try {
-    dispatch(ProductActionStart());
+// Fetch products based on filters or category
+export const getProducts = (filters) => {
+  const { category, page = 1, limit = 12, sort } = filters;
+  const params = new URLSearchParams({ page, limit, sort });
+  if (filters.minPrice) params.append("minPrice", filters.minPrice);
+  if (filters.maxPrice) params.append("maxPrice", filters.maxPrice);
+  // add other optional filters...
 
-    const {
-      page = 1,
-      limit = 12,
-      search = "",
-      category = "",
-      sortBy = "createdAt",
-      sortOrder = "desc",
-    } = params;
+  const url = category
+    ? `/products/category/${category}?${params.toString()}`
+    : `/products?${params.toString()}`;
 
-    const queryParams = new URLSearchParams({
-      page: page.toString(),
-      limit: limit.toString(),
-      sortBy,
-      sortOrder,
+  return api.get(url)
+    .then(res => {
+      const data = Array.isArray(res.data)
+        ? res.data
+        : res.data.data || [];
+      return { data };
     });
-
-    if (search) queryParams.append("search", search);
-    if (category) queryParams.append("category", category);
-
-    const { data } = await api.get(`/products?${queryParams.toString()}`);
-
-    dispatch(
-      ProductActionSuccess({
-        type: "GET_CUSTOMER_PRODUCTS",
-        payload: data,
-      })
-    );
-
-    return data;
-  } catch (error) {
-    const errorMessage =
-      error.response?.data?.message ||
-      error.response?.statusText ||
-      error.message ||
-      "Failed to load products";
-
-    dispatch(ProductActionFailure(errorMessage));
-    toast.error(errorMessage, ErrorToastOptions);
-    throw error;
-  }
-};
-
-// ✅ Get single customer product by slug or ID
-export const getSingleCustomerProduct = async (dispatch, slug) => {
-  try {
-    dispatch(ProductActionStart());
-
-    const { data } = await api.get(`/products/${slug}`);
-
-    dispatch(
-      ProductActionSuccess({
-        type: "GET_SINGLE_CUSTOMER_PRODUCT",
-        payload: data,
-      })
-    );
-
-    return data;
-  } catch (error) {
-    const errorMessage =
-      error.response?.data?.message ||
-      error.response?.statusText ||
-      error.message ||
-      "Failed to load product";
-
-    dispatch(ProductActionFailure(errorMessage));
-    toast.error(errorMessage, ErrorToastOptions);
-    throw error;
-  }
 };
