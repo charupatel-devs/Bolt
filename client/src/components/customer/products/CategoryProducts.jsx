@@ -8,8 +8,9 @@ const CategoryProducts = () => {
   const { categoryId } = useParams();
   return (
     <div style={{ display: "flex", gap: "1rem", padding: '1rem' }}>
-      <CategorySidebar selectedCategory={categoryId} />
-      <Products initialCategory={categoryId} />
+      {/* <CategorySidebar selectedCategory={categoryId} />
+      <Products initialCategory={categoryId} /> */}
+      <h2>hii</h2> 
     </div>
   );
 };
