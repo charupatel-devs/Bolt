@@ -19,6 +19,8 @@ const {
   clearCart,
   calculateShipping,
   applyDiscount,
+  getOrdersByStatus,
+  getOrderManagementData,
 } = require("../controllers/orderController");
 
 const {
@@ -28,6 +30,7 @@ const {
   canModifyOrder,
   canViewOrder,
   logActivity,
+  isAdmin,
 } = require("../middlewares/auth");
 
 const router = express.Router();
@@ -74,14 +77,15 @@ router.post("/apply-discount", applyDiscount);
 // Create new order (requires verified email and complete profile)
 router.post(
   "/create",
-  requireVerifiedEmail,
-  requireCompleteProfile,
+  // requireVerifiedEmail,
+  // requireCompleteProfile,
   logActivity("create_order"),
   createOrder
 );
 
 // Get user's orders
 router.get("/my-orders", getUserOrders);
+router.get("/management", isAdmin, getOrderManagementData);
 
 // Get specific order details (only if user owns the order)
 router.get("/:id", canViewOrder, getOrderById);
@@ -114,5 +118,17 @@ router.post(
 
 // Verify payment status
 router.post("/:id/verify-payment", canViewOrder, verifyPayment);
+
+// ===========================================
+// ADMIN-ONLY ORDER STATUS ROUTES
+// ===========================================
+
+// Get pending orders
+router.get(
+  "/orders/:status",
+  isAdmin,
+  logActivity("get_orders_by_status"),
+  getOrdersByStatus
+);
 
 module.exports = router;

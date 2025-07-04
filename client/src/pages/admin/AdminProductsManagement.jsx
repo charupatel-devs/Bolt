@@ -11,7 +11,10 @@ import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { NavLink } from "react-router-dom";
 import AdminLayout from "../../components/admin/layout/AdminLayout";
-import { getAllProducts } from "../../services_hooks/admin/adminProductService";
+import {
+  deleteProductService,
+  getAllProducts,
+} from "../../services_hooks/admin/adminProductService";
 
 const AdminProductsManagement = () => {
   const dispatch = useDispatch();
@@ -35,8 +38,7 @@ const AdminProductsManagement = () => {
       // Service function now handles all dispatch logic
       await getAllProducts(dispatch, {
         page: pagination.currentPage,
-        limit: pagination.limit,
-        search: searchTerm,
+        limit: 5,
         category: filters.category,
         status: filters.status,
         sortBy: filters.sortBy,
@@ -197,10 +199,12 @@ const AdminProductsManagement = () => {
           </div>
 
           <div className="flex space-x-3">
-            <button className="flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">
-              <Upload className="w-4 h-4 mr-2" />
-              Import CSV
-            </button>
+            <NavLink to="/admin/products/add/bulk">
+              <button className="flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">
+                <Upload className="w-4 h-4 mr-2" />
+                Import CSV
+              </button>
+            </NavLink>
             <NavLink to="/admin/products/add">
               <button className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
                 <Plus className="w-4 h-4 mr-2" />
@@ -210,8 +214,7 @@ const AdminProductsManagement = () => {
           </div>
         </div>
 
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="flex flex-row flex-nowrap gap-6 overflow-x-auto">
           {statsData.map((stat, index) => (
             <div
               key={index}
@@ -227,6 +230,42 @@ const AdminProductsManagement = () => {
               </div>
             </div>
           ))}
+        </div>
+
+        {/* Quick Actions */}
+        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+          <h2 className="text-lg font-semibold text-gray-900 mb-4">
+            Quick Actions
+          </h2>
+          <div className="flex flex-row flex-nowrap gap-4 overflow-x-auto">
+            <NavLink
+              to="/admin/products/add"
+              className="flex items-center p-4 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors group"
+            >
+              <Plus className="w-5 h-5 text-blue-600 mr-3" />
+              <span className="text-blue-800 font-medium">Add New Product</span>
+            </NavLink>
+
+            <NavLink
+              to="/admin/products/add/bulk"
+              className="flex items-center p-4 bg-green-50 rounded-lg hover:bg-green-100 transition-colors group"
+            >
+              <Upload className="w-5 h-5 text-green-600 mr-3" />
+              <span className="text-green-800 font-medium">Bulk Import</span>
+            </NavLink>
+
+            <button className="flex items-center p-4 bg-orange-50 rounded-lg hover:bg-orange-100 transition-colors group">
+              <AlertTriangle className="w-5 h-5 text-orange-600 mr-3" />
+              <span className="text-orange-800 font-medium">
+                Low Stock Alert
+              </span>
+            </button>
+
+            <button className="flex items-center p-4 bg-purple-50 rounded-lg hover:bg-purple-100 transition-colors group">
+              <Download className="w-5 h-5 text-purple-600 mr-3" />
+              <span className="text-purple-800 font-medium">Export Data</span>
+            </button>
+          </div>
         </div>
 
         {/* Search Bar */}
@@ -284,9 +323,12 @@ const AdminProductsManagement = () => {
                       className="border-b border-gray-100 hover:bg-gray-50"
                     >
                       <td className="py-3 px-4">
-                        <div className="font-medium text-gray-900">
+                        <NavLink
+                          to={`/admin/products/${product.id}`}
+                          className="font-medium text-gray-900 hover:text-blue-600"
+                        >
                           {product.name}
-                        </div>
+                        </NavLink>
                       </td>
                       <td className="py-3 px-4 text-gray-600">{product.sku}</td>
                       <td className="py-3 px-4 text-gray-900">
@@ -305,10 +347,16 @@ const AdminProductsManagement = () => {
                         </span>
                       </td>
                       <td className="py-3 px-4">
-                        <button className="text-blue-600 hover:text-blue-800 text-sm font-medium mr-3">
+                        <NavLink
+                          to={`/admin/products/edit/${product.id}`}
+                          className="text-blue-600 hover:text-blue-800 text-sm font-medium mr-3"
+                        >
                           Edit
-                        </button>
-                        <button className="text-red-600 hover:text-red-800 text-sm font-medium">
+                        </NavLink>
+                        <button
+                          onClick={() => handleDeleteProduct(product.id)}
+                          className="text-red-600 hover:text-red-800 text-sm font-medium"
+                        >
                           Delete
                         </button>
                       </td>
@@ -329,47 +377,13 @@ const AdminProductsManagement = () => {
           {/* Show "View All" message if there are more products */}
           {products.length === 5 && (
             <div className="mt-4 text-center">
-              <NavLink to="/admin/products/all">
+              <NavLink to="/admin/products/list">
                 <button className="text-blue-600 hover:text-blue-800 text-sm font-medium">
                   Showing 5 most recent products • View all products →
                 </button>
               </NavLink>
             </div>
           )}
-        </div>
-
-        {/* Quick Actions */}
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">
-            Quick Actions
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <NavLink to="/admin/products/add">
-              <button className="flex items-center p-4 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors group">
-                <Plus className="w-5 h-5 text-blue-600 mr-3" />
-                <span className="text-blue-800 font-medium">
-                  Add New Product
-                </span>
-              </button>
-            </NavLink>
-
-            <button className="flex items-center p-4 bg-green-50 rounded-lg hover:bg-green-100 transition-colors group">
-              <Upload className="w-5 h-5 text-green-600 mr-3" />
-              <span className="text-green-800 font-medium">Bulk Import</span>
-            </button>
-
-            <button className="flex items-center p-4 bg-orange-50 rounded-lg hover:bg-orange-100 transition-colors group">
-              <AlertTriangle className="w-5 h-5 text-orange-600 mr-3" />
-              <span className="text-orange-800 font-medium">
-                Low Stock Alert
-              </span>
-            </button>
-
-            <button className="flex items-center p-4 bg-purple-50 rounded-lg hover:bg-purple-100 transition-colors group">
-              <Download className="w-5 h-5 text-purple-600 mr-3" />
-              <span className="text-purple-800 font-medium">Export Data</span>
-            </button>
-          </div>
         </div>
       </div>
     </AdminLayout>

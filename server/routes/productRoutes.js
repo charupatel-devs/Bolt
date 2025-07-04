@@ -48,7 +48,7 @@ router.get("/new-arrivals", getNewArrivals);
 router.get("/category/:categoryId", optionalAuth, getProductsByCategory);
 
 // Product details
-router.get("/:id", optionalAuth, getProductById);
+router.get("/:id", getProductById);
 
 router.get("/:id/related", getRelatedProducts);
 

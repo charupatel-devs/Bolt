@@ -1,4 +1,3 @@
-// src/pages/admin/Orders.jsx
 import {
   AlertTriangle,
   ArrowDownRight,
@@ -7,119 +6,73 @@ import {
   CheckCircle,
   Clock,
   DollarSign,
-  Edit,
-  Eye,
   Filter,
-  MoreHorizontal,
   Package,
   Search,
   ShoppingCart,
   TrendingUp,
   Truck,
   Users,
-  XCircle,
 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import AdminLayout from "../../components/admin/layout/AdminLayout";
+import { fetchOrderStats } from "../../services_hooks/admin/adminOrderService";
 
 const AdminOrders = () => {
   const [timeFilter, setTimeFilter] = useState("today");
-  const [selectedStatus, setSelectedStatus] = useState("all");
-
-  // Sample orders data
-  const recentOrders = [
-    {
-      id: "#ORD-2024-001",
-      customer: "John Smith",
-      email: "john.smith@email.com",
-      items: 3,
-      total: 299.97,
-      status: "pending",
-      date: "2024-06-18T10:30:00",
-      paymentStatus: "paid",
-      shippingAddress: "New York, NY",
-    },
-    {
-      id: "#ORD-2024-002",
-      customer: "Sarah Johnson",
-      email: "sarah.j@email.com",
-      items: 1,
-      total: 89.99,
-      status: "processing",
-      date: "2024-06-18T09:15:00",
-      paymentStatus: "paid",
-      shippingAddress: "Los Angeles, CA",
-    },
-    {
-      id: "#ORD-2024-003",
-      customer: "Michael Brown",
-      email: "m.brown@email.com",
-      items: 5,
-      total: 567.45,
-      status: "shipped",
-      date: "2024-06-17T16:45:00",
-      paymentStatus: "paid",
-      shippingAddress: "Chicago, IL",
-    },
-    {
-      id: "#ORD-2024-004",
-      customer: "Emily Davis",
-      email: "emily.davis@email.com",
-      items: 2,
-      total: 156.5,
-      status: "delivered",
-      date: "2024-06-17T14:20:00",
-      paymentStatus: "paid",
-      shippingAddress: "Houston, TX",
-    },
-    {
-      id: "#ORD-2024-005",
-      customer: "Robert Wilson",
-      email: "r.wilson@email.com",
-      items: 1,
-      total: 25.99,
-      status: "cancelled",
-      date: "2024-06-17T11:30:00",
-      paymentStatus: "refunded",
-      shippingAddress: "Phoenix, AZ",
-    },
-  ];
-
-  // Order statistics
-  const orderStats = {
+  const [orderStats, setOrderStats] = useState({
     today: {
-      total: 45,
-      revenue: 12847.5,
-      pending: 8,
-      processing: 5,
-      shipped: 15,
-      delivered: 12,
-      returns: 3,
-      cancelled: 2,
+      total: 0,
+      revenue: 0,
+      pending: 0,
+      processing: 0,
+      shipped: 0,
+      delivered: 0,
+      refunded: 0,
+      returns: 0,
     },
     week: {
-      total: 312,
-      revenue: 89234.75,
-      pending: 23,
-      processing: 18,
-      shipped: 89,
-      delivered: 156,
-      returns: 15,
-      cancelled: 11,
+      total: 0,
+      revenue: 0,
+      pending: 0,
+      processing: 0,
+      shipped: 0,
+      delivered: 0,
+      refunded: 0,
+      returns: 0,
     },
     month: {
-      total: 1247,
-      revenue: 345678.9,
-      pending: 45,
-      processing: 67,
-      shipped: 234,
-      delivered: 823,
-      returns: 56,
-      cancelled: 22,
+      total: 0,
+      revenue: 0,
+      pending: 0,
+      processing: 0,
+      shipped: 0,
+      delivered: 0,
+      refunded: 0,
+      returns: 0,
     },
-  };
+  });
+  const [recentOrders, setRecentOrders] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  const currentStats = orderStats[timeFilter];
+  // Fetch data from API
+  useEffect(() => {
+    const fetchOrdersManagmentData = async () => {
+      try {
+        setLoading(true);
+        const data = await fetchOrderStats();
+        setRecentOrders(data.recentOrders || []);
+        setOrderStats(data.stats || {});
+      } catch (err) {
+        console.error("Failed to fetch orders:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchOrdersManagmentData();
+  }, []);
+
+  const currentStats = orderStats[timeFilter] || {};
 
   const getStatusColor = (status) => {
     switch (status) {
@@ -131,10 +84,12 @@ const AdminOrders = () => {
         return "bg-purple-100 text-purple-800 border-purple-200";
       case "delivered":
         return "bg-green-100 text-green-800 border-green-200";
-      case "cancelled":
-        return "bg-red-100 text-red-800 border-red-200";
+
       case "returned":
+      case "returns":
         return "bg-orange-100 text-orange-800 border-orange-200";
+      case "refunded":
+        return "bg-gray-100 text-gray-800 border-gray-200";
       default:
         return "bg-gray-100 text-gray-800 border-gray-200";
     }
@@ -150,10 +105,12 @@ const AdminOrders = () => {
         return <Truck className="w-4 h-4" />;
       case "delivered":
         return <CheckCircle className="w-4 h-4" />;
-      case "cancelled":
-        return <XCircle className="w-4 h-4" />;
+
       case "returned":
+      case "returns":
         return <AlertTriangle className="w-4 h-4" />;
+      case "refunded":
+        return <DollarSign className="w-4 h-4" />;
       default:
         return <ShoppingCart className="w-4 h-4" />;
     }
@@ -162,7 +119,7 @@ const AdminOrders = () => {
   const formatCurrency = (amount) => {
     return new Intl.NumberFormat("en-US", {
       style: "currency",
-      currency: "USD",
+      currency: "INR",
     }).format(amount);
   };
 
@@ -214,23 +171,29 @@ const AdminOrders = () => {
     },
     {
       title: "Returns",
-      value: currentStats.returns,
+      value: currentStats.returns || currentStats.returned || 0,
       icon: AlertTriangle,
       color: "orange",
       change: "-5%",
       trend: "down",
       path: "/admin/orders/returns",
     },
-    {
-      title: "Cancelled",
-      value: currentStats.cancelled,
-      icon: XCircle,
-      color: "red",
-      change: "-3%",
-      trend: "down",
-      path: "/admin/orders/cancelled",
-    },
   ];
+
+  if (loading) {
+    return (
+      <AdminLayout>
+        <div className="flex justify-center items-center h-96">
+          <div className="text-center">
+            <Clock className="w-12 h-12 mx-auto text-blue-500 animate-spin" />
+            <p className="mt-4 text-lg font-medium text-gray-700">
+              Loading orders...
+            </p>
+          </div>
+        </div>
+      </AdminLayout>
+    );
+  }
 
   return (
     <AdminLayout>
@@ -313,7 +276,9 @@ const AdminOrders = () => {
                   Average Order
                 </p>
                 <p className="text-2xl font-bold text-gray-900 mt-1">
-                  {formatCurrency(currentStats.revenue / currentStats.total)}
+                  {currentStats.total
+                    ? formatCurrency(currentStats.revenue / currentStats.total)
+                    : "₹0"}
                 </p>
                 <p className="text-sm text-green-600 mt-1 flex items-center">
                   <ArrowUpRight className="w-3 h-3 mr-1" />
@@ -435,37 +400,34 @@ const AdminOrders = () => {
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Date
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Actions
-                  </th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
                 {recentOrders.map((order) => (
-                  <tr key={order.id} className="hover:bg-gray-50">
+                  <tr key={order._id} className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm font-medium text-blue-600">
-                        {order.id}
+                        {order.orderNumber}
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div>
                         <div className="text-sm font-medium text-gray-900">
-                          {order.customer}
+                          {order.user?.name}
                         </div>
                         <div className="text-sm text-gray-500">
-                          {order.email}
+                          {order.user?.email}
                         </div>
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm text-gray-900">
-                        {order.items} items
+                        {order.totalItems} items
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm font-medium text-gray-900">
-                        {formatCurrency(order.total)}
+                        {formatCurrency(order.totalAmount)}
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
@@ -475,25 +437,14 @@ const AdminOrders = () => {
                         )}`}
                       >
                         {getStatusIcon(order.status)}
-                        <span className="ml-1 capitalize">{order.status}</span>
+                        <span className="ml-1 capitalize">
+                          {order.statusDisplay || order.status}
+                        </span>
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm text-gray-900">
-                        {formatDate(order.date)}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center space-x-2">
-                        <button className="p-2 text-blue-600 hover:text-blue-800 hover:bg-blue-100 rounded-lg transition-colors">
-                          <Eye className="w-4 h-4" />
-                        </button>
-                        <button className="p-2 text-green-600 hover:text-green-800 hover:bg-green-100 rounded-lg transition-colors">
-                          <Edit className="w-4 h-4" />
-                        </button>
-                        <button className="p-2 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors">
-                          <MoreHorizontal className="w-4 h-4" />
-                        </button>
+                        {formatDate(order.createdAt)}
                       </div>
                     </td>
                   </tr>

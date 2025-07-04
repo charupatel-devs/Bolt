@@ -9,8 +9,10 @@ import AdminCategories from "../pages/admin/AdminCategories";
 
 // Order Pages
 import AllOrders from "../pages/admin/AdminAllOrders";
+import AdminEditProduct from "../pages/admin/AdminEditProduct";
 import Orders from "../pages/admin/AdminOrders";
 import PendingOrders from "../pages/admin/AdminPendingOrders";
+import AdminProductDetail from "../pages/admin/AdminProductDetail";
 import AdminProductsManagement from "../pages/admin/AdminProductsManagement";
 import AdminSettings from "../pages/admin/AdminSettings";
 import AllProducts from "../pages/admin/AllProducts";
@@ -23,8 +25,7 @@ import PaymentMethods from "../pages/admin/PaymentMethods";
 import ProcessingOrders from "../pages/admin/ProcessingOrders";
 import ProductPerformance from "../pages/admin/ProductPerformance";
 import PurchaseOrders from "../pages/admin/PurchaseOrders";
-import Refunds from "../pages/admin/Refunds";
-import Returns from "../pages/admin/Returns";
+import RefundedOrders from "../pages/admin/RefundedOrders";
 import SalesReports from "../pages/admin/SalesReports";
 import ShippedOrders from "../pages/admin/ShippedOrders";
 import ShippingMethods from "../pages/admin/ShippingMethods";
@@ -61,11 +62,15 @@ const AdminRoutes = () => {
         <Route path="/products" element={<AdminProductsManagement />} />
         <Route path="/products/list" element={<AllProducts />} />
         <Route path="/products/add" element={<AdminAddProduct />} />
+        <Route
+          path="/products/add/bulk"
+          element={<AdminAddProduct initialMode="bulk" />}
+        />
+
         <Route path="/products/categories" element={<AdminCategories />} />
         <Route path="/products/low-stock" element={<AllProducts />} />
-        {/* <Route path="/products/:id" element={<AdminProductDetails />} /> */}
-        {/* <Route path="/products/edit/:id" element={<AdminProductForm />} /> */}
-        {/* <Route path="/products/bulk-upload" element={<AdminBulkUpload />} /> */}
+        <Route path="/products/:id" element={<AdminProductDetail />} />
+        <Route path="/products/edit/:id" element={<AdminEditProduct />} />
 
         {/* 🛒 ORDERS ROUTES */}
         <Route path="/orders" element={<Orders />} />
@@ -74,7 +79,7 @@ const AdminRoutes = () => {
         <Route path="/orders/processing" element={<ProcessingOrders />} />
         <Route path="/orders/shipped" element={<ShippedOrders />} />
         <Route path="/orders/delivered" element={<DeliveredOrders />} />
-        <Route path="/orders/returns" element={<Returns />} />
+        <Route path="/orders/returns" element={<RefundedOrders />} />
         {/* <Route path="/orders/:id" element={<AdminOrderDetails />} /> */}
 
         {/* 👥 CUSTOMERS ROUTES (Future) */}
@@ -102,7 +107,7 @@ const AdminRoutes = () => {
 
         {/* 💰 FINANCE ROUTES (Future) */}
         <Route path="/finance/payments" element={<PaymentMethods />} />
-        <Route path="/finance/refunds" element={<Refunds />} />
+        {/* <Route path="/finance/refunds" element={<Refunds />} /> */}
 
         {/* 📢 MARKETING ROUTES (Future) */}
         {/* <Route path="/marketing" element={<AdminMarketing />} />

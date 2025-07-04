@@ -151,7 +151,6 @@ const getAvailableFilters = async (baseFilter) => {
 const getProductById = catchAsync(async (req, res, next) => {
   const product = await Product.findById(req.params.id)
     .populate("category", "name slug description")
-    .populate("subcategory", "name slug")
     .populate("reviews.user", "name avatar");
 
   if (!product) {
@@ -163,22 +162,17 @@ const getProductById = catchAsync(async (req, res, next) => {
   }
 
   // Increment view count (async, don't wait)
-  product
-    .incrementViewCount()
-    .catch((err) =>
-      console.log("Failed to increment view count:", err.message)
-    );
+  Product.findByIdAndUpdate(
+    req.params.id,
+    { $inc: { viewCount: 1 } },
+    { new: false }
+  ).catch((err) => console.log("View count increment failed:", err.message));
 
-  // Get category breadcrumb
-  let breadcrumb = [];
-  if (product.category) {
-    breadcrumb = await product.category.getBreadcrumb();
-  }
-
+  // Just send the category info directly
   res.status(200).json({
     success: true,
     product,
-    breadcrumb,
+    category: product.category, // This is enough for flat categories
   });
 });
 

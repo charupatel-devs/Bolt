@@ -5,7 +5,7 @@ import {
 } from "../../store/admin/adminProductSlice";
 import api from "../api";
 
-export const addProduct = async (productData) => {
+export const addProduct = async (productData, dispatch) => {
   try {
     dispatch(ProductActionStart());
     const formDataToSend = new FormData();
@@ -81,8 +81,8 @@ export const addProduct = async (productData) => {
 export const getAllProducts = async (dispatch, params = {}) => {
   try {
     const {
-      page = 1,
-      limit = 5,
+      page = "",
+      limit = "5",
       search = "",
       category = "",
       status = "",
@@ -90,18 +90,15 @@ export const getAllProducts = async (dispatch, params = {}) => {
       sortOrder = "desc",
     } = params;
 
-    // Dispatch start action
     dispatch(ProductActionStart());
 
-    // Build query parameters
     const queryParams = new URLSearchParams({
       page: page.toString(),
-      limit: "5",
+      limit: limit.toString(),
       sortBy,
       sortOrder,
     });
 
-    // Add optional parameters only if they have values
     if (search) queryParams.append("search", search);
     if (category) queryParams.append("category", category);
     if (status) queryParams.append("status", status);
@@ -109,32 +106,23 @@ export const getAllProducts = async (dispatch, params = {}) => {
     const queryString = queryParams.toString();
     const { data } = await api.get(`/admin/products?${queryString}`);
 
-    if (data) {
-      dispatch(
-        ProductActionSuccess({
-          type: "GET_PRODUCTS",
-          payload: data,
-        })
-      );
+    if (data?.products) {
+      dispatch(ProductActionSuccess({ type: "GET_PRODUCTS", payload: data }));
     } else {
-      console.log("🔍 DEBUG: Invalid API response format:", data);
-      dispatch(ProductActionFailure("Invalid response format"));
       throw new Error("Invalid response format");
     }
   } catch (error) {
-    console.error("🔍 DEBUG: Error caught in getAllProducts:", error);
-
     const errorMessage =
       error.response?.data?.message ||
       error.response?.statusText ||
       error.message ||
       "Unknown error fetching products";
 
-    console.log("🔍 DEBUG: Dispatching error:", errorMessage);
     dispatch(ProductActionFailure(errorMessage));
     throw new Error("Error fetching products: " + errorMessage);
   }
 };
+
 // Update product
 export const updateProductService = async (
   dispatch,
@@ -220,12 +208,10 @@ export const updateProductService = async (
 // Delete product
 export const deleteProductService = async (dispatch, productId) => {
   try {
-    console.log("🚀 Service: Starting product deletion for ID:", productId);
-
     // Dispatch start action
     dispatch(ProductActionStart());
 
-    const { data } = await api.delete(`/admin/products/${productId}`);
+    const { data } = await api.delete(`/admin/products/delete/${productId}`);
 
     console.log("✅ Service: Product deleted successfully:", data);
 
@@ -256,14 +242,14 @@ export const deleteProductService = async (dispatch, productId) => {
 };
 
 // Get single product by ID
-export const getProductByIdService = async (dispatch, productId) => {
+export const getProductById = async (dispatch, productId) => {
   try {
     console.log("🚀 Service: Fetching product by ID:", productId);
 
     // Dispatch start action
     dispatch(ProductActionStart());
 
-    const { data } = await api.get(`/admin/products/${productId}`);
+    const { data } = await api.get(`/products/${productId}`);
 
     console.log("✅ Service: Product fetched successfully:", data);
 
@@ -272,7 +258,7 @@ export const getProductByIdService = async (dispatch, productId) => {
       dispatch(
         ProductActionSuccess({
           type: "GET_SINGLE_PRODUCT",
-          payload: data.product,
+          payload: data,
         })
       );
       return data;

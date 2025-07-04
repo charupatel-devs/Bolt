@@ -224,6 +224,10 @@ productSchema.index({ "specifications.voltage": 1 });
 productSchema.index({ "specifications.power": 1 });
 productSchema.index({ "specifications.speed": 1 });
 
+productSchema.methods.incrementViewCount = async function () {
+  this.viewCount += 1;
+  await this.save();
+};
 // Virtual for primary image
 productSchema.virtual("primaryImage").get(function () {
   const primary = this.images.find((img) => img.isPrimary);
@@ -312,7 +316,10 @@ productSchema.statics.filterBySpecifications = function (
     .skip(skip)
     .limit(limit);
 };
-
+productSchema.methods.getPriceForQuantity = function (quantity) {
+  // Basic example: same price per item, can customize for discounts later
+  return this.price * quantity;
+};
 // Static method to get filter options for a category
 productSchema.statics.getFilterOptions = async function (categoryId) {
   const Category = mongoose.model("Category");

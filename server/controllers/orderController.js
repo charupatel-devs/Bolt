@@ -4,40 +4,23 @@ const User = require("../models/User");
 const catchAsync = require("../utils/catchAsync");
 const AppError = require("../utils/appError");
 const sendEmail = require("../utils/sendEmail");
+const Cart = require("../models/Cart");
 
-// In-memory cart storage (replace with Redis in production)
-const userCarts = new Map();
+const getUserCart = async (userId) => {
+  let cart = await Cart.findOne({ user: userId });
 
-// Helper function to get user's cart
-const getUserCart = (userId) => {
-  if (!userCarts.has(userId)) {
-    userCarts.set(userId, {
+  if (!cart) {
+    cart = new Cart({
+      user: userId,
       items: [],
       subtotal: 0,
       shippingCost: 0,
       taxAmount: 0,
       discountAmount: 0,
       totalAmount: 0,
-      updatedAt: new Date(),
     });
+    await cart.save();
   }
-  return userCarts.get(userId);
-};
-
-// Helper function to calculate cart totals
-const calculateCartTotals = (cart) => {
-  cart.subtotal = cart.items.reduce(
-    (total, item) => total + item.price * item.quantity,
-    0
-  );
-
-  // Calculate tax (18% GST for India)
-  cart.taxAmount = Math.round(cart.subtotal * 0.18 * 100) / 100;
-
-  // Calculate total
-  cart.totalAmount =
-    cart.subtotal + cart.shippingCost + cart.taxAmount - cart.discountAmount;
-  cart.updatedAt = new Date();
 
   return cart;
 };
@@ -147,54 +130,46 @@ exports.getCartItems = catchAsync(async (req, res, next) => {
 exports.addToCart = catchAsync(async (req, res, next) => {
   const { productId, quantity = 1 } = req.body;
 
-  if (!productId) {
-    return next(new AppError("Product ID is required", 400));
-  }
-
-  if (quantity < 1) {
+  // Validation checks
+  if (!productId) return next(new AppError("Product ID is required", 400));
+  if (quantity < 1)
     return next(new AppError("Quantity must be at least 1", 400));
-  }
 
   const product = await Product.findById(productId);
-
-  if (!product) {
-    return next(new AppError("Product not found", 404));
-  }
-
-  if (!product.isActive) {
+  if (!product) return next(new AppError("Product not found", 404));
+  if (!product.isActive)
     return next(new AppError("Product is not available", 400));
-  }
 
+  // Stock and quantity validation
   if (product.stock < quantity) {
     return next(
       new AppError(`Only ${product.stock} items available in stock`, 400)
     );
   }
-
   if (quantity < product.minOrderQuantity) {
     return next(
       new AppError(`Minimum order quantity is ${product.minOrderQuantity}`, 400)
     );
   }
-
   if (quantity > product.maxOrderQuantity) {
     return next(
       new AppError(`Maximum order quantity is ${product.maxOrderQuantity}`, 400)
     );
   }
 
-  const cart = getUserCart(req.user._id.toString());
-  const price = product.getPriceForQuantity(quantity);
+  const userId = req.user._id.toString();
+  const cart = await getUserCart(userId);
 
-  // Check if item already exists in cart
+  // Find existing item index
   const existingItemIndex = cart.items.findIndex(
-    (item) => item.productId === productId
+    (item) => item.productId.toString() === productId
   );
 
   if (existingItemIndex > -1) {
     const existingItem = cart.items[existingItemIndex];
     const newQuantity = existingItem.quantity + quantity;
 
+    // Additional validations for existing items
     if (newQuantity > product.stock) {
       return next(
         new AppError(
@@ -203,7 +178,6 @@ exports.addToCart = catchAsync(async (req, res, next) => {
         )
       );
     }
-
     if (newQuantity > product.maxOrderQuantity) {
       return next(
         new AppError(
@@ -222,15 +196,16 @@ exports.addToCart = catchAsync(async (req, res, next) => {
     cart.items.push({
       productId,
       name: product.name,
-      image: product.primaryImage,
+      image: product.primaryImage || "https://via.placeholder.com/300",
       sku: product.sku,
       quantity,
-      price,
+      price: product.getPriceForQuantity(quantity),
       addedAt: new Date(),
     });
   }
 
-  calculateCartTotals(cart);
+  // Save to database (totals calculated automatically via pre-save hook)
+  await cart.save();
 
   res.status(200).json({
     success: true,
@@ -254,29 +229,31 @@ exports.updateCartItem = catchAsync(async (req, res, next) => {
     return next(new AppError("Valid quantity is required", 400));
   }
 
-  const cart = getUserCart(req.user._id.toString());
-  const itemIndex = cart.items.findIndex((item) => item.productId === itemId);
+  const userId = req.user._id.toString();
+  const cart = await getUserCart(userId);
+
+  // Find item by productId (itemId in params is productId)
+  const itemIndex = cart.items.findIndex(
+    (item) => item.productId.toString() === itemId
+  );
 
   if (itemIndex === -1) {
     return next(new AppError("Item not found in cart", 404));
   }
 
+  const product = await Product.findById(itemId);
+  if (!product) return next(new AppError("Product not found", 404));
+
   if (quantity === 0) {
     // Remove item if quantity is 0
     cart.items.splice(itemIndex, 1);
   } else {
-    const product = await Product.findById(itemId);
-
-    if (!product) {
-      return next(new AppError("Product not found", 404));
-    }
-
+    // Validate new quantity
     if (quantity > product.stock) {
       return next(
         new AppError(`Only ${product.stock} items available in stock`, 400)
       );
     }
-
     if (quantity < product.minOrderQuantity) {
       return next(
         new AppError(
@@ -285,7 +262,6 @@ exports.updateCartItem = catchAsync(async (req, res, next) => {
         )
       );
     }
-
     if (quantity > product.maxOrderQuantity) {
       return next(
         new AppError(
@@ -300,7 +276,7 @@ exports.updateCartItem = catchAsync(async (req, res, next) => {
     cart.items[itemIndex].price = product.getPriceForQuantity(quantity);
   }
 
-  calculateCartTotals(cart);
+  await cart.save();
 
   res.status(200).json({
     success: true,
@@ -315,16 +291,19 @@ exports.updateCartItem = catchAsync(async (req, res, next) => {
 // @access  Private
 exports.removeFromCart = catchAsync(async (req, res, next) => {
   const { itemId } = req.params;
+  const userId = req.user._id.toString();
+  const cart = await getUserCart(userId);
 
-  const cart = getUserCart(req.user._id.toString());
-  const itemIndex = cart.items.findIndex((item) => item.productId === itemId);
+  const itemIndex = cart.items.findIndex(
+    (item) => item.productId.toString() === itemId
+  );
 
   if (itemIndex === -1) {
     return next(new AppError("Item not found in cart", 404));
   }
 
   const removedItem = cart.items.splice(itemIndex, 1)[0];
-  calculateCartTotals(cart);
+  await cart.save();
 
   res.status(200).json({
     success: true,
@@ -338,15 +317,74 @@ exports.removeFromCart = catchAsync(async (req, res, next) => {
 // @route   DELETE /api/orders/cart/clear
 // @access  Private
 exports.clearCart = catchAsync(async (req, res, next) => {
-  const cart = getUserCart(req.user._id.toString());
+  const userId = req.user._id.toString();
+  const cart = await getUserCart(userId);
 
   const itemCount = cart.items.length;
   cart.items = [];
-  calculateCartTotals(cart);
+  cart.discountAmount = 0;
+  cart.couponCode = null;
+  cart.freeShipping = false;
+
+  await cart.save();
 
   res.status(200).json({
     success: true,
     message: `${itemCount} items removed from cart`,
+    cart,
+  });
+});
+
+// @desc    Get cart items
+// @route   GET /api/orders/cart
+// @access  Private
+exports.getCartItems = catchAsync(async (req, res, next) => {
+  const userId = req.user._id.toString();
+  const cart = await Cart.findOne({ user: userId }).populate(
+    "items.productId",
+    "name price images stock isActive specifications"
+  );
+
+  if (!cart) {
+    return res.status(200).json({
+      success: true,
+      cart: {
+        items: [],
+        subtotal: 0,
+        shippingCost: 0,
+        taxAmount: 0,
+        discountAmount: 0,
+        totalAmount: 0,
+      },
+    });
+  }
+
+  // Validate and update prices
+  let hasChanges = false;
+  for (const item of cart.items) {
+    const product = item.productId;
+
+    // Remove unavailable products
+    if (!product || !product.isActive) {
+      cart.items = cart.items.filter(
+        (i) => i.productId.toString() !== item.productId.toString()
+      );
+      hasChanges = true;
+      continue;
+    }
+
+    // Update prices if changed
+    const currentPrice = product.getPriceForQuantity(item.quantity);
+    if (item.price !== currentPrice) {
+      item.price = currentPrice;
+      hasChanges = true;
+    }
+  }
+
+  if (hasChanges) await cart.save();
+
+  res.status(200).json({
+    success: true,
     cart,
   });
 });
@@ -363,20 +401,26 @@ exports.calculateShipping = catchAsync(async (req, res, next) => {
     );
   }
 
-  const cart = items || getUserCart(req.user._id.toString()).items;
-
-  if (cart.length === 0) {
-    return next(new AppError("Cart is empty", 400));
+  let cartItems = [];
+  if (items) {
+    cartItems = items;
+  } else {
+    const userId = req.user._id.toString();
+    const cart = await getUserCart(userId);
+    if (cart.items.length === 0) {
+      return next(new AppError("Cart is empty", 400));
+    }
+    cartItems = cart.items;
   }
 
   // Calculate total weight and value
   let totalWeight = 0;
   let totalValue = 0;
 
-  for (const item of cart) {
+  for (const item of cartItems) {
     const product = await Product.findById(item.productId);
     if (product) {
-      totalWeight += (product.weight || 0.1) * item.quantity; // Default 100g if no weight
+      totalWeight += (product.weight || 0.1) * item.quantity;
       totalValue += item.price * item.quantity;
     }
   }
@@ -414,14 +458,14 @@ exports.calculateShipping = catchAsync(async (req, res, next) => {
       name: "Standard Shipping",
       cost: shippingCost,
       estimatedDays: "3-5 business days",
-      estimatedDelivery: standardDelivery.toDateString(),
+      estimatedDelivery: standardDelivery.toISOString().split("T")[0],
     },
     {
       type: "express",
       name: "Express Shipping",
       cost: expressShipping,
       estimatedDays: "1-2 business days",
-      estimatedDelivery: expressDelivery.toDateString(),
+      estimatedDelivery: expressDelivery.toISOString().split("T")[0],
     },
   ];
 
@@ -432,7 +476,151 @@ exports.calculateShipping = catchAsync(async (req, res, next) => {
     shippingOptions,
   });
 });
+// @desc    Create new order
+// @route   POST /api/orders/create
+// @access  Private
+exports.createOrder = catchAsync(async (req, res, next) => {
+  const {
+    shippingAddress,
+    billingAddress,
+    paymentMethod,
+    shippingOption,
+    orderNotes,
+    useCartItems = true,
+  } = req.body;
 
+  if (!shippingAddress) {
+    return next(new AppError("Shipping address is required", 400));
+  }
+
+  if (!paymentMethod) {
+    return next(new AppError("Payment method is required", 400));
+  }
+
+  let orderItems = [];
+  let cart = null;
+  const userId = req.user._id.toString();
+
+  if (useCartItems) {
+    cart = await getUserCart(userId);
+    if (cart.items.length === 0) {
+      return next(new AppError("Cart is empty", 400));
+    }
+    orderItems = cart.items;
+  } else {
+    orderItems = req.body.items || [];
+  }
+
+  if (orderItems.length === 0) {
+    return next(new AppError("No items to order", 400));
+  }
+
+  // Validate all items
+  const { validationErrors, validatedItems } = await validateCartItems(
+    orderItems.map((item) => ({
+      productId: item.productId || item.product,
+      quantity: item.quantity,
+      price: item.price,
+    }))
+  );
+
+  if (validationErrors.length > 0) {
+    return next(
+      new AppError(`Validation errors: ${validationErrors.join(", ")}`, 400)
+    );
+  }
+
+  // Calculate order totals
+  let subtotal = 0;
+  const orderItemsData = [];
+
+  for (const validatedItem of validatedItems) {
+    const itemTotal = validatedItem.currentPrice * validatedItem.quantity;
+    subtotal += itemTotal;
+
+    orderItemsData.push({
+      product: validatedItem.product._id,
+      name: validatedItem.product.name,
+      image: validatedItem.product.primaryImage,
+      sku: validatedItem.product.sku,
+      quantity: validatedItem.quantity,
+      price: validatedItem.currentPrice,
+      totalPrice: itemTotal,
+    });
+  }
+
+  // Calculate shipping
+  const shipping = shippingOption || { cost: 0 };
+  const shippingCost = cart?.freeShipping ? 0 : shipping.cost;
+
+  // Calculate tax (18% GST)
+  const taxAmount = Math.round(subtotal * 0.18 * 100) / 100;
+
+  // Apply discount
+  const discountAmount = cart?.discountAmount || 0;
+
+  const totalAmount = subtotal + shippingCost + taxAmount - discountAmount;
+
+  // Create order
+  const order = await Order.create({
+    user: userId,
+    items: orderItemsData,
+    shippingAddress,
+    billingAddress: billingAddress || shippingAddress,
+    paymentInfo: {
+      method: paymentMethod,
+      status: paymentMethod === "cod" ? "pending" : "pending",
+    },
+    subtotal,
+    shippingCost,
+    taxAmount,
+    discountAmount,
+    totalAmount,
+    orderNotes,
+    couponCode: cart?.couponCode,
+    status: "pending",
+    shippingOption: shippingOption?.type || "standard",
+    estimatedDelivery:
+      shippingOption?.estimatedDelivery ||
+      new Date(Date.now() + 5 * 24 * 60 * 60 * 1000),
+  });
+  await order.save();
+
+  // Clear cart if using cart items
+  if (useCartItems && cart) {
+    cart.items = [];
+    cart.discountAmount = 0;
+    cart.couponCode = null;
+    cart.freeShipping = false;
+    await cart.save();
+  }
+
+  // Update product stock
+  for (const item of orderItemsData) {
+    await Product.findByIdAndUpdate(item.product, {
+      $inc: { stock: -item.quantity },
+    });
+  }
+
+  // Send order confirmation email
+  try {
+    await sendOrderConfirmationEmail(order, req.user);
+  } catch (error) {
+    console.log("Order confirmation email failed:", error.message);
+  }
+
+  res.status(201).json({
+    success: true,
+    message: "Order created successfully",
+    order: {
+      _id: order._id,
+      orderNumber: order.orderNumber,
+      totalAmount: order.totalAmount,
+      status: order.status,
+      estimatedDelivery: order.estimatedDelivery,
+    },
+  });
+});
 // @desc    Apply discount/coupon
 // @route   POST /api/orders/apply-discount
 // @access  Private
@@ -522,139 +710,6 @@ exports.applyDiscount = catchAsync(async (req, res, next) => {
   });
 });
 
-// @desc    Create new order
-// @route   POST /api/orders/create
-// @access  Private
-exports.createOrder = catchAsync(async (req, res, next) => {
-  const {
-    shippingAddress,
-    billingAddress,
-    paymentMethod,
-    shippingOption,
-    orderNotes,
-    useCartItems = true,
-  } = req.body;
-
-  if (!shippingAddress) {
-    return next(new AppError("Shipping address is required", 400));
-  }
-
-  if (!paymentMethod) {
-    return next(new AppError("Payment method is required", 400));
-  }
-
-  let orderItems = [];
-  let cart = null;
-
-  if (useCartItems) {
-    cart = getUserCart(req.user._id.toString());
-    if (cart.items.length === 0) {
-      return next(new AppError("Cart is empty", 400));
-    }
-    orderItems = cart.items;
-  } else {
-    orderItems = req.body.items || [];
-  }
-
-  if (orderItems.length === 0) {
-    return next(new AppError("No items to order", 400));
-  }
-
-  // Validate all items
-  const { validationErrors, validatedItems } = await validateCartItems(
-    orderItems.map((item) => ({
-      productId: item.productId,
-      quantity: item.quantity,
-      price: item.price,
-    }))
-  );
-
-  if (validationErrors.length > 0) {
-    return next(
-      new AppError(`Validation errors: ${validationErrors.join(", ")}`, 400)
-    );
-  }
-
-  // Calculate order totals
-  let subtotal = 0;
-  const orderItemsData = [];
-
-  for (const validatedItem of validatedItems) {
-    const itemTotal = validatedItem.currentPrice * validatedItem.quantity;
-    subtotal += itemTotal;
-
-    orderItemsData.push({
-      product: validatedItem.product._id,
-      name: validatedItem.product.name,
-      image: validatedItem.product.primaryImage,
-      sku: validatedItem.product.sku,
-      quantity: validatedItem.quantity,
-      price: validatedItem.currentPrice,
-      totalPrice: itemTotal,
-    });
-  }
-
-  // Calculate shipping
-  const shipping = shippingOption || { cost: 0 };
-  const shippingCost = cart?.freeShipping ? 0 : shipping.cost;
-
-  // Calculate tax (18% GST)
-  const taxAmount = Math.round(subtotal * 0.18 * 100) / 100;
-
-  // Apply discount
-  const discountAmount = cart?.discountAmount || 0;
-
-  const totalAmount = subtotal + shippingCost + taxAmount - discountAmount;
-
-  // Create order
-  const order = await Order.create({
-    user: req.user._id,
-    items: orderItemsData,
-    shippingAddress,
-    billingAddress: billingAddress || shippingAddress,
-    paymentInfo: {
-      method: paymentMethod,
-      status: paymentMethod === "cod" ? "pending" : "pending",
-    },
-    subtotal,
-    shippingCost,
-    taxAmount,
-    discountAmount,
-    totalAmount,
-    orderNotes,
-    couponCode: cart?.couponCode,
-    status: "pending",
-  });
-
-  // Clear cart if using cart items
-  if (useCartItems && cart) {
-    cart.items = [];
-    cart.discountAmount = 0;
-    cart.couponCode = null;
-    cart.freeShipping = false;
-    calculateCartTotals(cart);
-  }
-
-  // Send order confirmation email
-  try {
-    await sendOrderConfirmationEmail(order, req.user);
-  } catch (error) {
-    console.log("Order confirmation email failed:", error.message);
-  }
-
-  res.status(201).json({
-    success: true,
-    message: "Order created successfully",
-    order: {
-      _id: order._id,
-      orderNumber: order.orderNumber,
-      totalAmount: order.totalAmount,
-      status: order.status,
-      estimatedDelivery: shipping.estimatedDelivery,
-    },
-  });
-});
-
 // Helper function to send order confirmation email
 const sendOrderConfirmationEmail = async (order, user) => {
   const itemsList = order.items
@@ -737,8 +792,8 @@ Electronics Marketplace Team
           : ""
       }
       ${order.shippingAddress.city}, ${order.shippingAddress.state} ${
-    order.shippingAddress.postalCode
-  }
+        order.shippingAddress.postalCode
+      }
     </p>
     
     <p>We'll send you another email when your order ships.</p>
@@ -1364,3 +1419,95 @@ exports.downloadInvoice = catchAsync(async (req, res, next) => {
     invoice,
   });
 });
+exports.getOrdersByStatus = async (req, res) => {
+  const { status } = req.params;
+  const allowedStatuses = [
+    "pending",
+    "processing",
+    "shipped",
+    "delivered",
+    "refunded",
+  ];
+
+  if (!allowedStatuses.includes(status)) {
+    return res.status(400).json({ message: "Invalid order status" });
+  }
+
+  try {
+    const orders = await Order.find({ status }).populate("user", "name email"); // populates the user who created the order
+
+    res.json(orders);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+// controllers/orderController.js
+
+exports.getOrderManagementData = async (req, res) => {
+  try {
+    // Get all recent orders (limit as needed, e.g., 20 most recent)
+    const recentOrders = await Order.find({})
+      .populate("user", "name email")
+      .sort({ createdAt: -1 })
+      .limit(20);
+
+    // Define all statuses you want to show on dashboard
+    const statuses = [
+      "pending",
+      "processing",
+      "shipped",
+      "delivered",
+      "refunded",
+    ];
+
+    // Compute stats for time filters (today, week, month)
+    const now = new Date();
+    const startOfToday = new Date(
+      now.getFullYear(),
+      now.getMonth(),
+      now.getDate()
+    );
+    const startOfWeek = new Date(now);
+    startOfWeek.setDate(now.getDate() - now.getDay());
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+
+    // Helper to get stats in a time range
+    const getStats = async (startDate) => {
+      const match = { createdAt: { $gte: startDate } };
+      const total = await Order.countDocuments(match);
+      const revenueAgg = await Order.aggregate([
+        { $match: { ...match } },
+        { $group: { _id: null, totalRevenue: { $sum: "$totalAmount" } } },
+      ]);
+      const revenue = revenueAgg.length > 0 ? revenueAgg[0].totalRevenue : 0;
+
+      // Status counts
+      const statusCounts = {};
+      for (const s of statuses) {
+        statusCounts[s] = await Order.countDocuments({ ...match, status: s });
+      }
+
+      return {
+        total,
+        revenue,
+        ...statusCounts,
+      };
+    };
+
+    // Gather stats for each time filter
+    const todayStats = await getStats(startOfToday);
+    const weekStats = await getStats(startOfWeek);
+    const monthStats = await getStats(startOfMonth);
+
+    res.json({
+      recentOrders,
+      stats: {
+        today: todayStats,
+        week: weekStats,
+        month: monthStats,
+      },
+    });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
