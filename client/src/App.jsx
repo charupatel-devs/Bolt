@@ -1,12 +1,11 @@
 import { Toaster } from "react-hot-toast";
 import { Navigate, Route, Routes } from "react-router-dom";
 
+import ErrorBoundary from "./components/common/ErrorBoundary";
 import AdminRoutes from "./routes/AdminRoutes";
 import CustomerRoutes from "./routes/CustomerRoutes";
-import ErrorBoundary from "./components/common/ErrorBoundary";
 
 import "./App.css";
-import Home from "./pages/customer/Home";
 
 function App() {
   return (
@@ -36,10 +35,11 @@ function App() {
         />
 
         <Routes>
-
-           <Route path="/" element={<Home/>} />
-          <Route path="/customer/*" element={<CustomerRoutes />} />
-          <Route path="/admin" element={<Navigate to="/admin/dashboard" replace />} />
+          <Route path="/*" element={<CustomerRoutes />} />
+          <Route
+            path="/admin"
+            element={<Navigate to="/admin/dashboard" replace />}
+          />
           <Route path="/admin/*" element={<AdminRoutes />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

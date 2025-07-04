@@ -1,10 +1,9 @@
 import { configureStore } from "@reduxjs/toolkit";
 import adminAuthReducer from "../store/admin/adminAuthSlice";
-import userAuthReducer from "../store/customer/userAuthSlice";
 import productReducer from "../store/customer/productSlice";
-
-import customerProductsReducer from "../store/customer/customerProductSlice";
 import userAuthReducer from "../store/customer/userAuthSlice";
+
+import customerProductsReducer from "../store/customer/productSlice";
 import adminCategoriesReducer from "./admin/adminCategorySlice";
 import adminOrderReducer from "./admin/adminOrderSlice";
 import adminProductReducer from "./admin/adminProductSlice";
