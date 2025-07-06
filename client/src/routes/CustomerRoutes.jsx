@@ -19,8 +19,9 @@ const CustomerRoutes = () => {
       <Route path="register" element={<Register />} />
       <Route path="forgot-password" element={<ForgotPassword />} />
       <Route path="products" element={<Products />} />
-      <Route path="products/:categoryId" element={<CategoryProducts />} />
-      {/*<Route path="dashboard" element={<Dashboard />} /> */}
+      <Route path="products/category/:categoryId" element={<CategoryProducts />} />
+
+      {/* <Route path="dashboard" element={<Dashboard />} /> */}
     </Routes>
   );
 };
