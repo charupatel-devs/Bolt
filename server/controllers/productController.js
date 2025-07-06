@@ -278,24 +278,23 @@ const getSearchSuggestions = async (searchTerm) => {
   return suggestions[0]?.suggestions || [];
 };
 
-// @desc    Get products by category
+// @desc    Get products by category (with stats & pagination)
 // @route   GET /api/products/category/:categoryId
 // @access  Public
 const getProductsByCategory = catchAsync(async (req, res, next) => {
+  // 1. Find the category
   const category = await Category.findById(req.params.categoryId);
 
   if (!category) {
     return next(new AppError("Category not found", 404));
   }
-
   if (!category.isActive) {
     return next(new AppError("Category is not available", 404));
   }
 
-  // Get all descendant categories
-  const descendants = await category.getAllDescendants();
-  const categoryIds = [category._id, ...descendants.map((d) => d._id)];
+  const categoryIds = [category._id];
 
+  // 3. Build query features (filter, sort, limitFields, paginate)
   const features = new APIFeatures(
     Product.find({
       category: { $in: categoryIds },
@@ -308,19 +307,35 @@ const getProductsByCategory = catchAsync(async (req, res, next) => {
     .limitFields()
     .paginate();
 
+  // 4. Fetch products
   const products = await features.query;
+
+  // 5. Count total products in these categories
   const totalProducts = await Product.countDocuments({
     category: { $in: categoryIds },
     isActive: true,
   });
 
-  // Get category breadcrumb
-  const breadcrumb = await category.getBreadcrumb();
+  // 6. Calculate stats for this category group
+  const stats = await Promise.all([
+    Product.countDocuments({ category: { $in: categoryIds }, isActive: true }), // Total products in category
+    Product.countDocuments({
+      category: { $in: categoryIds },
+      isActive: true,
+      stock: { $gt: 0, $lte: 10 },
+    }), // Low stock
+    Product.countDocuments({
+      category: { $in: categoryIds },
+      isActive: true,
+      stock: 0,
+    }), // Out of stock
+  ]);
 
-  // Calculate pagination
+  // 8. Pagination info
   const page = parseInt(req.query.page) || 1;
   const limit = parseInt(req.query.limit) || 12;
 
+  // 9. Send response
   res.status(200).json({
     success: true,
     category: {
@@ -329,7 +344,6 @@ const getProductsByCategory = catchAsync(async (req, res, next) => {
       description: category.description,
       image: category.image,
     },
-    breadcrumb,
     results: products.length,
     totalProducts,
     pagination: {
@@ -337,6 +351,11 @@ const getProductsByCategory = catchAsync(async (req, res, next) => {
       totalPages: Math.ceil(totalProducts / limit),
       hasNextPage: page < Math.ceil(totalProducts / limit),
       hasPrevPage: page > 1,
+    },
+    stats: {
+      totalProducts: stats[0],
+      lowStockItems: stats[1],
+      outOfStock: stats[2],
     },
     products,
   });
