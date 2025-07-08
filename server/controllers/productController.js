@@ -921,19 +921,6 @@ const checkLowStock = async (threshold = 10) => {
     .sort({ stock: 1 });
 };
 
-const updateProductStock = async (
-  productId,
-  quantity,
-  operation = "subtract"
-) => {
-  const product = await Product.findById(productId);
-  if (!product) {
-    throw new Error("Product not found");
-  }
-
-  return await product.updateStock(quantity, operation);
-};
-
 // Price calculation helpers
 const calculatePriceForQuantity = async (productId, quantity) => {
   const product = await Product.findById(productId);
@@ -1343,6 +1330,98 @@ const recordProductView = catchAsync(async (req, res, next) => {
     recommendations: recommendations ? recommendations.slice(0, 4) : [],
   });
 });
+
+// GET all product stocks
+const getAllStocks = async (req, res) => {
+  try {
+    const products = await Product.find(
+      {},
+      "name sku stock minOrderQuantity maxOrderQuantity availability"
+    );
+    res.json({ success: true, products });
+  } catch (err) {
+    res
+      .status(500)
+      .json({ success: false, message: "Server error", error: err.message });
+  }
+};
+
+// GET single product stock
+const getStockById = async (req, res) => {
+  try {
+    const product = await Product.findById(
+      req.params.id,
+      "name sku stock availability"
+    );
+    if (!product)
+      return res
+        .status(404)
+        .json({ success: false, message: "Product not found" });
+    res.json({ success: true, product });
+  } catch (err) {
+    res
+      .status(500)
+      .json({ success: false, message: "Server error", error: err.message });
+  }
+};
+
+// PATCH adjust product stock
+const adjustStock = async (req, res) => {
+  /*
+    Body: { type: "add" | "subtract" | "set", quantity: Number, reason?: String }
+  */
+  try {
+    const { type, quantity, reason } = req.body;
+    if (!["add", "subtract", "set"].includes(type)) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Invalid adjustment type" });
+    }
+    if (typeof quantity !== "number" || quantity < 0) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Invalid quantity" });
+    }
+
+    const product = await Product.findById(req.params.id);
+    if (!product)
+      return res
+        .status(404)
+        .json({ success: false, message: "Product not found" });
+
+    let oldStock = product.stock;
+    if (type === "add") {
+      product.stock += quantity;
+    } else if (type === "subtract") {
+      product.stock = Math.max(0, product.stock - quantity);
+    } else if (type === "set") {
+      product.stock = quantity;
+    }
+
+    // Optionally, update availability
+    product.availability = product.stock > 0 ? "in_stock" : "out_of_stock";
+
+    await product.save();
+
+    res.json({
+      success: true,
+      message: "Stock adjusted successfully",
+      data: {
+        productId: product._id,
+        sku: product.sku,
+        oldStock,
+        newStock: product.stock,
+        adjustment: type,
+        quantity,
+        reason,
+      },
+    });
+  } catch (err) {
+    res
+      .status(500)
+      .json({ success: false, message: "Server error", error: err.message });
+  }
+};
 module.exports = {
   getAllProducts,
   getProductById,
@@ -1354,7 +1433,6 @@ module.exports = {
   addProductReview,
   getProductReviews,
   getProductSpecifications,
-  updateProductStock,
   // Additional controller methods
   compareProducts,
   getAutocomplete,
@@ -1372,4 +1450,7 @@ module.exports = {
   buildAdvancedFilter,
   checkLowStock,
   calculatePriceForQuantity,
+  getAllStocks,
+  adjustStock,
+  getStockById,
 };

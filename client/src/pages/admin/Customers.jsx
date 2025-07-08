@@ -6,18 +6,18 @@ import {
   Download,
   Eye,
   Mail,
-  MapPin,
   MoreHorizontal,
+  PhoneCallIcon,
   Search,
   Shield,
   ShoppingCart,
-  Star,
   TrendingUp,
-  UserPlus,
   Users,
 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
 import AdminLayout from "../../components/admin/layout/AdminLayout";
+import { getAllCustomers } from "../../services_hooks/admin/adminUserService";
 
 const Customers = () => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -27,105 +27,65 @@ const Customers = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(25);
 
-  // Sample customers data
-  const customers = [
-    {
-      id: 1,
-      name: "John Smith",
-      email: "john.smith@email.com",
-      phone: "+1 (555) 123-4567",
-      avatar:
-        "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop&crop=face",
-      type: "premium",
-      status: "active",
-      location: "New York, NY",
-      joinDate: "2023-01-15",
-      lastOrderDate: "2024-06-15",
-      totalOrders: 23,
-      totalSpent: 1847.65,
-      averageOrderValue: 80.33,
-      rating: 4.8,
-      reviewsCount: 12,
-      tags: ["VIP", "Frequent Buyer"],
-    },
-    {
-      id: 2,
-      name: "Sarah Johnson",
-      email: "sarah.j@email.com",
-      phone: "+1 (555) 234-5678",
-      avatar:
-        "https://images.unsplash.com/photo-1494790108755-2616b612b29c?w=100&h=100&fit=crop&crop=face",
-      type: "regular",
-      status: "active",
-      location: "Los Angeles, CA",
-      joinDate: "2023-03-22",
-      lastOrderDate: "2024-06-18",
-      totalOrders: 8,
-      totalSpent: 456.89,
-      averageOrderValue: 57.11,
-      rating: 4.5,
-      reviewsCount: 5,
-      tags: ["Electronics Enthusiast"],
-    },
-    {
-      id: 3,
-      name: "Michael Brown",
-      email: "m.brown@company.com",
-      phone: "+1 (555) 345-6789",
-      avatar:
-        "https://images.unsplash.com/photo-1560250097-0b93528c311a?w=100&h=100&fit=crop&crop=face",
-      type: "business",
-      status: "active",
-      location: "Chicago, IL",
-      joinDate: "2022-11-08",
-      lastOrderDate: "2024-06-17",
-      totalOrders: 45,
-      totalSpent: 8934.21,
-      averageOrderValue: 198.54,
-      rating: 4.9,
-      reviewsCount: 23,
-      tags: ["Bulk Buyer", "Corporate"],
-    },
-    {
-      id: 4,
-      name: "Emily Davis",
-      email: "emily.davis@email.com",
-      phone: "+1 (555) 456-7890",
-      avatar:
-        "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=100&h=100&fit=crop&crop=face",
-      type: "regular",
-      status: "inactive",
-      location: "Houston, TX",
-      joinDate: "2023-05-12",
-      lastOrderDate: "2024-02-14",
-      totalOrders: 3,
-      totalSpent: 127.45,
-      averageOrderValue: 42.48,
-      rating: 4.0,
-      reviewsCount: 2,
-      tags: ["New Customer"],
-    },
-    {
-      id: 5,
-      name: "Robert Wilson",
-      email: "r.wilson@email.com",
-      phone: "+1 (555) 567-8901",
-      avatar:
-        "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop&crop=face",
-      type: "premium",
-      status: "active",
-      location: "Phoenix, AZ",
-      joinDate: "2023-07-19",
-      lastOrderDate: "2024-06-16",
-      totalOrders: 18,
-      totalSpent: 2134.78,
-      averageOrderValue: 118.6,
-      rating: 4.6,
-      reviewsCount: 9,
-      tags: ["IoT Developer", "Regular"],
-    },
-  ];
+  const dispatch = useDispatch();
 
+  // Get data from Redux store
+  const {
+    customers = [],
+    stats = {},
+    totalCustomers,
+    activeCustomers,
+    pagination = {},
+    isFetching,
+    error,
+    errMsg,
+  } = useSelector((state) => state.customers);
+
+  // Fetch customers on mount or filter change
+  useEffect(() => {
+    getAllCustomers(dispatch);
+  }, [dispatch]);
+
+  // Map backend data to UI fields (with defaults)
+  const mappedCustomers = (customers || []).map((c) => ({
+    id: c._id,
+    name: c.name,
+    email: c.email,
+    phone: c.phone,
+    avatar: c.avatar,
+    type: c.type || "regular",
+    status: c.isActive ? "active" : "inactive",
+    location:
+      c.addresses && c.addresses.length > 0 ? c.addresses[0].city || "" : "",
+    joinDate: c.createdAt,
+    lastOrderDate: c.lastLogin || null,
+    totalOrders: c.totalOrders ?? 0,
+    totalSpent: c.totalSpent ?? 0,
+    averageOrderValue: c.averageOrderValue ?? 0,
+    reviewsCount: c.reviewsCount ?? 0,
+    tags: c.tags || [],
+  }));
+
+  // Filtering
+  const filteredCustomers = mappedCustomers.filter((customer) => {
+    const searchMatch =
+      customer.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      customer.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      customer.phone?.includes(searchTerm);
+    const statusMatch =
+      statusFilter === "all" || customer.status === statusFilter;
+    const typeMatch = typeFilter === "all" || customer.type === typeFilter;
+    return searchMatch && statusMatch && typeMatch;
+  });
+
+  // Pagination
+  const paginatedCustomers = filteredCustomers.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
+  const totalPages = Math.ceil(filteredCustomers.length / itemsPerPage);
+
+  // Helpers
   const getTypeColor = (type) => {
     switch (type) {
       case "premium":
@@ -169,49 +129,17 @@ const Customers = () => {
     return new Intl.NumberFormat("en-US", {
       style: "currency",
       currency: "USD",
-    }).format(amount);
+    }).format(amount || 0);
   };
 
   const formatDate = (dateString) => {
+    if (!dateString) return "N/A";
     return new Date(dateString).toLocaleDateString("en-US", {
       month: "short",
       day: "numeric",
       year: "numeric",
     });
   };
-
-  const renderStars = (rating) => {
-    return [...Array(5)].map((_, i) => (
-      <Star
-        key={i}
-        className={`w-3 h-3 ${
-          i < Math.floor(rating)
-            ? "text-yellow-400 fill-current"
-            : "text-gray-300"
-        }`}
-      />
-    ));
-  };
-
-  const filteredCustomers = customers.filter((customer) => {
-    const searchMatch =
-      customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      customer.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      customer.phone.includes(searchTerm);
-
-    const statusMatch =
-      statusFilter === "all" || customer.status === statusFilter;
-    const typeMatch = typeFilter === "all" || customer.type === typeFilter;
-
-    return searchMatch && statusMatch && typeMatch;
-  });
-
-  const paginatedCustomers = filteredCustomers.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
-  );
-
-  const totalPages = Math.ceil(filteredCustomers.length / itemsPerPage);
 
   const handleSelectCustomer = (customerId) => {
     setSelectedCustomers((prev) =>
@@ -229,18 +157,6 @@ const Customers = () => {
     }
   };
 
-  // Calculate stats
-  const totalCustomers = customers.length;
-  const activeCustomers = customers.filter((c) => c.status === "active").length;
-  const premiumCustomers = customers.filter((c) => c.type === "premium").length;
-  const totalRevenue = customers.reduce(
-    (sum, customer) => sum + customer.totalSpent,
-    0
-  );
-  const averageOrderValue =
-    customers.reduce((sum, customer) => sum + customer.averageOrderValue, 0) /
-    customers.length;
-
   return (
     <AdminLayout>
       <div className="space-y-6">
@@ -252,18 +168,14 @@ const Customers = () => {
               Customer Management
             </h1>
             <p className="text-gray-600 mt-1">
-              {filteredCustomers.length} of {totalCustomers} customers
+              {filteredCustomers.length} of {stats.totalCustomers || 0}{" "}
+              customers
             </p>
           </div>
-
           <div className="flex space-x-3">
             <button className="flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">
               <Download className="w-4 h-4 mr-2" />
               Export
-            </button>
-            <button className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
-              <UserPlus className="w-4 h-4 mr-2" />
-              Add Customer
             </button>
           </div>
         </div>
@@ -277,13 +189,12 @@ const Customers = () => {
                   Total Customers
                 </p>
                 <p className="text-2xl font-bold text-gray-900 mt-1">
-                  {totalCustomers}
+                  {stats.totalCustomers || 0}
                 </p>
               </div>
               <Users className="w-8 h-8 text-blue-600" />
             </div>
           </div>
-
           <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
             <div className="flex items-center justify-between">
               <div>
@@ -291,7 +202,7 @@ const Customers = () => {
                   Active Customers
                 </p>
                 <p className="text-2xl font-bold text-green-600 mt-1">
-                  {activeCustomers}
+                  {stats.activeCustomers || 0}
                 </p>
               </div>
               <TrendingUp className="w-8 h-8 text-green-600" />
@@ -302,30 +213,15 @@ const Customers = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-600">
-                  Premium Members
-                </p>
-                <p className="text-2xl font-bold text-purple-600 mt-1">
-                  {premiumCustomers}
-                </p>
-              </div>
-              <Crown className="w-8 h-8 text-purple-600" />
-            </div>
-          </div>
-
-          <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">
                   Total Revenue
                 </p>
                 <p className="text-2xl font-bold text-green-600 mt-1">
-                  {formatCurrency(totalRevenue)}
+                  {formatCurrency(stats.totalRevenue)}
                 </p>
               </div>
               <DollarSign className="w-8 h-8 text-green-600" />
             </div>
           </div>
-
           <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
             <div className="flex items-center justify-between">
               <div>
@@ -333,7 +229,7 @@ const Customers = () => {
                   Avg. Order Value
                 </p>
                 <p className="text-2xl font-bold text-blue-600 mt-1">
-                  {formatCurrency(averageOrderValue)}
+                  {formatCurrency(stats.averageOrderValue)}
                 </p>
               </div>
               <ShoppingCart className="w-8 h-8 text-blue-600" />
@@ -355,7 +251,6 @@ const Customers = () => {
                   className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
               </div>
-
               <select
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
@@ -366,7 +261,6 @@ const Customers = () => {
                 <option value="inactive">Inactive</option>
                 <option value="suspended">Suspended</option>
               </select>
-
               <select
                 value={typeFilter}
                 onChange={(e) => setTypeFilter(e.target.value)}
@@ -379,7 +273,6 @@ const Customers = () => {
               </select>
             </div>
           </div>
-
           {selectedCustomers.length > 0 && (
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
               <div className="flex items-center justify-between">
@@ -440,7 +333,6 @@ const Customers = () => {
               </div>
             </div>
           </div>
-
           <div className="overflow-x-auto">
             <table className="min-w-full">
               <thead className="bg-gray-50">
@@ -469,9 +361,7 @@ const Customers = () => {
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Total Spent
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Rating
-                  </th>
+
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Status
                   </th>
@@ -509,8 +399,8 @@ const Customers = () => {
                             {customer.email}
                           </div>
                           <div className="text-xs text-gray-400 flex items-center">
-                            <MapPin className="w-3 h-3 mr-1" />
-                            {customer.location}
+                            <PhoneCallIcon className="w-3 h-3 mr-1" />
+                            {customer.phone || "N/A"}
                           </div>
                         </div>
                       </div>
@@ -527,7 +417,7 @@ const Customers = () => {
                     </td>
                     <td className="px-6 py-4">
                       <div className="text-sm font-medium text-gray-900">
-                        {customer.totalOrders}
+                        {customer.totalOrders ?? 0}
                       </div>
                       <div className="text-sm text-gray-500">
                         Avg: {formatCurrency(customer.averageOrderValue)}
@@ -538,14 +428,7 @@ const Customers = () => {
                         {formatCurrency(customer.totalSpent)}
                       </div>
                     </td>
-                    <td className="px-6 py-4">
-                      <div className="flex items-center space-x-1">
-                        {renderStars(customer.rating)}
-                        <span className="text-sm text-gray-600 ml-2">
-                          {customer.rating} ({customer.reviewsCount})
-                        </span>
-                      </div>
-                    </td>
+
                     <td className="px-6 py-4">
                       <span
                         className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(
@@ -560,7 +443,9 @@ const Customers = () => {
                     </td>
                     <td className="px-6 py-4">
                       <div className="text-sm text-gray-900">
-                        {formatDate(customer.lastOrderDate)}
+                        {customer.lastOrderDate
+                          ? formatDate(customer.lastOrderDate)
+                          : "N/A"}
                       </div>
                     </td>
                     <td className="px-6 py-4">
@@ -589,7 +474,6 @@ const Customers = () => {
                 <div className="text-sm text-gray-600">
                   Page {currentPage} of {totalPages}
                 </div>
-
                 <div className="flex items-center space-x-2">
                   <button
                     onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
@@ -598,7 +482,6 @@ const Customers = () => {
                   >
                     Previous
                   </button>
-
                   <div className="flex space-x-1">
                     {[...Array(Math.min(5, totalPages))].map((_, i) => {
                       const page = i + 1;
@@ -617,7 +500,6 @@ const Customers = () => {
                       );
                     })}
                   </div>
-
                   <button
                     onClick={() =>
                       setCurrentPage(Math.min(totalPages, currentPage + 1))

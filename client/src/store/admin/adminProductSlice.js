@@ -92,6 +92,9 @@ const productSlice = createSlice({
         case "BULK_IMPORT":
         case "EXPORT_PRODUCTS":
           break;
+        case "GET_STOCKS":
+          state.products = payload.products;
+          break;
         default:
           break;
       }

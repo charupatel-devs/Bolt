@@ -367,10 +367,11 @@ exports.getDashboardStats = catchAsync(async (req, res, next) => {
   });
 });
 
-// @desc    Get all users
-// @route   GET /api/admin/users
+// @desc    Get all customers for admin
+// @route   GET /api/admin/customers
 // @access  Private/Admin
-exports.getAllUsers = catchAsync(async (req, res, next) => {
+exports.getAllCustomers = catchAsync(async (req, res, next) => {
+  // Exclude admins, fetch users only
   const features = new APIFeatures(
     User.find({ role: { $ne: "admin" } }),
     req.query
@@ -381,24 +382,37 @@ exports.getAllUsers = catchAsync(async (req, res, next) => {
     .paginate()
     .search();
 
-  const users = await features.query;
-  const totalUsers = await User.countDocuments({ role: { $ne: "admin" } });
+  const customers = await features.query;
+
+  // For summary stats, count and aggregate on all customers (not just paginated)
+  const allCustomers = await User.find({ role: { $ne: "admin" } });
+
+  const totalCustomers = allCustomers.length;
+  const activeCustomers = allCustomers.filter((c) => c.isActive).length;
+
+  const totalRevenue = allCustomers.reduce(
+    (sum, c) => sum + (c.totalSpent || 0),
+    0
+  );
+  const averageOrderValue =
+    allCustomers.reduce((sum, c) => sum + (c.averageOrderValue || 0), 0) /
+    (allCustomers.length || 1);
 
   // Calculate pagination info
   const page = req.query.page * 1 || 1;
   const limit = req.query.limit * 1 || 10;
+  const totalPages = Math.ceil(totalCustomers / limit);
 
   res.status(200).json({
     success: true,
-    results: users.length,
-    totalUsers,
+    customers, // paginated
+    stats: { totalCustomers, activeCustomers, totalRevenue, averageOrderValue },
     pagination: {
       currentPage: page,
-      totalPages: Math.ceil(totalUsers / limit),
-      hasNextPage: page < Math.ceil(totalUsers / limit),
+      totalPages,
+      hasNextPage: page < totalPages,
       hasPrevPage: page > 1,
     },
-    users,
   });
 });
 
