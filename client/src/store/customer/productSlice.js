@@ -1,5 +1,5 @@
 // Location: client/src/store/customer/productSlice.js
-
+import axios from 'axios';
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import { getCategories, getProducts } from '../../services_hooks/customer/productService';
 
@@ -8,9 +8,20 @@ export const fetchCategories = createAsyncThunk('product/fetchCategories', async
   return res.data;
 });
 
+// ✅ Async thunk to fetch products with category routing logic
 export const fetchProducts = createAsyncThunk('product/fetchProducts', async (filters) => {
-  const res = await getProducts(filters);
-  return res.data;
+  const { category, ...restFilters } = filters;
+
+  let url = '/api/products';
+  let config = { params: restFilters };
+
+  if (category) {
+    url = `/api/products/category/${category}`;
+    config = {}; 
+  }
+
+  const res = await axios.get(url, config);
+  return res.data.products || res.data;
 });
 
 const productSlice = createSlice({

@@ -1,4 +1,4 @@
-import { Route, Routes } from "react-router-dom";
+import { Route, Routes, Navigate} from "react-router-dom";
 import ForgotPassword from "../components/customer/auth/ForgotPassword";
 import Login from "../components/customer/auth/Login";
 import Register from "../components/customer/auth/Register";
@@ -19,8 +19,9 @@ const CustomerRoutes = () => {
       <Route path="register" element={<Register />} />
       <Route path="forgot-password" element={<ForgotPassword />} />
       <Route path="products" element={<Products />} />
-      <Route path="products/:categoryId" element={<CategoryProducts />} />
-      {/*<Route path="dashboard" element={<Dashboard />} /> */}
+      <Route path="products/category/:categoryId" element={<CategoryProducts />} />
+      <Route path="*" element={<Navigate to="/" replace />} />
+      {/* <Route path="dashboard" element={<Dashboard />} /> */}
     </Routes>
   );
 };
