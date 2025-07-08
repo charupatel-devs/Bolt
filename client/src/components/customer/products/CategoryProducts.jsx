@@ -1,22 +1,23 @@
-// client/src/pages/customer/CategoryProducts.jsx
+import React from "react";
 import { useParams } from "react-router-dom";
-import Layout from "../../../components/customer/layout/Layout";
 import CategorySidebar from "../products/CategorySidebar";
 import Products from "../products/Products";
-
+import Layout from "../layout/Layout"
 const CategoryProducts = () => {
   const { categoryId } = useParams();
-
-  return (
-    <Layout>
-      <div className="flex gap-4">
-        <CategorySidebar selectedCategory={categoryId} />
-        <div className="flex-1">
-          <Products initialCategory={categoryId} />
-        </div>
+return (
+  <Layout>
+    <div className="w-full min-h-screen flex">
+      <div className="w-1/4">
+        <CategorySidebar />
       </div>
-    </Layout>
-  );
+      <div className="w-3/4">
+        <Products categoryId={categoryId} />
+      </div>
+    </div>
+  </Layout>
+);
+
 };
 
 export default CategoryProducts;

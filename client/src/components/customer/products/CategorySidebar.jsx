@@ -1,35 +1,52 @@
-import { useEffect } from "react";
+// src/components/customer/products/CategorySidebar.jsx
+import React, { useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { Link, useParams } from "react-router-dom";
 import { fetchCategories } from "../../../store/customer/productSlice";
 import "../../../assets/css/customer/FilterSidebar.css";
-const CategorySidebar = ({ selectedCategory }) => {
+
+const CategorySidebar = () => {
   const dispatch = useDispatch();
-  const { categories = [], loading, error } = useSelector((s) => s.product);
+  const { categories = [], loading, error } = useSelector(s => s.product);
   const { categoryId } = useParams();
 
   useEffect(() => {
     dispatch(fetchCategories());
   }, [dispatch]);
 
-  const current = selectedCategory || categoryId;
-
-  if (loading) return <aside className="sidebar-container">Loading...</aside>;
-  if (error) return <aside className="sidebar-container error">Error: {error}</aside>;
+  if (loading) {
+    return (
+      <aside className="sidebar-container">
+        <div className="sidebar-box">Loading...</div>
+      </aside>
+    );
+  }
+  if (error) {
+    return (
+      <aside className="sidebar-container">
+        <div className="sidebar-box error">Error: {error}</div>
+      </aside>
+    );
+  }
 
   return (
-    <aside className="sidebar-container w-1/4 pr-4">
+    <aside className="sidebar-container">
       <div className="sidebar-box">
         <div className="sidebar-header">
-          <h3 className="sidebar-heading">Category</h3>
-          <Link to="/customer/products" className="view-all-link">View All</Link>
+          <h3 className="sidebar-heading">CATEGORY</h3>
+          <Link
+            to="/products"
+            className={`view-all-link ${!categoryId ? "active" : ""}`}
+          >
+            View All
+          </Link>
         </div>
         <ul className="sidebar-list">
-          {categories.map((cat) => (
+          {categories.map(cat => (
             <li key={cat._id}>
               <Link
-                to={`/customer/products/category/${cat._id}`}
-                className={`sidebar-item ${cat._id === current ? "active" : ""}`}
+                to={`/products/category/${cat._id}`}
+                className={`sidebar-item ${cat._id === categoryId ? "active" : ""}`}
               >
                 {cat.name}
               </Link>
