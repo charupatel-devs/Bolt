@@ -44,6 +44,11 @@
   border-right: none;
 }
 
+.table-container-v2 {
+  min-height: 400px; 
+  overflow-y: auto;
+}
+
 /* ---------- Image Styling ---------- */
 .product-thumbnail {
   width: 50px;

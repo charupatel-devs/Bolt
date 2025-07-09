@@ -4,24 +4,13 @@ import "../../../assets/css/customer/Products.css";
 
 const Products = () => {
   const { categoryId } = useParams();
-  const [allProducts, setAllProducts] = useState([]); // All fetched + dummy
-  const [visibleProducts, setVisibleProducts] = useState([]); // Current 4
+  const [allProducts, setAllProducts] = useState([]);
+  const [visibleProducts, setVisibleProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [pagination, setPagination] = useState({ page: 1, limit: 4 });
   const [totalPages, setTotalPages] = useState(1);
-
-  const dummyData = [
-    { _id: "1", name: "Sample Product 8", description: "", price: 40.3, stock: 157, sku: "SKU-008", category: { name: "Axail" }, unit: "piece", specifications: { speed: "338 Mbps" } },
-    { _id: "2", name: "Sample Product 9", description: "", price: 33.51, stock: 322, sku: "SKU-009", category: { name: "Axail" }, unit: "piece", specifications: { speed: "647 Mbps" } },
-    { _id: "3", name: "Sample Product 10", description: "", price: 13.61, stock: 391, sku: "SKU-010", category: { name: "Axail" }, unit: "piece", specifications: { speed: "880 Mbps" } },
-    { _id: "4", name: "Sample Product 11", description: "", price: 44.62, stock: 397, sku: "SKU-011", category: { name: "Axail" }, unit: "piece", specifications: { speed: "820 Mbps" } },
-    { _id: "5", name: "Sample Product", description: "", price: 10.99, stock: 100, sku: "SKU-001", category: { name: "Axail" }, unit: "piece", specifications: { speed: "sample_value" } },
-    { _id: "6", name: "Sample Product 2", description: "", price: 16.89, stock: 440, sku: "SKU-002", category: { name: "Axail" }, unit: "piece", specifications: { speed: "630 Mbps" } },
-    { _id: "7", name: "charupatel", description: "acs", price: 121, stock: 0, sku: "CCA12", category: { name: "Axail" }, unit: "piece", specifications: {} },
-    { _id: "8", name: "charupatel-devs", description: "acs", price: 121, stock: 0, sku: "CCA", category: { name: "Axail" }, unit: "piece", specifications: {} },
-    { _id: "9", name: "charupatel-devs", description: "charu", price: 12, stock: 11, sku: "CHARU", category: { name: "Axail" }, unit: "piece", specifications: {} },
-  ];
+  const [sortOption, setSortOption] = useState("name");
 
   useEffect(() => {
     const fetchProducts = async () => {
@@ -33,33 +22,37 @@ const Products = () => {
         const data = await res.json();
 
         if (data.success) {
-          const combined = [...data.products, ...dummyData];
-          setAllProducts(combined);
-          const total = combined.length;
-          setTotalPages(Math.ceil(total / pagination.limit));
-          const start = (pagination.page - 1) * pagination.limit;
-          const end = start + pagination.limit;
-          setVisibleProducts(combined.slice(start, end));
+          setAllProducts(data.products);
+          setTotalPages(Math.ceil(data.products.length / pagination.limit));
         } else {
           setError("Failed to fetch products.");
-          setAllProducts(dummyData);
-          setTotalPages(Math.ceil(dummyData.length / pagination.limit));
-          const start = (pagination.page - 1) * pagination.limit;
-          setVisibleProducts(dummyData.slice(start, start + pagination.limit));
         }
       } catch (err) {
         setError("Error fetching data");
-        setAllProducts(dummyData);
-        setTotalPages(Math.ceil(dummyData.length / pagination.limit));
-        const start = (pagination.page - 1) * pagination.limit;
-        setVisibleProducts(dummyData.slice(start, start + pagination.limit));
       } finally {
         setLoading(false);
       }
     };
 
     fetchProducts();
-  }, [categoryId, pagination.page]);
+  }, [categoryId]);
+
+  useEffect(() => {
+    const start = (pagination.page - 1) * pagination.limit;
+    const end = start + pagination.limit;
+
+    let sorted = [...allProducts];
+
+    if (sortOption === "name") {
+      sorted.sort((a, b) => a.name.localeCompare(b.name));
+    } else if (sortOption === "price") {
+      sorted.sort((a, b) => a.price - b.price);
+    } else if (sortOption === "stock") {
+      sorted.sort((a, b) => b.stock - a.stock); // DESCENDING
+    }
+
+    setVisibleProducts(sorted.slice(start, end));
+  }, [allProducts, pagination.page, pagination.limit, sortOption]);
 
   const goToNextPage = () => {
     if (pagination.page < totalPages) {
@@ -73,6 +66,32 @@ const Products = () => {
     }
   };
 
+  const handleDownload = () => {
+    const headers = ["Name", "SKU", "Speed", "Unit", "Price (₹)", "Stock"];
+    const rows = visibleProducts.map((p) => [
+      p.name,
+      p.sku,
+      p.specifications?.speed || "N/A",
+      p.unit,
+      p.price.toFixed(2),
+      p.stock,
+    ]);
+
+    const csvContent = [
+      headers.join(","),
+      ...rows.map((row) => row.join(",")),
+    ].join("\n");
+
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.setAttribute("download", "bollent-products.csv");
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   return (
     <div className="w-full min-h-screen flex">
       <div className="flex-grow">
@@ -80,12 +99,20 @@ const Products = () => {
           <div className="table-controls">
             <div className="left-controls">
               <span className="pagination-summary">
-                Page <strong>{pagination.page}</strong> of <strong>{totalPages}</strong>
+                Page <strong>{pagination.page}</strong> of{" "}
+                <strong>{totalPages}</strong>
               </span>
               <div className="dropdown-divider"></div>
               <div className="sort-by">
-                <label htmlFor="sort"><b>Sort By:</b></label>
-                <select id="sort" className="sort-dropdown">
+                <label htmlFor="sort">
+                  <b>Sort By:</b>
+                </label>
+                <select
+                  id="sort"
+                  className="sort-dropdown"
+                  value={sortOption}
+                  onChange={(e) => setSortOption(e.target.value)}
+                >
                   <option value="name">Name</option>
                   <option value="price">Price</option>
                   <option value="stock">Stock</option>
@@ -93,7 +120,9 @@ const Products = () => {
               </div>
             </div>
             <div className="right-controls">
-              <button className="download-button">Download Table</button>
+              <button className="download-button" onClick={handleDownload}>
+                Download Table
+              </button>
             </div>
           </div>
 
@@ -139,7 +168,6 @@ const Products = () => {
                 </table>
               </div>
 
-              {/* ✅ Pagination Buttons */}
               <div className="pagination-controls">
                 <button
                   disabled={pagination.page === 1}
@@ -148,7 +176,9 @@ const Products = () => {
                 >
                   Previous
                 </button>
-                <span className="page-info">Page {pagination.page} of {totalPages}</span>
+                <span className="page-info">
+                  Page {pagination.page} of {totalPages}
+                </span>
                 <button
                   disabled={pagination.page === totalPages}
                   onClick={goToNextPage}
