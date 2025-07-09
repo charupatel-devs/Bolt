@@ -12,8 +12,10 @@ const {
   getRelatedProducts,
   addProductReview,
   getProductReviews,
-  updateProductStock,
   getProductSpecifications,
+  getAllStocks,
+  getStockById,
+  adjustStock,
 } = require("../controllers/productController");
 
 const {
@@ -25,6 +27,18 @@ const {
 } = require("../middlewares/auth");
 
 const router = express.Router();
+// ===========================================
+// ADMIN PRODUCTS STOCK INFORMATION
+// ===========================================
+
+// GET all product stocks
+router.get("/stock", getAllStocks);
+
+// GET single product stock
+router.get("/stock/:id", getStockById);
+
+// PATCH adjust product stock
+router.patch("/stock/adjust/:id", adjustStock);
 
 // ===========================================
 // PUBLIC ROUTES (No authentication required)
@@ -70,12 +84,5 @@ router.post(
   logActivity("add_product_review"),
   addProductReview
 );
-
-// ===========================================
-// STOCK INFORMATION
-// ===========================================
-
-// Get stock information (optional auth for detailed info)
-router.get("/:id/stock", optionalAuth, updateProductStock);
 
 module.exports = router;

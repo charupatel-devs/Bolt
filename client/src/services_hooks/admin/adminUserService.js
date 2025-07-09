@@ -1,12 +1,51 @@
+import toast from "react-hot-toast";
+import {
+  CustomerActionFailure,
+  CustomerActionStart,
+  CustomerActionSuccess,
+} from "../../store/admin/adminCustomerSlice";
 import api from "../api";
+// Toast options
+const ErrorToastOptions = {
+  duration: 4000,
+  style: {
+    background: "#f87171",
+    color: "#fff",
+  },
+};
 
-// Get all users
-export const getAllUsers = async () => {
+const SuccessToastOptions = {
+  duration: 3000,
+  style: {
+    background: "#4ade80",
+    color: "#000",
+  },
+};
+
+// Parse error function
+const parseError = (error) => {
+  if (error.response) {
+    return error.response.data.message || "Invalid credentials";
+  } else if (error.request) {
+    return "Network error. Please check your connection.";
+  } else {
+    return "Something went wrong. Please try again.";
+  }
+};
+export const getAllCustomers = async (dispatch) => {
   try {
-    const response = await api.get("/admin/users");
-    return response.data;
+    dispatch(CustomerActionStart());
+    const { data } = await api.get("/admin/customers");
+    dispatch(CustomerActionSuccess({ type: "GET_CUSTOMERS", payload: data }));
   } catch (error) {
-    throw new Error(error.response?.data?.message || "Failed to fetch users");
+    const errorMessage = parseError(error);
+
+    toast.error(errorMessage, {
+      id: "get-customers-error",
+      ...ErrorToastOptions,
+    });
+    dispatch(CustomerActionFailure(errorMessage));
+    throw error;
   }
 };
 

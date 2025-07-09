@@ -371,3 +371,28 @@ export const exportProductsService = async (
     throw new Error("Error exporting products: " + errorMessage);
   }
 };
+
+export const fetchStocks = async (dispatch) => {
+  try {
+    dispatch(ProductActionStart());
+    const { data } = await api.get("/products/stock");
+    if (data.success) {
+      dispatch(
+        ProductActionSuccess({
+          type: "GET_STOCKS",
+          payload: data.products,
+        })
+      );
+    } else {
+      throw new Error("Failed to fetch stocks");
+    }
+  } catch (error) {
+    const errorMessage =
+      error.response?.data?.message ||
+      error.response?.statusText ||
+      error.message ||
+      "Unknown error fetching stocks";
+    dispatch(ProductActionFailure(errorMessage));
+    throw new Error("Error fetching stocks: " + errorMessage);
+  }
+};

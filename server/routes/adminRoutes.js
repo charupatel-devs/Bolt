@@ -5,7 +5,7 @@ const {
   validateAdminToken, // 🚨 NEW: Token validation endpoint
   getAdminProfile, // 🚨 NEW: Profile endpoint
   getDashboardStats,
-  getAllUsers,
+  getAllCustomers,
   getUserById,
   updateUserRole,
   deleteUser,
@@ -76,7 +76,7 @@ router.get("/activities/recent", getRecentActivities);
 // USER MANAGEMENT
 // ===========================================
 
-router.get("/users", getAllUsers);
+router.get("/customers", getAllCustomers);
 router.get("/users/:id", getUserById);
 router.put("/users/:id/role", logActivity("update_user_role"), updateUserRole);
 router.delete("/users/:id", logActivity("delete_user"), deleteUser);

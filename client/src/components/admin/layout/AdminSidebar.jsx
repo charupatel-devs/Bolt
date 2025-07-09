@@ -61,8 +61,8 @@ const AdminSidebar = ({ isOpen, onToggle }) => {
       icon: Users,
       submenu: [
         { label: "All Customers", path: "/admin/customers" },
-        { label: "Customer Groups", path: "/admin/customers/groups" },
-        { label: "Customer Reviews", path: "/admin/customers/reviews" },
+        // { label: "Customer Groups", path: "/admin/customers/groups" },
+        // { label: "Customer Reviews", path: "/admin/customers/reviews" },
       ],
     },
     {

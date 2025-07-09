@@ -1,15 +1,16 @@
 import { configureStore } from "@reduxjs/toolkit";
 
 import adminAuthReducer from "../store/admin/adminAuthSlice";
+import { default as productReducer } from "../store/customer/productSlice";
 import userAuthReducer from "../store/customer/userAuthSlice";
-
-// Admin slices
 import adminCategoriesReducer from "./admin/adminCategorySlice";
-import adminProductReducer from "./admin/adminProductSlice";
+import adminCustReducer from "./admin/adminCustomerSlice";
 import adminOrderReducer from "./admin/adminOrderSlice";
 
+// Admin slices
+import adminProductReducer from "./admin/adminProductSlice";
+
 // Customer product slice
-import productReducer from "../store/customer/productSlice";  // rename import if needed
 
 export default configureStore({
   reducer: {
@@ -18,6 +19,8 @@ export default configureStore({
     categories: adminCategoriesReducer,
     products: adminProductReducer,
     orders: adminOrderReducer,
+    customers: adminCustReducer,
+    //customer
 
     // Customer-related state
     userAuth: userAuthReducer,
