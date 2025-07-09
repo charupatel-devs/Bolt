@@ -152,6 +152,27 @@
   color: blue;
   text-decoration: underline;
 }
+.pagination-controls {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-top: 20px;
+  gap: 12px;
+}
+
+.pagination-button {
+  padding: 6px 12px;
+  background-color:red;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.pagination-button:disabled {
+  background-color: gray;
+  cursor: not-allowed;
+}
 
 /* ---------- Responsive Enhancements ---------- */
 /* @media (max-width: 768px) {

@@ -4,12 +4,13 @@ import "../../../assets/css/customer/Products.css";
 
 const Products = () => {
   const { categoryId } = useParams();
-  const [products, setProducts] = useState([]);
+  const [allProducts, setAllProducts] = useState([]); // All fetched + dummy
+  const [visibleProducts, setVisibleProducts] = useState([]); // Current 4
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [pagination, setPagination] = useState({ page: 1, limit: 5 });
+  const [pagination, setPagination] = useState({ page: 1, limit: 4 });
+  const [totalPages, setTotalPages] = useState(1);
 
-  // ✅ Dummy product data
   const dummyData = [
     { _id: "1", name: "Sample Product 8", description: "", price: 40.3, stock: 157, sku: "SKU-008", category: { name: "Axail" }, unit: "piece", specifications: { speed: "338 Mbps" } },
     { _id: "2", name: "Sample Product 9", description: "", price: 33.51, stock: 322, sku: "SKU-009", category: { name: "Axail" }, unit: "piece", specifications: { speed: "647 Mbps" } },
@@ -22,32 +23,55 @@ const Products = () => {
     { _id: "9", name: "charupatel-devs", description: "charu", price: 12, stock: 11, sku: "CHARU", category: { name: "Axail" }, unit: "piece", specifications: {} },
   ];
 
-  // ✅ Fetch API and combine with dummy data
   useEffect(() => {
     const fetchProducts = async () => {
       try {
         setLoading(true);
         const res = await fetch(
-          `http://localhost:5001/api/products/category/${categoryId}?page=${pagination.page}&limit=${pagination.limit}`
+          `http://localhost:5001/api/products/category/${categoryId}`
         );
         const data = await res.json();
 
         if (data.success) {
-          setProducts([...data.products, ...dummyData]); // ✅ Combine API + dummy
+          const combined = [...data.products, ...dummyData];
+          setAllProducts(combined);
+          const total = combined.length;
+          setTotalPages(Math.ceil(total / pagination.limit));
+          const start = (pagination.page - 1) * pagination.limit;
+          const end = start + pagination.limit;
+          setVisibleProducts(combined.slice(start, end));
         } else {
           setError("Failed to fetch products.");
-          setProducts(dummyData); // fallback to dummy only
+          setAllProducts(dummyData);
+          setTotalPages(Math.ceil(dummyData.length / pagination.limit));
+          const start = (pagination.page - 1) * pagination.limit;
+          setVisibleProducts(dummyData.slice(start, start + pagination.limit));
         }
       } catch (err) {
         setError("Error fetching data");
-        setProducts(dummyData); // fallback to dummy only
+        setAllProducts(dummyData);
+        setTotalPages(Math.ceil(dummyData.length / pagination.limit));
+        const start = (pagination.page - 1) * pagination.limit;
+        setVisibleProducts(dummyData.slice(start, start + pagination.limit));
       } finally {
         setLoading(false);
       }
     };
 
     fetchProducts();
-  }, [categoryId, pagination.page, pagination.limit]);
+  }, [categoryId, pagination.page]);
+
+  const goToNextPage = () => {
+    if (pagination.page < totalPages) {
+      setPagination((prev) => ({ ...prev, page: prev.page + 1 }));
+    }
+  };
+
+  const goToPrevPage = () => {
+    if (pagination.page > 1) {
+      setPagination((prev) => ({ ...prev, page: prev.page - 1 }));
+    }
+  };
 
   return (
     <div className="w-full min-h-screen flex">
@@ -56,7 +80,7 @@ const Products = () => {
           <div className="table-controls">
             <div className="left-controls">
               <span className="pagination-summary">
-                Showing <strong>1 - {products.length}</strong> of {products.length}
+                Page <strong>{pagination.page}</strong> of <strong>{totalPages}</strong>
               </span>
               <div className="dropdown-divider"></div>
               <div className="sort-by">
@@ -75,45 +99,65 @@ const Products = () => {
 
           {loading && <p>Loading products...</p>}
           {error && <p className="error">Error: {error}</p>}
-          {!loading && products.length === 0 && <p>No products found.</p>}
+          {!loading && visibleProducts.length === 0 && <p>No products found.</p>}
 
-          {!loading && products.length > 0 && (
-            <div className="table-container-v2">
-              <table className="product-table-v2">
-                <thead>
-                  <tr>
-                    <th>Name</th>
-                    <th>SKU</th>
-                    <th>Speed</th>
-                    <th>Unit</th>
-                    <th>Price (₹)</th>
-                    <th>Stock</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {products.map((p) => (
-                    <tr key={p._id}>
-                      <td>
-                        <div className="product-name-cell">
-                        <img
-                           src="/images/default-product.jpg" 
-                           alt={p.name}
-                           className="product-thumbnail"
-                        />
-
-                          <div>{p.name}</div>
-                        </div>
-                      </td>
-                      <td>{p.sku}</td>
-                      <td>{p.specifications?.speed || "N/A"}</td>
-                      <td>{p.unit}</td>
-                      <td>{p.price.toFixed(2)}</td>
-                      <td>{p.stock}</td>
+          {!loading && visibleProducts.length > 0 && (
+            <>
+              <div className="table-container-v2">
+                <table className="product-table-v2">
+                  <thead>
+                    <tr>
+                      <th>Name</th>
+                      <th>SKU</th>
+                      <th>Speed</th>
+                      <th>Unit</th>
+                      <th>Price (₹)</th>
+                      <th>Stock</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody>
+                    {visibleProducts.map((p) => (
+                      <tr key={p._id}>
+                        <td>
+                          <div className="product-name-cell">
+                            <img
+                              src="/images/default-product.jpg"
+                              alt={p.name}
+                              className="product-thumbnail"
+                            />
+                            <div>{p.name}</div>
+                          </div>
+                        </td>
+                        <td>{p.sku}</td>
+                        <td>{p.specifications?.speed || "N/A"}</td>
+                        <td>{p.unit}</td>
+                        <td>{p.price.toFixed(2)}</td>
+                        <td>{p.stock}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* ✅ Pagination Buttons */}
+              <div className="pagination-controls">
+                <button
+                  disabled={pagination.page === 1}
+                  onClick={goToPrevPage}
+                  className="pagination-button"
+                >
+                  Previous
+                </button>
+                <span className="page-info">Page {pagination.page} of {totalPages}</span>
+                <button
+                  disabled={pagination.page === totalPages}
+                  onClick={goToNextPage}
+                  className="pagination-button"
+                >
+                  Next
+                </button>
+              </div>
+            </>
           )}
         </div>
       </div>
@@ -122,4 +166,3 @@ const Products = () => {
 };
 
 export default Products;
-

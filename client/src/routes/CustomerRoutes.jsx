@@ -5,7 +5,8 @@ import Register from "../components/customer/auth/Register";
 import CategoryProducts from "../components/customer/products/CategoryProducts";
 import Products from "../components/customer/products/Products";
 import Home from "../pages/customer/Home";
-
+import AboutUs from "../pages/customer/AboutUs";
+import ContactUs from "../pages/customer/ContactUs";
 {
   /*import Dashboard from "../pages/customer/Dashboard";*/
 }
@@ -20,6 +21,8 @@ const CustomerRoutes = () => {
       <Route path="forgot-password" element={<ForgotPassword />} />
       <Route path="products" element={<Products />} />
       <Route path="products/category/:categoryId" element={<CategoryProducts />} />
+       <Route path="about" element={<AboutUs />} /> 
+        <Route path="contact" element={<ContactUs />} /> 
       <Route path="*" element={<Navigate to="/" replace />} />
       {/* <Route path="dashboard" element={<Dashboard />} /> */}
     </Routes>

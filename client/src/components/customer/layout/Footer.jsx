@@ -1,9 +1,10 @@
+import { Link } from "react-router-dom";
 import  "../../../assets/css/customer/Footer.css";
 const Footer = () => (
   <footer className="footer">
     <div className="footer-container">
       <div className="footer-brand">
-        <img src="/digikey-logo-footer.png" alt="BollentElectric" />
+        <img src="/bollent-logo-footer.png" alt="BollentElectric" />
         <p className="footer-desc">
           Distributor of electronic components worldwide. Find parts, datasheets, and more.
         </p>
@@ -12,10 +13,10 @@ const Footer = () => (
         <div className="footer-section">
           <h4>Company</h4>
           <ul>
-            <li><a href="#">About Us</a></li>
+            <li><Link to="/about">About Us</Link></li>
             <li><a href="#">Careers</a></li>
             <li><a href="#">Press</a></li>
-            <li><a href="#">Contact Us</a></li>
+            <li><Link to="/contact">Contact Us</Link></li>
           </ul>
         </div>
         <div className="footer-section">
