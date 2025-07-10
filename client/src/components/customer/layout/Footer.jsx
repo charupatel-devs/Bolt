@@ -1,5 +1,7 @@
 import { Link } from "react-router-dom";
-import  "../../../assets/css/customer/Footer.css";
+import "../../../assets/css/customer/Footer.css";
+import { FaFacebookF, FaXTwitter, FaInstagram, FaLinkedinIn, FaYoutube } from "react-icons/fa6";
+
 const Footer = () => (
   <footer className="footer">
     <div className="footer-container">
@@ -9,6 +11,7 @@ const Footer = () => (
           Distributor of electronic components worldwide. Find parts, datasheets, and more.
         </p>
       </div>
+
       <div className="footer-links">
         <div className="footer-section">
           <h4>Company</h4>
@@ -36,16 +39,30 @@ const Footer = () => (
             <li><a href="#">Compliance</a></li>
           </ul>
         </div>
+
         <div className="footer-section">
           <h4>Connect With Us</h4>
           <div className="social-icons">
-            <a href="#"><img src="/facebook.png" alt="Facebook" /></a>
-            <a href="#"><img src="/twitter.png" alt="Twitter" /></a>
-            <a href="#"><img src="/linkedin.png" alt="LinkedIn" /></a>
+            <a href="https://www.facebook.com/login" target="_blank" rel="noopener noreferrer" title="Facebook Login">
+              <FaFacebookF />
+            </a>
+            <a href="https://twitter.com/login" target="_blank" rel="noopener noreferrer" title="X Login">
+              <FaXTwitter />
+            </a>
+            <a href="https://www.instagram.com/accounts/login" target="_blank" rel="noopener noreferrer" title="Instagram Login">
+              <FaInstagram />
+            </a>
+            <a href="https://www.linkedin.com/login" target="_blank" rel="noopener noreferrer" title="LinkedIn Login">
+              <FaLinkedinIn />
+            </a>
+            <a href="https://accounts.google.com/ServiceLogin?service=youtube" target="_blank" rel="noopener noreferrer" title="YouTube Login">
+              <FaYoutube />
+            </a>
           </div>
         </div>
       </div>
     </div>
+
     <div className="footer-bottom">
       © {new Date().getFullYear()} BollentElectric. All rights reserved.
     </div>

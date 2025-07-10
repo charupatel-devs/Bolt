@@ -1,9 +1,11 @@
 import React, { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import "../../../assets/css/customer/Products.css";
 
 const Products = () => {
   const { categoryId } = useParams();
+  const navigate = useNavigate();
+
   const [allProducts, setAllProducts] = useState([]);
   const [visibleProducts, setVisibleProducts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -21,14 +23,112 @@ const Products = () => {
         );
         const data = await res.json();
 
-        if (data.success) {
+        if (data.success && data.products.length > 0) {
           setAllProducts(data.products);
           setTotalPages(Math.ceil(data.products.length / pagination.limit));
         } else {
-          setError("Failed to fetch products.");
+          console.warn("Using dummy data fallback...");
+          const dummy = [
+            {
+              _id: "1",
+              name: "Arduino UNO R3",
+              sku: "ARD-UNO-R3",
+              specifications: { speed: "16 MHz" },
+              unit: "Piece",
+              price: 499.99,
+              stock: 20,
+            },
+            {
+              _id: "2",
+              name: "ESP32 Dev Kit",
+              sku: "ESP32-DEV",
+              specifications: { speed: "240 MHz" },
+              unit: "Piece",
+              price: 799.0,
+              stock: 15,
+            },
+            {
+              _id: "3",
+              name: "Raspberry Pi 4 Model B",
+              sku: "RPI4-4GB",
+              specifications: { speed: "1.5 GHz" },
+              unit: "Piece",
+              price: 3500.0,
+              stock: 10,
+            },
+            {
+              _id: "4",
+              name: "L298N Motor Driver",
+              sku: "L298N",
+              specifications: { speed: "N/A" },
+              unit: "Piece",
+              price: 150.0,
+              stock: 50,
+            },
+            {
+              _id: "5",
+              name: "HC-05 Bluetooth Module",
+              sku: "HC05-BT",
+              specifications: { speed: "9600 bps" },
+              unit: "Piece",
+              price: 250.0,
+              stock: 30,
+            },
+          ];
+          setAllProducts(dummy);
+          setTotalPages(Math.ceil(dummy.length / pagination.limit));
         }
       } catch (err) {
-        setError("Error fetching data");
+        setError("Error fetching data. Showing dummy data.");
+        const dummy = [
+          {
+            _id: "1",
+            name: "Arduino UNO R3",
+            sku: "ARD-UNO-R3",
+            specifications: { speed: "16 MHz" },
+            unit: "Piece",
+            price: 499.99,
+            stock: 20,
+          },
+          {
+            _id: "2",
+            name: "ESP32 Dev Kit",
+            sku: "ESP32-DEV",
+            specifications: { speed: "240 MHz" },
+            unit: "Piece",
+            price: 799.0,
+            stock: 15,
+          },
+          {
+            _id: "3",
+            name: "Raspberry Pi 4 Model B",
+            sku: "RPI4-4GB",
+            specifications: { speed: "1.5 GHz" },
+            unit: "Piece",
+            price: 3500.0,
+            stock: 10,
+          },
+          {
+            _id: "4",
+            name: "L298N Motor Driver",
+            sku: "L298N",
+            specifications: { speed: "N/A" },
+            unit: "Piece",
+            price: 150.0,
+            stock: 50,
+          },
+          {
+            _id: "5",
+            name: "HC-05 Bluetooth Module",
+            sku: "HC05-BT",
+            specifications: { speed: "9600 bps" },
+            unit: "Piece",
+            price: 250.0,
+            stock: 30,
+          },
+        ];
+        setAllProducts(dummy);
+        setTotalPages(Math.ceil(dummy.length / pagination.limit));
       } finally {
         setLoading(false);
       }
@@ -48,7 +148,7 @@ const Products = () => {
     } else if (sortOption === "price") {
       sorted.sort((a, b) => a.price - b.price);
     } else if (sortOption === "stock") {
-      sorted.sort((a, b) => b.stock - a.stock); // DESCENDING
+      sorted.sort((a, b) => b.stock - a.stock);
     }
 
     setVisibleProducts(sorted.slice(start, end));
@@ -77,10 +177,7 @@ const Products = () => {
       p.stock,
     ]);
 
-    const csvContent = [
-      headers.join(","),
-      ...rows.map((row) => row.join(",")),
-    ].join("\n");
+    const csvContent = [headers.join(","), ...rows.map((row) => row.join(","))].join("\n");
 
     const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
@@ -99,14 +196,11 @@ const Products = () => {
           <div className="table-controls">
             <div className="left-controls">
               <span className="pagination-summary">
-                Page <strong>{pagination.page}</strong> of{" "}
-                <strong>{totalPages}</strong>
+                Page <strong>{pagination.page}</strong> of <strong>{totalPages}</strong>
               </span>
               <div className="dropdown-divider"></div>
               <div className="sort-by">
-                <label htmlFor="sort">
-                  <b>Sort By:</b>
-                </label>
+                <label htmlFor="sort"><b>Sort By:</b></label>
                 <select
                   id="sort"
                   className="sort-dropdown"
@@ -146,7 +240,11 @@ const Products = () => {
                   </thead>
                   <tbody>
                     {visibleProducts.map((p) => (
-                      <tr key={p._id}>
+                      <tr
+                        key={p._id}
+                        onClick={() => navigate(`/product/${p._id}`)}
+                        style={{ cursor: "pointer" }}
+                      >
                         <td>
                           <div className="product-name-cell">
                             <img
@@ -154,7 +252,7 @@ const Products = () => {
                               alt={p.name}
                               className="product-thumbnail"
                             />
-                            <div>{p.name}</div>
+                            <span className="hover-red-name">{p.name}</span>
                           </div>
                         </td>
                         <td>{p.sku}</td>

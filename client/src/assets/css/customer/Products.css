@@ -179,6 +179,16 @@
   cursor: not-allowed;
 }
 
+.hover-red-name {
+  color: black;
+  transition: color 0.2s ease;
+}
+
+.hover-red-name:hover {
+  color: red;
+  cursor: pointer;
+}
+
 /* ---------- Responsive Enhancements ---------- */
 /* @media (max-width: 768px) {
   .table-controls {
