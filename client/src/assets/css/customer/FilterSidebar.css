@@ -1,14 +1,13 @@
 .sidebar-container {
-  /* padding: 1rem; */
   margin-left: 0.5rem;
-   margin-right:5rem;
+  margin-right: 5rem;
 }
 
 .sidebar-box {
   background: #fff;
-  border: 1px solid #ddd;
-  padding: 1rem;
-  border-radius: 4px;
+  border: 2px solid #ddd;
+  padding: 1.5rem 1.75rem; /* Added space between border and content */
+  border-radius: 6px; /* Slightly smoother corners */
 }
 
 .sidebar-header {
@@ -16,8 +15,6 @@
   justify-content: space-between;
   align-items: baseline;
   margin-bottom: 0.75rem;
-  
-
 }
 
 .sidebar-heading {
@@ -25,6 +22,7 @@
   font-size: 1.25rem;
   font-weight: bold;
   padding-bottom: 0.25rem;
+  text-decoration: underline;
 }
 
 .view-all-link {
@@ -43,7 +41,7 @@
   list-style: none;
   padding: 0;
   margin: 0;
-  width:150px;
+  width: 160px; /* slightly wider */
 }
 
 .sidebar-item {
@@ -52,17 +50,20 @@
   cursor: pointer;
   font-weight: bold;
   transition: color 0.2s, border-left 0.2s;
-  padding-left: 0.5rem;
+  padding: 0.4rem 0.5rem 0.4rem 0.75rem; /* subtle inner spacing */
   border-left: 3px solid transparent;
   color: #333;
+  border-radius: 4px;
 }
 
 .sidebar-item:hover {
   color: red;
   border-left-color: red;
+  background-color: #fef2f2; /* light background on hover */
 }
 
 .sidebar-item.active {
   color: red;
   border-left-color: red;
+  background-color: #ffeaea; /* light red for active */
 }

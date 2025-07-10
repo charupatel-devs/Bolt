@@ -1,53 +1,193 @@
 import React, { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import "../../../assets/css/customer/Products.css";
 
 const Products = () => {
   const { categoryId } = useParams();
-  const [products, setProducts] = useState([]);
+  const navigate = useNavigate();
+
+  const [allProducts, setAllProducts] = useState([]);
+  const [visibleProducts, setVisibleProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [pagination, setPagination] = useState({ page: 1, limit: 5 });
+  const [pagination, setPagination] = useState({ page: 1, limit: 4 });
+  const [totalPages, setTotalPages] = useState(1);
+  const [sortOption, setSortOption] = useState("name");
 
-  // ✅ Dummy product data
-  const dummyData = [
-    { _id: "1", name: "Sample Product 8", description: "", price: 40.3, stock: 157, sku: "SKU-008", category: { name: "Axail" }, unit: "piece", specifications: { speed: "338 Mbps" } },
-    { _id: "2", name: "Sample Product 9", description: "", price: 33.51, stock: 322, sku: "SKU-009", category: { name: "Axail" }, unit: "piece", specifications: { speed: "647 Mbps" } },
-    { _id: "3", name: "Sample Product 10", description: "", price: 13.61, stock: 391, sku: "SKU-010", category: { name: "Axail" }, unit: "piece", specifications: { speed: "880 Mbps" } },
-    { _id: "4", name: "Sample Product 11", description: "", price: 44.62, stock: 397, sku: "SKU-011", category: { name: "Axail" }, unit: "piece", specifications: { speed: "820 Mbps" } },
-    { _id: "5", name: "Sample Product", description: "", price: 10.99, stock: 100, sku: "SKU-001", category: { name: "Axail" }, unit: "piece", specifications: { speed: "sample_value" } },
-    { _id: "6", name: "Sample Product 2", description: "", price: 16.89, stock: 440, sku: "SKU-002", category: { name: "Axail" }, unit: "piece", specifications: { speed: "630 Mbps" } },
-    { _id: "7", name: "charupatel", description: "acs", price: 121, stock: 0, sku: "CCA12", category: { name: "Axail" }, unit: "piece", specifications: {} },
-    { _id: "8", name: "charupatel-devs", description: "acs", price: 121, stock: 0, sku: "CCA", category: { name: "Axail" }, unit: "piece", specifications: {} },
-    { _id: "9", name: "charupatel-devs", description: "charu", price: 12, stock: 11, sku: "CHARU", category: { name: "Axail" }, unit: "piece", specifications: {} },
-  ];
-
-  // ✅ Fetch API and combine with dummy data
   useEffect(() => {
     const fetchProducts = async () => {
       try {
         setLoading(true);
         const res = await fetch(
-          `http://localhost:5001/api/products/category/${categoryId}?page=${pagination.page}&limit=${pagination.limit}`
+          `http://localhost:5001/api/products/category/${categoryId}`
         );
         const data = await res.json();
 
-        if (data.success) {
-          setProducts([...data.products, ...dummyData]); // ✅ Combine API + dummy
+        if (data.success && data.products.length > 0) {
+          setAllProducts(data.products);
+          setTotalPages(Math.ceil(data.products.length / pagination.limit));
         } else {
-          setError("Failed to fetch products.");
-          setProducts(dummyData); // fallback to dummy only
+          console.warn("Using dummy data fallback...");
+          const dummy = [
+            {
+              _id: "1",
+              name: "Arduino UNO R3",
+              sku: "ARD-UNO-R3",
+              specifications: { speed: "16 MHz" },
+              unit: "Piece",
+              price: 499.99,
+              stock: 20,
+            },
+            {
+              _id: "2",
+              name: "ESP32 Dev Kit",
+              sku: "ESP32-DEV",
+              specifications: { speed: "240 MHz" },
+              unit: "Piece",
+              price: 799.0,
+              stock: 15,
+            },
+            {
+              _id: "3",
+              name: "Raspberry Pi 4 Model B",
+              sku: "RPI4-4GB",
+              specifications: { speed: "1.5 GHz" },
+              unit: "Piece",
+              price: 3500.0,
+              stock: 10,
+            },
+            {
+              _id: "4",
+              name: "L298N Motor Driver",
+              sku: "L298N",
+              specifications: { speed: "N/A" },
+              unit: "Piece",
+              price: 150.0,
+              stock: 50,
+            },
+            {
+              _id: "5",
+              name: "HC-05 Bluetooth Module",
+              sku: "HC05-BT",
+              specifications: { speed: "9600 bps" },
+              unit: "Piece",
+              price: 250.0,
+              stock: 30,
+            },
+          ];
+          setAllProducts(dummy);
+          setTotalPages(Math.ceil(dummy.length / pagination.limit));
         }
       } catch (err) {
-        setError("Error fetching data");
-        setProducts(dummyData); // fallback to dummy only
+        setError("Error fetching data. Showing dummy data.");
+        const dummy = [
+          {
+            _id: "1",
+            name: "Arduino UNO R3",
+            sku: "ARD-UNO-R3",
+            specifications: { speed: "16 MHz" },
+            unit: "Piece",
+            price: 499.99,
+            stock: 20,
+          },
+          {
+            _id: "2",
+            name: "ESP32 Dev Kit",
+            sku: "ESP32-DEV",
+            specifications: { speed: "240 MHz" },
+            unit: "Piece",
+            price: 799.0,
+            stock: 15,
+          },
+          {
+            _id: "3",
+            name: "Raspberry Pi 4 Model B",
+            sku: "RPI4-4GB",
+            specifications: { speed: "1.5 GHz" },
+            unit: "Piece",
+            price: 3500.0,
+            stock: 10,
+          },
+          {
+            _id: "4",
+            name: "L298N Motor Driver",
+            sku: "L298N",
+            specifications: { speed: "N/A" },
+            unit: "Piece",
+            price: 150.0,
+            stock: 50,
+          },
+          {
+            _id: "5",
+            name: "HC-05 Bluetooth Module",
+            sku: "HC05-BT",
+            specifications: { speed: "9600 bps" },
+            unit: "Piece",
+            price: 250.0,
+            stock: 30,
+          },
+        ];
+        setAllProducts(dummy);
+        setTotalPages(Math.ceil(dummy.length / pagination.limit));
       } finally {
         setLoading(false);
       }
     };
 
     fetchProducts();
-  }, [categoryId, pagination.page, pagination.limit]);
+  }, [categoryId]);
+
+  useEffect(() => {
+    const start = (pagination.page - 1) * pagination.limit;
+    const end = start + pagination.limit;
+
+    let sorted = [...allProducts];
+
+    if (sortOption === "name") {
+      sorted.sort((a, b) => a.name.localeCompare(b.name));
+    } else if (sortOption === "price") {
+      sorted.sort((a, b) => a.price - b.price);
+    } else if (sortOption === "stock") {
+      sorted.sort((a, b) => b.stock - a.stock);
+    }
+
+    setVisibleProducts(sorted.slice(start, end));
+  }, [allProducts, pagination.page, pagination.limit, sortOption]);
+
+  const goToNextPage = () => {
+    if (pagination.page < totalPages) {
+      setPagination((prev) => ({ ...prev, page: prev.page + 1 }));
+    }
+  };
+
+  const goToPrevPage = () => {
+    if (pagination.page > 1) {
+      setPagination((prev) => ({ ...prev, page: prev.page - 1 }));
+    }
+  };
+
+  const handleDownload = () => {
+    const headers = ["Name", "SKU", "Speed", "Unit", "Price (₹)", "Stock"];
+    const rows = visibleProducts.map((p) => [
+      p.name,
+      p.sku,
+      p.specifications?.speed || "N/A",
+      p.unit,
+      p.price.toFixed(2),
+      p.stock,
+    ]);
+
+    const csvContent = [headers.join(","), ...rows.map((row) => row.join(","))].join("\n");
+
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.setAttribute("download", "bollent-products.csv");
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
 
   return (
     <div className="w-full min-h-screen flex">
@@ -56,12 +196,17 @@ const Products = () => {
           <div className="table-controls">
             <div className="left-controls">
               <span className="pagination-summary">
-                Showing <strong>1 - {products.length}</strong> of {products.length}
+                Page <strong>{pagination.page}</strong> of <strong>{totalPages}</strong>
               </span>
               <div className="dropdown-divider"></div>
               <div className="sort-by">
                 <label htmlFor="sort"><b>Sort By:</b></label>
-                <select id="sort" className="sort-dropdown">
+                <select
+                  id="sort"
+                  className="sort-dropdown"
+                  value={sortOption}
+                  onChange={(e) => setSortOption(e.target.value)}
+                >
                   <option value="name">Name</option>
                   <option value="price">Price</option>
                   <option value="stock">Stock</option>
@@ -69,51 +214,78 @@ const Products = () => {
               </div>
             </div>
             <div className="right-controls">
-              <button className="download-button">Download Table</button>
+              <button className="download-button" onClick={handleDownload}>
+                Download Table
+              </button>
             </div>
           </div>
 
           {loading && <p>Loading products...</p>}
           {error && <p className="error">Error: {error}</p>}
-          {!loading && products.length === 0 && <p>No products found.</p>}
+          {!loading && visibleProducts.length === 0 && <p>No products found.</p>}
 
-          {!loading && products.length > 0 && (
-            <div className="table-container-v2">
-              <table className="product-table-v2">
-                <thead>
-                  <tr>
-                    <th>Name</th>
-                    <th>SKU</th>
-                    <th>Speed</th>
-                    <th>Unit</th>
-                    <th>Price (₹)</th>
-                    <th>Stock</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {products.map((p) => (
-                    <tr key={p._id}>
-                      <td>
-                        <div className="product-name-cell">
-                        <img
-                           src="/images/default-product.jpg" 
-                           alt={p.name}
-                           className="product-thumbnail"
-                        />
-
-                          <div>{p.name}</div>
-                        </div>
-                      </td>
-                      <td>{p.sku}</td>
-                      <td>{p.specifications?.speed || "N/A"}</td>
-                      <td>{p.unit}</td>
-                      <td>{p.price.toFixed(2)}</td>
-                      <td>{p.stock}</td>
+          {!loading && visibleProducts.length > 0 && (
+            <>
+              <div className="table-container-v2">
+                <table className="product-table-v2">
+                  <thead>
+                    <tr>
+                      <th>Name</th>
+                      <th>SKU</th>
+                      <th>Speed</th>
+                      <th>Unit</th>
+                      <th>Price (₹)</th>
+                      <th>Stock</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody>
+                    {visibleProducts.map((p) => (
+                      <tr
+                        key={p._id}
+                        onClick={() => navigate(`/product/${p._id}`)}
+                        style={{ cursor: "pointer" }}
+                      >
+                        <td>
+                          <div className="product-name-cell">
+                            <img
+                              src="/images/default-product.jpg"
+                              alt={p.name}
+                              className="product-thumbnail"
+                            />
+                            <span className="hover-red-name">{p.name}</span>
+                          </div>
+                        </td>
+                        <td>{p.sku}</td>
+                        <td>{p.specifications?.speed || "N/A"}</td>
+                        <td>{p.unit}</td>
+                        <td>{p.price.toFixed(2)}</td>
+                        <td>{p.stock}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              <div className="pagination-controls">
+                <button
+                  disabled={pagination.page === 1}
+                  onClick={goToPrevPage}
+                  className="pagination-button"
+                >
+                  Previous
+                </button>
+                <span className="page-info">
+                  Page {pagination.page} of {totalPages}
+                </span>
+                <button
+                  disabled={pagination.page === totalPages}
+                  onClick={goToNextPage}
+                  className="pagination-button"
+                >
+                  Next
+                </button>
+              </div>
+            </>
           )}
         </div>
       </div>
@@ -122,4 +294,3 @@ const Products = () => {
 };
 
 export default Products;
-

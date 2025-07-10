@@ -44,6 +44,11 @@
   border-right: none;
 }
 
+.table-container-v2 {
+  min-height: 400px; 
+  overflow-y: auto;
+}
+
 /* ---------- Image Styling ---------- */
 .product-thumbnail {
   width: 50px;
@@ -151,6 +156,37 @@
   font-size: 14px;
   color: blue;
   text-decoration: underline;
+}
+.pagination-controls {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-top: 20px;
+  gap: 12px;
+}
+
+.pagination-button {
+  padding: 6px 12px;
+  background-color:red;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.pagination-button:disabled {
+  background-color: gray;
+  cursor: not-allowed;
+}
+
+.hover-red-name {
+  color: black;
+  transition: color 0.2s ease;
+}
+
+.hover-red-name:hover {
+  color: red;
+  cursor: pointer;
 }
 
 /* ---------- Responsive Enhancements ---------- */

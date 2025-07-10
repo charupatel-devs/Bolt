@@ -1,0 +1,104 @@
+.about-us-container {
+  font-family: 'Segoe UI', sans-serif;
+  color: #333;
+  background: #f9f9f9;
+  padding: 2rem;
+}
+
+.hero-section {
+  background: #fff;
+  padding: 2rem;
+  border-left: 4px solid #e60000;
+  box-shadow: 0 0 10px rgba(0,0,0,0.05);
+}
+
+.hero-section .highlight {
+  color: #e60000;
+  font-size: 45px;
+  font-weight:700;
+}
+
+.history-section {
+  margin-top: 3rem;
+}
+.history-section .heading{
+    font-size: 28px;
+    font-weight:700;
+
+}
+.timeline {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 2rem;
+}
+
+.timeline-item {
+  flex: 1 1 45%;
+  background: #fff;
+  padding: 1rem;
+  border-left: 4px solid #e60000;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+}
+
+.timeline-item img {
+  width: 40px;
+}
+
+.timeline-content h3 {
+  margin: 0;
+  color: #111;
+}
+
+.fast-facts-section {
+  margin-top: 3rem;
+  background: #1e1e1e;
+  color: white;
+  padding: 2rem;
+  border-radius: 10px;
+ 
+}
+
+.facts-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.fact-box {
+  background: #333;
+  padding: 1rem;
+  border-radius: 8px;
+  text-align: center;
+  font-size: 0.95rem;
+}
+
+.fact-box strong {
+  display: block;
+  font-size: 1.5rem;
+  color: #e60000;
+}
+
+.cta-section {
+  text-align: center;
+  padding: 3rem 1rem;
+}
+
+.cta-button {
+  background: #e60000;
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  font-size: 1rem;
+  border-radius: 5px;
+  margin-top: 1rem;
+  cursor: pointer;
+}
+
+.cta-button:hover {
+  background: #cc0000;
+}
