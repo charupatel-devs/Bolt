@@ -4,7 +4,33 @@ import {
   ProductActionSuccess,
 } from "../../store/admin/adminProductSlice";
 import api from "../api";
+// Toast options
+const ErrorToastOptions = {
+  duration: 4000,
+  style: {
+    background: "#f87171",
+    color: "#fff",
+  },
+};
 
+const SuccessToastOptions = {
+  duration: 3000,
+  style: {
+    background: "#4ade80",
+    color: "#000",
+  },
+};
+
+// Parse error function
+const parseError = (error) => {
+  if (error.response) {
+    return error.response.data.message || "Invalid credentials";
+  } else if (error.request) {
+    return "Network error. Please check your connection.";
+  } else {
+    return "Something went wrong. Please try again.";
+  }
+};
 export const addProduct = async (productData, dispatch) => {
   try {
     dispatch(ProductActionStart());
@@ -371,28 +397,36 @@ export const exportProductsService = async (
     throw new Error("Error exporting products: " + errorMessage);
   }
 };
-
-export const fetchStocks = async (dispatch) => {
+// Returns a promise resolving to a list of products for the given categoryId
+export const getProductNameByCategory = async (dispatch, categoryId) => {
   try {
+    if (!categoryId) {
+      dispatch(ProductActionFailure("No category selected"));
+      toast.error("Please select a category first.", ErrorToastOptions);
+      return [];
+    }
+
     dispatch(ProductActionStart());
-    const { data } = await api.get("/products/stock");
-    if (data.success) {
+
+    const { data } = await api.get(`/products/names?category=${categoryId}`);
+
+    if (data.products.length) {
       dispatch(
         ProductActionSuccess({
-          type: "GET_STOCKS",
-          payload: data.products,
+          type: "GET_PRODUCT_NAMES",
+          payload: data,
         })
       );
+      toast.success("Product names loaded!", SuccessToastOptions);
     } else {
-      throw new Error("Failed to fetch stocks");
+      dispatch(ProductActionFailure("No products found for this category"));
+      toast.error("No products found for this category.", ErrorToastOptions);
     }
+    return products;
   } catch (error) {
-    const errorMessage =
-      error.response?.data?.message ||
-      error.response?.statusText ||
-      error.message ||
-      "Unknown error fetching stocks";
+    const errorMessage = parseError(error);
     dispatch(ProductActionFailure(errorMessage));
-    throw new Error("Error fetching stocks: " + errorMessage);
+    toast.error(errorMessage, ErrorToastOptions);
+    return [];
   }
 };

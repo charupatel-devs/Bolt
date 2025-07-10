@@ -1,37 +1,55 @@
+import { toast } from "react-hot-toast"; // Or your toast library
 import api from "../api";
 
-// Get dashboard statistics
+// Toast options
+const ErrorToastOptions = {
+  duration: 4000,
+  style: {
+    background: "#f87171",
+    color: "#fff",
+  },
+};
+
+const SuccessToastOptions = {
+  duration: 3000,
+  style: {
+    background: "#4ade80",
+    color: "#000",
+  },
+};
+
+// Parse error function
+const parseError = (error) => {
+  if (error.response) {
+    return error.response.data.message || "Invalid credentials";
+  } else if (error.request) {
+    return "Network error. Please check your connection.";
+  } else {
+    return "Something went wrong. Please try again.";
+  }
+};
+
+// Get dashboard stats cards data
 export const getDashboardStats = async () => {
   try {
     const response = await api.get("/admin/dashboard");
+    // Optionally show a success toast
+    // toast.success("Dashboard stats loaded", SuccessToastOptions);
     return response.data;
   } catch (error) {
-    throw new Error(
-      error.response?.data?.message || "Failed to fetch dashboard stats"
-    );
+    const message = parseError(error);
+    toast.error(message, ErrorToastOptions);
+    throw new Error(message);
   }
 };
 
-// Get recent activities
-export const getRecentActivities = async () => {
+export const getSalesChartData = async (range = "7days") => {
   try {
-    const response = await api.get("/admin/activities/recent");
-    return response.data;
+    const response = await api.get(`/admin/sales-chart?range=${range}`);
+    return response.data.data;
   } catch (error) {
-    throw new Error(
-      error.response?.data?.message || "Failed to fetch recent activities"
-    );
-  }
-};
-
-// Get sales analytics
-export const getSalesAnalytics = async () => {
-  try {
-    const response = await api.get("/admin/analytics/sales");
-    return response.data;
-  } catch (error) {
-    throw new Error(
-      error.response?.data?.message || "Failed to fetch sales analytics"
-    );
+    const message = parseError(error);
+    toast.error(message, ErrorToastOptions);
+    throw new Error(message);
   }
 };

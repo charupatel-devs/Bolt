@@ -26,7 +26,6 @@ import {
   fetchCategories,
   updateCategory,
 } from "../../services_hooks/admin/adminCategory";
-import { clearMessages } from "../../store/admin/adminCategorySlice";
 
 const AdminCategories = () => {
   const dispatch = useDispatch();
@@ -86,18 +85,6 @@ const AdminCategories = () => {
     console.log("Fetching categories...");
     fetchCategories(dispatch);
   }, [dispatch]);
-
-  // Handle success/error messages
-  useEffect(() => {
-    if (successMessage) {
-      alert(successMessage);
-      dispatch(clearMessages());
-    }
-    if (error && errorMessage) {
-      alert(errorMessage);
-      dispatch(clearMessages());
-    }
-  }, [successMessage, error, errorMessage, dispatch]);
 
   const resetForm = () => {
     setNewCategory({

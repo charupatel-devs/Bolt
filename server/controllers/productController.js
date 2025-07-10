@@ -8,6 +8,7 @@ const APIFeatures = require("../utils/apiFeatures");
 // @desc    Get all products with filtering, sorting, and pagination
 // @route   GET /api/products
 // @access  Public
+// const getAllProducts = catchAsync(async (req, res, next) => {
 const getAllProducts = catchAsync(async (req, res, next) => {
   // Build filter object
   let filter = { isActive: true };
@@ -92,7 +93,33 @@ const getAllProducts = catchAsync(async (req, res, next) => {
     products,
   });
 });
+// Get minimal product list: only _id and name (optionally filtered by category)
+const getProductNamesByCategory = catchAsync(async (req, res, next) => {
+  try {
+    const { category } = req.query;
+    const filter = { isActive: true };
 
+    if (category) {
+      filter.category = category;
+    }
+
+    // Only select _id and name fields
+    const products = await Product.find(filter)
+      .select("name _id")
+      .sort({ name: 1 });
+
+    res.status(200).json({
+      success: true,
+      products, // array of { _id, name }
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Server error fetching product names",
+      error: error.message,
+    });
+  }
+});
 // Helper function to get available filters
 const getAvailableFilters = async (baseFilter) => {
   const [brands, priceRange, categories] = await Promise.all([
@@ -583,61 +610,6 @@ const getProductSpecifications = catchAsync(async (req, res, next) => {
     rawSpecifications: specs,
   });
 });
-
-// @desc    Update product stock (can be used by authenticated users to check real-time stock)
-// @route   GET /api/products/:id/stock
-// @access  Public (with optional auth)
-exports.updateProductStock = catchAsync(async (req, res, next) => {
-  const product = await Product.findById(req.params.id).select(
-    "name stock availability minOrderQuantity maxOrderQuantity"
-  );
-
-  if (!product) {
-    return next(new AppError("Product not found", 404));
-  }
-
-  // Calculate stock status
-  let stockStatus = "in_stock";
-  if (product.stock === 0) {
-    stockStatus = "out_of_stock";
-  } else if (product.stock <= 10) {
-    stockStatus = "low_stock";
-  }
-
-  // Check if user is authenticated for detailed stock info
-  const isAuthenticated = req.user ? true : false;
-
-  const stockInfo = {
-    availability: product.availability,
-    stockStatus,
-    minOrderQuantity: product.minOrderQuantity,
-    maxOrderQuantity: product.maxOrderQuantity,
-  };
-
-  // Show exact stock only to authenticated users
-  if (isAuthenticated) {
-    stockInfo.exactStock = product.stock;
-  } else {
-    // Show general availability to anonymous users
-    stockInfo.inStock = product.stock > 0;
-    if (product.stock > 50) {
-      stockInfo.stockLevel = "high";
-    } else if (product.stock > 10) {
-      stockInfo.stockLevel = "medium";
-    } else if (product.stock > 0) {
-      stockInfo.stockLevel = "low";
-    } else {
-      stockInfo.stockLevel = "out";
-    }
-  }
-
-  res.status(200).json({
-    success: true,
-    productName: product.name,
-    stock: stockInfo,
-  });
-});
-// Additional utility functions and extended features for productController.js
 
 // Helper function to format product data for API response
 const formatProductResponse = (product) => {
@@ -1331,21 +1303,6 @@ const recordProductView = catchAsync(async (req, res, next) => {
   });
 });
 
-// GET all product stocks
-const getAllStocks = async (req, res) => {
-  try {
-    const products = await Product.find(
-      {},
-      "name sku stock minOrderQuantity maxOrderQuantity availability"
-    );
-    res.json({ success: true, products });
-  } catch (err) {
-    res
-      .status(500)
-      .json({ success: false, message: "Server error", error: err.message });
-  }
-};
-
 // GET single product stock
 const getStockById = async (req, res) => {
   try {
@@ -1365,63 +1322,6 @@ const getStockById = async (req, res) => {
   }
 };
 
-// PATCH adjust product stock
-const adjustStock = async (req, res) => {
-  /*
-    Body: { type: "add" | "subtract" | "set", quantity: Number, reason?: String }
-  */
-  try {
-    const { type, quantity, reason } = req.body;
-    if (!["add", "subtract", "set"].includes(type)) {
-      return res
-        .status(400)
-        .json({ success: false, message: "Invalid adjustment type" });
-    }
-    if (typeof quantity !== "number" || quantity < 0) {
-      return res
-        .status(400)
-        .json({ success: false, message: "Invalid quantity" });
-    }
-
-    const product = await Product.findById(req.params.id);
-    if (!product)
-      return res
-        .status(404)
-        .json({ success: false, message: "Product not found" });
-
-    let oldStock = product.stock;
-    if (type === "add") {
-      product.stock += quantity;
-    } else if (type === "subtract") {
-      product.stock = Math.max(0, product.stock - quantity);
-    } else if (type === "set") {
-      product.stock = quantity;
-    }
-
-    // Optionally, update availability
-    product.availability = product.stock > 0 ? "in_stock" : "out_of_stock";
-
-    await product.save();
-
-    res.json({
-      success: true,
-      message: "Stock adjusted successfully",
-      data: {
-        productId: product._id,
-        sku: product.sku,
-        oldStock,
-        newStock: product.stock,
-        adjustment: type,
-        quantity,
-        reason,
-      },
-    });
-  } catch (err) {
-    res
-      .status(500)
-      .json({ success: false, message: "Server error", error: err.message });
-  }
-};
 module.exports = {
   getAllProducts,
   getProductById,
@@ -1450,7 +1350,6 @@ module.exports = {
   buildAdvancedFilter,
   checkLowStock,
   calculatePriceForQuantity,
-  getAllStocks,
-  adjustStock,
+  getProductNamesByCategory,
   getStockById,
 };

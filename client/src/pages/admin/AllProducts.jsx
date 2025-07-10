@@ -12,10 +12,11 @@ import {
   SlidersHorizontal,
   XCircle,
 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { NavLink } from "react-router-dom";
 import AdminLayout from "../../components/admin/layout/AdminLayout";
+import { fetchCategories } from "../../services_hooks/admin/adminCategory";
 import {
   deleteProductService,
   getAllProducts,
@@ -26,6 +27,7 @@ const AllProducts = () => {
   const dispatch = useDispatch();
   const { products, pagination, stats, filters, isFetching, error, errMsg } =
     useSelector((state) => state.products);
+  const { categories = [] } = useSelector((state) => state.categories || {});
 
   // Local UI states
   const [viewMode, setViewMode] = useState("table");
@@ -47,6 +49,10 @@ const AllProducts = () => {
     newProduct: filters.newProduct || false,
     onSale: filters.onSale || false,
   });
+  // Fetch categories on mount
+  useEffect(() => {
+    fetchCategories(dispatch);
+  }, [dispatch]);
 
   // Fetch products
   const fetchProducts = async () => {
@@ -55,7 +61,7 @@ const AllProducts = () => {
       await getAllProducts(dispatch, {
         page: pageNo,
         limit: itemsPerPage,
-        // search: searchTerm,
+        search: searchTerm, // <-- this was commented before
         category: selectedCategory,
         status: localFilters.stockStatus.join(","),
         sortBy: sortBy,
@@ -68,11 +74,6 @@ const AllProducts = () => {
   useEffect(() => {
     fetchProducts();
   }, [pageNo, itemsPerPage, selectedCategory, localFilters, sortBy, sortOrder]);
-
-  // Derive categories
-  const categories = useMemo(() => {
-    return [...new Set(products.map((p) => p.category?.name))].filter(Boolean);
-  }, [products]);
 
   // Status helpers
   const getStockStatus = (stock) => {
@@ -129,29 +130,7 @@ const AllProducts = () => {
     }
   };
 
-  // Apply filters
-  const filteredProducts = useMemo(() => {
-    // Filter by search term (case-insensitive)
-    const searchFiltered = products.filter(
-      (product) =>
-        product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        product.sku.toLowerCase().includes(searchTerm.toLowerCase())
-    );
-    // Apply other filters as before
-    return searchFiltered.filter((product) => {
-      const priceMatch =
-        (!localFilters.priceRange.min ||
-          product.price >= parseFloat(localFilters.priceRange.min)) &&
-        (!localFilters.priceRange.max ||
-          product.price <= parseFloat(localFilters.priceRange.max));
-      const inStockMatch = !localFilters.inStock || product.stock > 0;
-      const newProductMatch = !localFilters.newProduct || product.isNewArrival;
-      const onSaleMatch = !localFilters.onSale || product.isOnSale;
-      return priceMatch && inStockMatch && newProductMatch && onSaleMatch;
-    });
-  }, [products, searchTerm, localFilters]);
-
-  const paginatedProducts = filteredProducts;
+  const paginatedProducts = products; // Use API results directly
 
   if (error) {
     return (
@@ -174,7 +153,7 @@ const AllProducts = () => {
               All Products
             </h1>
             <p className="text-gray-600 mt-1">
-              Showing {filteredProducts.length} of {stats.totalProducts}{" "}
+              Showing {paginatedProducts.length} of {stats.totalProducts}{" "}
               products
             </p>
           </div>
@@ -201,15 +180,23 @@ const AllProducts = () => {
         <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center space-x-4 flex-1">
-              <div className="relative flex-1 max-w-md">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                <input
-                  type="text"
-                  placeholder="Search products..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
+              <div className="flex space-x-2 flex-1 max-w-md">
+                <div className="relative flex-1">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                  <input
+                    type="text"
+                    placeholder="Search products..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                </div>
+                <button
+                  onClick={fetchProducts}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                >
+                  Search
+                </button>
               </div>
 
               <select
@@ -218,9 +205,9 @@ const AllProducts = () => {
                 className="px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               >
                 <option value="">All Categories</option>
-                {categories.map((name) => (
-                  <option key={name} value={name}>
-                    {name}
+                {categories.map((cat) => (
+                  <option value={cat._id} key={cat._id}>
+                    {cat.name}
                   </option>
                 ))}
               </select>
@@ -501,8 +488,11 @@ const AllProducts = () => {
                 </div>
               </div>
             </div>
-
-            {viewMode === "table" ? (
+            {paginatedProducts.length === 0 ? (
+              <div className="p-10 text-center text-gray-500 text-lg">
+                No products found.
+              </div>
+            ) : viewMode === "table" ? (
               /* Table View */
               <div className="overflow-x-auto">
                 <table className="min-w-full">

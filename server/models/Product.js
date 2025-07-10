@@ -230,8 +230,14 @@ productSchema.methods.incrementViewCount = async function () {
 };
 // Virtual for primary image
 productSchema.virtual("primaryImage").get(function () {
-  const primary = this.images.find((img) => img.isPrimary);
-  return primary ? primary.url : this.images[0] ? this.images[0].url : null;
+  const primary = Array.isArray(this.images)
+    ? this.images.find((img) => img.isPrimary)
+    : null;
+  return primary
+    ? primary.url
+    : Array.isArray(this.images) && this.images[0]
+      ? this.images[0].url
+      : null;
 });
 
 // Method to set specification

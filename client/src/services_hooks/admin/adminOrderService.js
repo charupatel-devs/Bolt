@@ -1,4 +1,3 @@
-// adminOrderService.js
 import toast from "react-hot-toast";
 import {
   fetchOrdersFailure,
@@ -41,22 +40,29 @@ export const getOrdersByStatus = async (status, dispatch) => {
   try {
     const { data } = await api.get(`/orders/orders/${status}`);
     dispatch(fetchOrdersSuccess(data));
+    toast.success(`Fetched ${status} orders!`, {
+      id: `orders-${status}`,
+      ...SuccessToastOptions,
+    });
     return data;
   } catch (error) {
     const errorMessage = parseError(error);
-
     toast.error(`Failed to fetch ${status} orders: ${errorMessage}`, {
       id: `orders-${status}`,
       ...ErrorToastOptions,
     });
-    dispatch(fetchOrdersFailure(error.message));
-    throw error;
+    dispatch(fetchOrdersFailure(errorMessage));
+    throw new Error(errorMessage);
   }
 };
 
 export const fetchOrderStats = async (dispatch) => {
   try {
     const { data } = await api.get("/orders/management");
+    toast.success("Order stats loaded!", {
+      id: "order-stats",
+      ...SuccessToastOptions,
+    });
     return data;
   } catch (error) {
     const errorMessage = parseError(error);
@@ -64,6 +70,6 @@ export const fetchOrderStats = async (dispatch) => {
       id: "order-stats",
       ...ErrorToastOptions,
     });
-    throw error;
+    throw new Error(errorMessage);
   }
 };

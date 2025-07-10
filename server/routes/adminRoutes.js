@@ -31,6 +31,7 @@ const {
 
 const router = express.Router();
 const multer = require("multer");
+const { getSalesChart } = require("../controllers/dashboardController");
 const upload = multer({ dest: "uploads/" }); // or configure as needed
 
 // ===========================================
@@ -57,6 +58,7 @@ router.use(isAuthenticated, isAdmin);
 // ===========================================
 // DASHBOARD & ANALYTICS
 // ===========================================
+router.get("/sales-chart", getSalesChart);
 
 router.get(
   "/dashboard",

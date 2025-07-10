@@ -713,8 +713,54 @@ exports.deleteOrder = catchAsync(async (req, res, next) => {
 exports.getAllProducts = catchAsync(async (req, res, next) => {
   console.log("🔍 Incoming Query:", req.query);
 
+  // ✅ Build filter object
+  let filter = { isActive: true };
+
+  // Keyword search
+  if (req.query.search) {
+    const regex = new RegExp(req.query.search, "i");
+    filter.$or = [{ name: regex }, { sku: regex }];
+  }
+
+  // Category filter
+  if (req.query.category) {
+    filter.category = req.query.category;
+  }
+
+  // Brand filter (assuming it's stored in specifications.brand)
+  if (req.query.brand) {
+    filter["specifications.brand"] = new RegExp(req.query.brand, "i");
+  }
+
+  // Stock availability
+  if (req.query.inStock === "true") {
+    filter.stock = { $gt: 0 };
+  }
+
+  // Rating filter
+  if (req.query.minRating) {
+    filter.averageRating = { $gte: parseFloat(req.query.minRating) };
+  }
+
+  // Featured / Sale filters
+  if (req.query.featured === "true") {
+    filter.isFeatured = true;
+  }
+
+  if (req.query.onSale === "true") {
+    filter.isOnSale = true;
+  }
+
+  // Price range
+  if (req.query.minPrice || req.query.maxPrice) {
+    filter.price = {};
+    if (req.query.minPrice) filter.price.$gte = parseFloat(req.query.minPrice);
+    if (req.query.maxPrice) filter.price.$lte = parseFloat(req.query.maxPrice);
+  }
+
+  // ✅ Apply APIFeatures on filtered query
   const features = new APIFeatures(
-    Product.find().populate("category", "name"),
+    Product.find(filter).populate("category", "name slug"),
     req.query
   )
     .sort()
@@ -722,37 +768,39 @@ exports.getAllProducts = catchAsync(async (req, res, next) => {
     .paginate();
 
   const products = await features.query;
-  console.log("🚀 Products fetched:", products.length);
-  const totalProducts = await Product.countDocuments();
 
-  // Calculate pagination info
+  console.log("🚀 Products fetched:", products.length);
+
+  const totalProducts = await Product.countDocuments(filter);
+
+  // Pagination calc
   const page = req.query.page * 1 || 1;
   const limit = req.query.limit * 1 || 10;
+  const totalPages = Math.ceil(totalProducts / limit);
 
-  // ✅ Calculate stats for frontend
-  const stats = await Promise.all([
-    Product.countDocuments(), // Total products
-    Category.countDocuments(), // Directly count all categories
-    Product.countDocuments({ stock: { $gt: 0, $lte: 10 } }), // Low stock
-    Product.countDocuments({ stock: 0 }), // Out of stock
+  // Optional stats
+  const [totalItems, categoryCount, lowStock, outOfStock] = await Promise.all([
+    Product.countDocuments(),
+    Category.countDocuments(),
+    Product.countDocuments({ stock: { $gt: 0, $lte: 10 } }),
+    Product.countDocuments({ stock: 0 }),
   ]);
 
-  // ✅ Option 1: Keep current format but add stats
   res.status(200).json({
     success: true,
     results: products.length,
     totalProducts,
     pagination: {
       currentPage: page,
-      totalPages: Math.ceil(totalProducts / limit),
-      hasNextPage: page < Math.ceil(totalProducts / limit),
+      totalPages,
+      hasNextPage: page < totalPages,
       hasPrevPage: page > 1,
     },
     stats: {
-      totalProducts: stats[0],
-      categories: stats[1],
-      lowStockItems: stats[2],
-      outOfStock: stats[3],
+      totalProducts: totalItems,
+      categories: categoryCount,
+      lowStockItems: lowStock,
+      outOfStock: outOfStock,
     },
     products,
   });

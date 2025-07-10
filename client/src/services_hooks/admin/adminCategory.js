@@ -1,4 +1,5 @@
-// src/services/categoryService.js
+import toast from "react-hot-toast";
+
 import {
   createCategoryFailure,
   createCategoryStart,
@@ -15,24 +16,55 @@ import {
 } from "../../store/admin/adminCategorySlice";
 import api from "../api"; // Adjust path if needed
 
+// Toast options
+const ErrorToastOptions = {
+  duration: 4000,
+  style: {
+    background: "#f87171",
+    color: "#fff",
+  },
+};
+
+const SuccessToastOptions = {
+  duration: 3000,
+  style: {
+    background: "#4ade80",
+    color: "#000",
+  },
+};
+
+// Parse error function
+const parseError = (error) => {
+  if (error.response) {
+    return error.response.data.message || "Invalid credentials";
+  } else if (error.request) {
+    return "Network error. Please check your connection.";
+  } else {
+    return "Something went wrong. Please try again.";
+  }
+};
+
 // Get all categories
 export const fetchCategories = async (dispatch) => {
-  console.log("Fetching categories...");
   dispatch(fetchCategoriesStart());
   try {
     const { data } = await api.get("/categories");
     if (data.success) {
-      console.log("Fetched categories:", data.data);
       dispatch(fetchCategoriesSuccess(data.data));
+      // toast.success("Categories loaded!", SuccessToastOptions);
     } else {
       dispatch(
         fetchCategoriesFailure(data.message || "Failed to fetch categories")
       );
+      toast.error(
+        data.message || "Failed to fetch categories",
+        ErrorToastOptions
+      );
     }
   } catch (error) {
-    dispatch(
-      fetchCategoriesFailure(error.response?.data?.message || error.message)
-    );
+    const errMsg = parseError(error);
+    dispatch(fetchCategoriesFailure(errMsg));
+    toast.error(errMsg, ErrorToastOptions);
   }
 };
 
@@ -43,15 +75,20 @@ export const createCategory = async (categoryData, dispatch) => {
     const { data } = await api.post("/categories/create", categoryData);
     if (data.success) {
       dispatch(createCategorySuccess(data.data));
+      toast.success("Category created!", SuccessToastOptions);
     } else {
       dispatch(
         createCategoryFailure(data.message || "Failed to create category")
       );
+      toast.error(
+        data.message || "Failed to create category",
+        ErrorToastOptions
+      );
     }
   } catch (error) {
-    dispatch(
-      createCategoryFailure(error.response?.data?.message || error.message)
-    );
+    const errMsg = parseError(error);
+    dispatch(createCategoryFailure(errMsg));
+    toast.error(errMsg, ErrorToastOptions);
   }
 };
 
@@ -65,15 +102,20 @@ export const updateCategory = async (categoryId, categoryData, dispatch) => {
     );
     if (data.success) {
       dispatch(updateCategorySuccess(data.data));
+      toast.success("Category updated!", SuccessToastOptions);
     } else {
       dispatch(
         updateCategoryFailure(data.message || "Failed to update category")
       );
+      toast.error(
+        data.message || "Failed to update category",
+        ErrorToastOptions
+      );
     }
   } catch (error) {
-    dispatch(
-      updateCategoryFailure(error.response?.data?.message || error.message)
-    );
+    const errMsg = parseError(error);
+    dispatch(updateCategoryFailure(errMsg));
+    toast.error(errMsg, ErrorToastOptions);
   }
 };
 
@@ -84,15 +126,20 @@ export const deleteCategory = async (categoryId, dispatch) => {
     const { data } = await api.delete(`/categories/delete/${categoryId}`);
     if (data.success) {
       dispatch(deleteCategorySuccess(categoryId));
+      toast.success("Category deleted!", SuccessToastOptions);
     } else {
       dispatch(
         deleteCategoryFailure(data.message || "Failed to delete category")
       );
+      toast.error(
+        data.message || "Failed to delete category",
+        ErrorToastOptions
+      );
     }
   } catch (error) {
-    dispatch(
-      deleteCategoryFailure(error.response?.data?.message || error.message)
-    );
+    const errMsg = parseError(error);
+    dispatch(deleteCategoryFailure(errMsg));
+    toast.error(errMsg, ErrorToastOptions);
   }
 };
 
@@ -110,15 +157,17 @@ export const addCategoryAttribute = async (
     );
     if (data.success) {
       dispatch(updateCategorySuccess(data.data));
+      toast.success("Attribute added!", SuccessToastOptions);
     } else {
       dispatch(
         updateCategoryFailure(data.message || "Failed to add attribute")
       );
+      toast.error(data.message || "Failed to add attribute", ErrorToastOptions);
     }
   } catch (error) {
-    dispatch(
-      updateCategoryFailure(error.response?.data?.message || error.message)
-    );
+    const errMsg = parseError(error);
+    dispatch(updateCategoryFailure(errMsg));
+    toast.error(errMsg, ErrorToastOptions);
   }
 };
 
@@ -137,15 +186,20 @@ export const updateCategoryAttribute = async (
     );
     if (data.success) {
       dispatch(updateCategorySuccess(data.data));
+      toast.success("Attribute updated!", SuccessToastOptions);
     } else {
       dispatch(
         updateCategoryFailure(data.message || "Failed to update attribute")
       );
+      toast.error(
+        data.message || "Failed to update attribute",
+        ErrorToastOptions
+      );
     }
   } catch (error) {
-    dispatch(
-      updateCategoryFailure(error.response?.data?.message || error.message)
-    );
+    const errMsg = parseError(error);
+    dispatch(updateCategoryFailure(errMsg));
+    toast.error(errMsg, ErrorToastOptions);
   }
 };
 
@@ -162,14 +216,19 @@ export const removeCategoryAttribute = async (
     );
     if (data.success) {
       dispatch(updateCategorySuccess(data.data));
+      toast.success("Attribute removed!", SuccessToastOptions);
     } else {
       dispatch(
         updateCategoryFailure(data.message || "Failed to remove attribute")
       );
+      toast.error(
+        data.message || "Failed to remove attribute",
+        ErrorToastOptions
+      );
     }
   } catch (error) {
-    dispatch(
-      updateCategoryFailure(error.response?.data?.message || error.message)
-    );
+    const errMsg = parseError(error);
+    dispatch(updateCategoryFailure(errMsg));
+    toast.error(errMsg, ErrorToastOptions);
   }
 };
