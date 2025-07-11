@@ -1,93 +1,109 @@
 import React, { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
-import "../../../assets/css/customer/ProductCard.css";
 import Layout from "../layout/Layout";
+import "../../../assets/css/customer/ProductCard.css";
+import { useDispatch } from "react-redux";
+import { addToCart } from "../../../services_hooks/customer/cartService";
+import { getProductById } from "../../../services_hooks/customer/productService";
 
 const ProductCard = () => {
   const { productId } = useParams();
+  const dispatch = useDispatch();
+
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
   useEffect(() => {
-    const fetchProductDetails = async () => {
+    const fetchProduct = async () => {
       try {
-        const res = await fetch(`http://localhost:5001/api/products/${productId}`);
-        const data = await res.json();
-
-        if (data.success) {
-          setProduct(data.product);
+        const data = await getProductById(productId);
+        if (data && data._id) {
+          setProduct(data);
         } else {
-          setError("Failed to load product data.");
+          setError("Product not found.");
         }
       } catch (err) {
-        setError("Something went wrong. Please try again.");
+        setError("Failed to load product.");
       } finally {
         setLoading(false);
       }
     };
 
-    fetchProductDetails();
+    fetchProduct();
   }, [productId]);
 
-  if (loading) return <div className="loading">Loading product...</div>;
-  if (error) return <div className="error">{error}</div>;
-  if (!product) return null;
+  const handleAddToCart = () => {
+    if (!product || !product._id) return;
+    dispatch(addToCart(product._id, 1));
+  };
+
+  if (loading) return <div className="loading-product">Loading...</div>;
+  if (error) return <div className="error-product">{error}</div>;
 
   return (
     <Layout>
-      <div className="product-card-container">
-        {/* Product Display Card */}
-        <div className="product-card-v2">
-          <div className="left-panel">
+      <div className="product-wrapper">
+        <div className="product-card">
+          <div className="product-left">
             <img
               src="/images/default-product.jpg"
               alt={product.name}
-              className="main-product-img"
+              className="product-img"
             />
-            <p className="product-id-text">Product ID: {product._id}</p>
-            <p className="stock-status">
-              <strong>In-Stock:</strong> {product.stock}
+            <p className="img-note">
+              Image shown is a representation only. Exact specifications should
+              be obtained from the product data sheet.
             </p>
-            <p className="price-tag">Price: ₹{product.price?.toFixed(2)}</p>
-            <button className="btn-add-cart">Add to Cart</button>
           </div>
 
-          <div className="right-panel">
-            <h1 className="product-title">{product.name}</h1>
+          <div className="product-right">
+            <h1 className="product-name">{product.name}</h1>
 
-            <div className="product-meta">
-              <p><strong>SKU:</strong> {product.sku}</p>
-              <p><strong>Category:</strong> {product.category?.name || "N/A"}</p>
-              <p><strong>Unit:</strong> {product.unit}</p>
-              <p><strong>Description:</strong> {product.description || "No description available"}</p>
+            <div className="product-info-grid">
+              <div><strong>DigiKey Part Number:</strong></div>
+              <div>{product.sku}</div>
+
+              <div><strong>Manufacturer:</strong></div>
+              <div style={{ color: "#0066cc", fontWeight: "500" }}>{product.brand || "N/A"}</div>
+
+              <div><strong>Manufacturer Product Number:</strong></div>
+              <div>{product.sku}</div>
+
+              <div><strong>Description:</strong></div>
+              <div>{product.description || "N/A"}</div>
+
+              <div><strong>Category:</strong></div>
+              <div>{product.category?.name || "N/A"}</div>
+
+              <div><strong>Unit:</strong></div>
+              <div>{product.unit}</div>
+            </div>
+          </div>
+
+          <div className="product-stock-panel">
+            <p className="stock-count">In-Stock: {product.stock}</p>
+            <p className="free-shipping"><b>FREE SHIPPING </b>for this product</p>
+
+            <div className="quantity-box">
+              <label>Quantity</label>
+              <input type="number" min="1" defaultValue={1} />
             </div>
 
-            {product.specifications && Object.keys(product.specifications).length > 0 && (
-              <>
-                <h3 className="spec-heading">Technical Specifications</h3>
-                <div className="spec-grid">
-                  {Object.entries(product.specifications).map(([key, value]) => (
-                    <div className="spec-row" key={key}>
-                      <span className="spec-label">{key}:</span>
-                      <span className="spec-value">{value}</span>
-                    </div>
-                  ))}
-                </div>
-              </>
-            )}
+            <button className="add-to-cart" onClick={handleAddToCart}>
+              Add to Cart
+            </button>
           </div>
         </div>
 
-        {/* DigiKey-style Attributes Table */}
         {product.specifications && Object.keys(product.specifications).length > 0 && (
-          <div className="attribute-table-container">
-            <h2 className="attribute-heading">Product Attributes</h2>
+          <div className="product-attributes">
+            <h2>Product Attributes</h2>
             <table className="attribute-table">
               <thead>
                 <tr>
-                  <th>TYPE</th>
-                  <th>DESCRIPTION</th>
+                  <th>Type</th>
+                  <th>Description</th>
                 </tr>
               </thead>
               <tbody>

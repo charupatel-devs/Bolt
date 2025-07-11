@@ -1,7 +1,12 @@
 import { createSlice } from "@reduxjs/toolkit";
 
+// Initialize state from localStorage
+const token = localStorage.getItem("userToken");
+const userData = JSON.parse(localStorage.getItem("userData"));
+
 const initialState = {
-  user: null,
+  user: userData || null,
+  token: token || null,
   loading: false,
   error: null,
 };
@@ -17,8 +22,13 @@ const userAuthSlice = createSlice({
     },
     UserLoginSuccess: (state, action) => {
       state.loading = false;
-      state.user = action.payload;
+      state.user = action.payload.user;
+      state.token = action.payload.token;
       state.error = null;
+
+      // Store in localStorage
+      localStorage.setItem("userToken", action.payload.token);
+      localStorage.setItem("userData", JSON.stringify(action.payload.user));
     },
     UserLoginFailure: (state, action) => {
       state.loading = false;
@@ -32,8 +42,13 @@ const userAuthSlice = createSlice({
     },
     UserRegisterSuccess: (state, action) => {
       state.loading = false;
-      state.user = action.payload;
+      state.user = action.payload.user;
+      state.token = action.payload.token;
       state.error = null;
+
+      // Store in localStorage
+      localStorage.setItem("userToken", action.payload.token);
+      localStorage.setItem("userData", JSON.stringify(action.payload.user));
     },
     UserRegisterFailure: (state, action) => {
       state.loading = false;
@@ -46,8 +61,13 @@ const userAuthSlice = createSlice({
     },
     UserLogoutSuccess: (state) => {
       state.user = null;
+      state.token = null;
       state.loading = false;
       state.error = null;
+
+      // Remove from localStorage
+      localStorage.removeItem("userToken");
+      localStorage.removeItem("userData");
     },
 
     // Clear error (optional utility reducer)

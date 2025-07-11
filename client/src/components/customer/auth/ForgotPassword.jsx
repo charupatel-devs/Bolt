@@ -39,7 +39,7 @@ const ForgotPassword = () => {
         </form>
 
         <div style={{ textAlign: "center", marginTop: "1rem" }}>
-          <Link to="/customer/login" style={{ color: "blue", fontSize: "0.9rem" }}>
+          <Link to="/login" style={{ color: "blue", fontSize: "0.9rem" }}>
             Back to Login
           </Link>
         </div>

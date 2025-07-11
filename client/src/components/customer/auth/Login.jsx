@@ -3,7 +3,7 @@ import "../../../assets/css/customer/Login.css";
 import { Link, useNavigate } from "react-router-dom";
 import { FaEye, FaEyeSlash } from "react-icons/fa";
 import { useDispatch, useSelector } from "react-redux";
-import { loginUser } from "../../../services_hooks/customer/userAuthApi"; // ✅ Corrected import
+import { loginUser } from "../../../services_hooks/customer/userAuthApi"; 
 
 const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
@@ -19,7 +19,7 @@ const Login = () => {
     console.log(" Sending credentials:", { email, password });
 
     try {
-      const response = await loginUser(dispatch, { email, password }); // ✅ Corrected call
+      const response = await loginUser(dispatch, { email, password }); 
       console.log("Login Successful:", response);
       navigate("dashboard");
     } catch (err) {
@@ -79,7 +79,7 @@ const Login = () => {
         )}
 
         <div className="login-links">
-          <Link to="/customer/forgot-password" className="forgot-password-link">
+          <Link to="/forgot-password" className="forgot-password-link">
             Forgot Password
           </Link>
         </div>
@@ -88,7 +88,7 @@ const Login = () => {
 
         <div className="register-link">
           Don’t have an account?{" "}
-          <Link to="/customer/register" className="register-now-link">
+          <Link to="/register" className="register-now-link">
             Register Now
           </Link>
         </div>

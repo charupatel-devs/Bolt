@@ -147,7 +147,7 @@ const Register = () => {
         </form>
 
         <p className="reg-footer">
-          Already have an account? <Link to="/customer/login">Login</Link>
+          Already have an account? <Link to="/login">Login</Link>
         </p>
       </div>
     </div>

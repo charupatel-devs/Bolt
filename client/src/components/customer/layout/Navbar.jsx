@@ -1,5 +1,6 @@
 import React, { useRef, useState } from "react";
 import { Link } from "react-router-dom";
+
 import {
   FaShoppingCart,
   FaSearch,
@@ -88,22 +89,22 @@ const Navbar = () => {
             </div>
             {showAuthDropdown && (
               <div className="auth-dropdown">
-                <Link to="/customer/login" className="dropdown-item">
+                <Link to="/login" className="dropdown-item">
                   Login
                 </Link>
-                <Link to="/customer/register" className="dropdown-item">
+                <Link to="/register" className="dropdown-item">
                   Register
                 </Link>
-                <Link to="/customer/quotes" className="dropdown-item">
+                <Link to="/quotes" className="dropdown-item">
                   Quotes
                 </Link>
                 <Link to="/customer/orders" className="dropdown-item">
                   Orders
                 </Link>
-                <Link to="/customer/carts" className="dropdown-item">
+                <Link to="/carts" className="dropdown-item">
                   Cart
                 </Link>
-                <Link to="/customer/lists" className="dropdown-item">
+                <Link to="/lists" className="dropdown-item">
                   Lists
                 </Link>
               </div>

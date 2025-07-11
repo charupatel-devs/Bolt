@@ -8,6 +8,8 @@ import Home from "../pages/customer/Home";
 import AboutUs from "../pages/customer/AboutUs";
 import ContactUs from "../pages/customer/ContactUs";
 import ProductCard from "../components/customer/products/ProductCard";
+import MyOrders from "../components/customer/cart/Cart";
+import OrderDetails from "../components/customer/orders/OrderDetails";
 {
   /*import Dashboard from "../pages/customer/Dashboard";*/
 }
@@ -25,7 +27,10 @@ const CustomerRoutes = () => {
       <Route path="/product/:productId" element={<ProductCard />} />
       <Route path="about" element={<AboutUs />} /> 
       <Route path="contact" element={<ContactUs />} /> 
+      <Route path="/customer/orders" element={<OrderDetails />} />
       <Route path="*" element={<Navigate to="/" replace />} />
+      
+
       {/* <Route path="dashboard" element={<Dashboard />} /> */}
     </Routes>
   );
