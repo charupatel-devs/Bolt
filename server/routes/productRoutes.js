@@ -24,17 +24,15 @@ const {
 
 const router = express.Router();
 
+// Route to create a new product with multiple images
+// 'images' is the field name from your form, 5 is the max number of files
+
 // ===========================================
 // PUBLIC ROUTES (No authentication required)
 // ===========================================
 
 // Product listing and search
 
-router.get(
-  "/",
-  optionalAuth, // Optional auth for personalized content
-  getAllProducts
-);
 router.get("/names", optionalAuth, getProductNamesByCategory);
 router.get("/search", optionalAuth, searchProducts);
 

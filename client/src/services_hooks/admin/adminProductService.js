@@ -1,9 +1,11 @@
+import toast from "react-hot-toast";
 import {
   ProductActionFailure,
   ProductActionStart,
   ProductActionSuccess,
 } from "../../store/admin/adminProductSlice";
 import api from "../api";
+
 // Toast options
 const ErrorToastOptions = {
   duration: 4000,
@@ -78,28 +80,22 @@ export const addProduct = async (productData, dispatch) => {
       },
     });
 
-    if (data.success && data.product) {
-      dispatch(
-        ProductActionSuccess({
-          type: "ADD_PRODUCT",
-          payload: data.product,
-        })
-      );
-      return data;
-    } else {
-      dispatch(ProductActionFailure("Failed to add product"));
-      throw new Error("Failed to add product");
-    }
+    dispatch(
+      ProductActionSuccess({
+        type: "ADD_PRODUCT",
+        payload: data.product,
+      })
+    );
+    // toast.custom((t) => <ViewProductToast t={t} />, {
+    //   duration: 8000,
+    //   position: "top-center",
+    // });
+
+    return data;
   } catch (error) {
-    console.error("💥 Service: Axios error in addProduct:", error);
-
-    const errorMessage =
-      error.response?.data?.message ||
-      error.response?.statusText ||
-      error.message ||
-      "Unknown error adding product";
-
+    const errorMessage = parseError(error);
     dispatch(ProductActionFailure(errorMessage));
+    toast.error(errorMessage, ErrorToastOptions);
     throw new Error("Error adding product: " + errorMessage);
   }
 };
@@ -134,17 +130,14 @@ export const getAllProducts = async (dispatch, params = {}) => {
 
     if (data?.products) {
       dispatch(ProductActionSuccess({ type: "GET_PRODUCTS", payload: data }));
+      toast.success("Products loaded!", SuccessToastOptions);
     } else {
       throw new Error("Invalid response format");
     }
   } catch (error) {
-    const errorMessage =
-      error.response?.data?.message ||
-      error.response?.statusText ||
-      error.message ||
-      "Unknown error fetching products";
-
+    const errorMessage = parseError(error);
     dispatch(ProductActionFailure(errorMessage));
+    toast.error(errorMessage, ErrorToastOptions);
     throw new Error("Error fetching products: " + errorMessage);
   }
 };
@@ -239,8 +232,6 @@ export const deleteProductService = async (dispatch, productId) => {
 
     const { data } = await api.delete(`/admin/products/delete/${productId}`);
 
-    console.log("✅ Service: Product deleted successfully:", data);
-
     if (data.success) {
       dispatch(
         ProductActionSuccess({
@@ -248,6 +239,8 @@ export const deleteProductService = async (dispatch, productId) => {
           payload: productId,
         })
       );
+      toast.success("Product deleted!", SuccessToastOptions);
+
       return data;
     } else {
       dispatch(ProductActionFailure("Failed to delete product"));

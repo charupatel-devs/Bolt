@@ -22,7 +22,6 @@ const {
   getRecentActivities,
   getSalesAnalytics,
 } = require("../controllers/adminController");
-
 const {
   isAuthenticated,
   isAdmin,

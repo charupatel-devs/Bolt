@@ -1,5 +1,15 @@
 import { useEffect, useState } from "react";
-import { AreaChart, LineChart, ResponsiveContainer } from "recharts";
+import {
+  Area,
+  AreaChart,
+  CartesianGrid,
+  Line,
+  LineChart,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts";
 import { getSalesChartData } from "../../../services_hooks/admin/adminDashboardService"; // Adjust path as needed
 
 const SalesChart = () => {
@@ -35,7 +45,29 @@ const SalesChart = () => {
     <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
       {/* Header, toggles, etc. as before */}
       <div className="flex items-center justify-between mb-6">
-        {/* ... */}
+        {/* Chart Type Toggle */}
+        <div className="flex bg-gray-100 rounded-lg p-1">
+          <button
+            onClick={() => setChartType("area")}
+            className={`px-3 py-1 rounded-md text-sm font-medium transition-colors duration-200 ${
+              chartType === "area"
+                ? "bg-white text-blue-600 shadow-sm"
+                : "text-gray-600 hover:text-gray-900"
+            }`}
+          >
+            Area
+          </button>
+          <button
+            onClick={() => setChartType("line")}
+            className={`px-3 py-1 rounded-md text-sm font-medium transition-colors duration-200 ${
+              chartType === "line"
+                ? "bg-white text-blue-600 shadow-sm"
+                : "text-gray-600 hover:text-gray-900"
+            }`}
+          >
+            Line
+          </button>
+        </div>
         <select
           value={timeRange}
           onChange={(e) => setTimeRange(e.target.value)}
@@ -60,14 +92,33 @@ const SalesChart = () => {
                 data={salesData}
                 margin={{ top: 10, right: 30, left: 0, bottom: 0 }}
               >
-                {/* ... */}
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="name" />
+                <YAxis />
+                <Tooltip formatter={(value) => formatCurrency(value)} />
+                <Area
+                  type="monotone"
+                  dataKey="sales"
+                  stroke="#4f46e5"
+                  fill="#c7d2fe"
+                  strokeWidth={2}
+                />
               </AreaChart>
             ) : (
               <LineChart
                 data={salesData}
                 margin={{ top: 10, right: 30, left: 0, bottom: 0 }}
               >
-                {/* ... */}
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="name" />
+                <YAxis />
+                <Tooltip formatter={(value) => formatCurrency(value)} />
+                <Line
+                  type="monotone"
+                  dataKey="sales"
+                  stroke="#4f46e5"
+                  strokeWidth={2}
+                />
               </LineChart>
             )}
           </ResponsiveContainer>

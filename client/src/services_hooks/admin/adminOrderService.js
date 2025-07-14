@@ -3,6 +3,7 @@ import {
   fetchOrdersFailure,
   fetchOrdersStart,
   fetchOrdersSuccess,
+  fetchRecentOrdersSuccess,
 } from "../../store/admin/adminOrderSlice";
 import api from "../api";
 
@@ -52,24 +53,25 @@ export const getOrdersByStatus = async (status, dispatch) => {
       ...ErrorToastOptions,
     });
     dispatch(fetchOrdersFailure(errorMessage));
-    throw new Error(errorMessage);
   }
 };
 
 export const fetchOrderStats = async (dispatch) => {
+  dispatch(fetchOrdersStart());
   try {
     const { data } = await api.get("/orders/management");
+    console.log("Order stats fetched:", data);
+    dispatch(fetchRecentOrdersSuccess(data));
     toast.success("Order stats loaded!", {
       id: "order-stats",
       ...SuccessToastOptions,
     });
-    return data;
   } catch (error) {
     const errorMessage = parseError(error);
     toast.error(`Failed to fetch order stats: ${errorMessage}`, {
       id: "order-stats",
       ...ErrorToastOptions,
     });
-    throw new Error(errorMessage);
+    dispatch(fetchOrdersFailure(errorMessage));
   }
 };

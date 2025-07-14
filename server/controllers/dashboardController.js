@@ -9,11 +9,7 @@ function getChange(current, previous) {
   if (previous === 0) return current === 0 ? 0 : 100;
   return ((current - previous) / previous) * 100;
 }
-const getDayLabel = (date) =>
-  date.toLocaleDateString("en-US", { weekday: "short" }); // "Mon", "Tue", etc.
 
-const getMonthLabel = (date) =>
-  date.toLocaleDateString("en-US", { month: "short" }); // "Jan", "Feb", etc.
 exports.getDashboardStats = async (req, res) => {
   try {
     const now = new Date();
@@ -34,7 +30,7 @@ exports.getDashboardStats = async (req, res) => {
       {
         $match: {
           createdAt: { $gte: startOfPrevMonth, $lt: startOfMonth },
-          status: { $in: ["processing", "shipped", "delivered"] },
+          // status: { $in: ["processing", "shipped", "delivered"] },
         },
       },
       { $group: { _id: null, total: { $sum: "$totalAmount" } } },
@@ -114,20 +110,20 @@ exports.getDashboardStats = async (req, res) => {
   }
 };
 
-// @desc    Get sales chart data (area graph)
-// @route   GET /api/admin/sales-chart
-// @access  Private/Admin
 exports.getSalesChart = async (req, res) => {
   try {
     const range = req.query.range || "7days"; // "7days", "30days", "6months"
-    let match = { status: { $in: ["delivered", "processing", "shipped"] } };
+
+    let match = {
+      // status: { $in: ["delivered", "processing", "shipped"] },
+    };
     let groupFormat;
     let periods = [];
     let labelFn;
+    const today = new Date();
 
+    // Set grouping and period setup based on range
     if (range === "7days") {
-      // Last 7 days, group by day
-      const today = new Date();
       for (let i = 6; i >= 0; i--) {
         const d = new Date(today);
         d.setDate(today.getDate() - i);
@@ -137,12 +133,11 @@ exports.getSalesChart = async (req, res) => {
         $dateToString: { format: "%Y-%m-%d", date: "$createdAt" },
       };
       match.createdAt = {
-        $gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
+        $gte: new Date(today.setHours(0, 0, 0, 0) - 6 * 24 * 60 * 60 * 1000),
+        $lte: new Date(),
       };
       labelFn = getDayLabel;
     } else if (range === "30days") {
-      // Last 30 days, group by week
-      const today = new Date();
       for (let i = 4; i >= 1; i--) {
         const start = new Date(today);
         start.setDate(today.getDate() - i * 7);
@@ -151,55 +146,46 @@ exports.getSalesChart = async (req, res) => {
       groupFormat = { $isoWeek: "$createdAt" };
       match.createdAt = {
         $gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
+        $lte: new Date(),
       };
       labelFn = (date, idx) => `Week ${idx + 1}`;
     } else if (range === "6months") {
-      // Last 6 months, group by month
-      const today = new Date();
-      for (let i = 5; i >= 0; i--) {
-        const d = new Date(today.getFullYear(), today.getMonth() - i, 1);
-        periods.push(d);
+      // Create a lookup map for fast access
+      const aggMap = new Map(agg.map((item) => [item._id, item]));
+
+      for (let i = 0; i < periods.length; i++) {
+        const d = periods[i];
+        const dateStr = d.toISOString().slice(0, 7); // 'YYYY-MM'
+        const found = aggMap.get(dateStr);
+
+        chartData.push({
+          name: labelFn(d),
+          sales: found ? found.sales : 0,
+          orders: found ? found.orders : 0,
+        });
       }
-      groupFormat = { $dateToString: { format: "%Y-%m", date: "$createdAt" } };
-      match.createdAt = {
-        $gte: new Date(today.getFullYear(), today.getMonth() - 5, 1),
-      };
-      labelFn = getMonthLabel;
     }
 
-    // Aggregate orders
-    let groupBy;
-    if (range === "7days") {
-      groupBy = {
-        _id: groupFormat,
-        sales: { $sum: "$totalAmount" },
-        orders: { $sum: 1 },
-        date: { $first: "$createdAt" },
-      };
-    } else if (range === "30days") {
-      groupBy = {
-        _id: { $isoWeek: "$createdAt" },
-        sales: { $sum: "$totalAmount" },
-        orders: { $sum: 1 },
-        date: { $first: "$createdAt" },
-      };
-    } else if (range === "6months") {
-      groupBy = {
-        _id: groupFormat,
-        sales: { $sum: "$totalAmount" },
-        orders: { $sum: 1 },
-        date: { $first: "$createdAt" },
-      };
-    }
+    // Set grouping fields
+    let groupBy = {
+      _id: groupFormat,
+      sales: { $sum: "$totalAmount" },
+      orders: { $sum: 1 },
+      date: { $first: "$createdAt" },
+    };
 
+    // Run aggregation
     const agg = await Order.aggregate([
       { $match: match },
       { $group: groupBy },
       { $sort: { _id: 1 } },
     ]);
 
-    // Map/merge results to fill missing periods
-    let chartData = [];
+    console.log("Aggregation Result:", agg); // Debug
+
+    // Generate chart data with all periods
+    const chartData = [];
+
     if (range === "7days") {
       for (let i = 0; i < periods.length; i++) {
         const d = periods[i];
@@ -212,9 +198,8 @@ exports.getSalesChart = async (req, res) => {
         });
       }
     } else if (range === "30days") {
-      // agg _id is week number; just map as Week 1, 2, ...
       for (let i = 0; i < periods.length; i++) {
-        const found = agg[i];
+        const found = agg[i]; // Indexed, not date-mapped
         chartData.push({
           name: labelFn(periods[i], i),
           sales: found ? found.sales : 0,
@@ -224,7 +209,7 @@ exports.getSalesChart = async (req, res) => {
     } else if (range === "6months") {
       for (let i = 0; i < periods.length; i++) {
         const d = periods[i];
-        const dateStr = d.toISOString().slice(0, 7); // "YYYY-MM"
+        const dateStr = d.toISOString().slice(0, 7); // YYYY-MM
         const found = agg.find((item) => item._id === dateStr);
         chartData.push({
           name: labelFn(d),
@@ -234,11 +219,156 @@ exports.getSalesChart = async (req, res) => {
       }
     }
 
-    res.json({ success: true, data: chartData });
+    return res.json({ success: true, data: chartData });
   } catch (error) {
-    console.error(error);
-    res
-      .status(500)
-      .json({ success: false, message: "Failed to fetch sales chart data" });
+    console.error("Sales Chart Error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to fetch sales chart data",
+    });
+  }
+};
+// Helper functions (place these outside your main function or where they are accessible)
+const getDayLabel = (date) =>
+  date.toLocaleDateString("en-US", { weekday: "short" }); // "Mon", "Tue", etc.
+
+const getMonthLabel = (date) =>
+  date.toLocaleDateString("en-US", { year: "numeric", month: "short" }); // "Jul 2025", etc.
+
+// Your controller function
+exports.getSalesChart = async (req, res) => {
+  try {
+    const range = req.query.range || "7days"; // "7days", "30days", "6months"
+
+    let match = {
+      // status: { $in: ["delivered", "processing", "shipped"] }, // Optional: uncomment to filter by status
+    };
+    let groupFormat;
+    let periods = [];
+    let labelFn;
+    const today = new Date();
+
+    // --- 1. SETUP PHASE ---
+    // Correctly set up variables based on the requested range.
+    if (range === "7days") {
+      for (let i = 6; i >= 0; i--) {
+        const d = new Date();
+        d.setDate(today.getDate() - i);
+        periods.push(d);
+      }
+      groupFormat = {
+        $dateToString: { format: "%Y-%m-%d", date: "$createdAt" },
+      };
+      // Set the start date to the beginning of the day, 7 days ago
+      const startDate = new Date(today);
+      startDate.setDate(today.getDate() - 6);
+      startDate.setHours(0, 0, 0, 0);
+      match.createdAt = {
+        $gte: startDate,
+        $lte: new Date(), // Now
+      };
+      labelFn = getDayLabel;
+    } else if (range === "30days") {
+      // Logic for 30 days (simplified for clarity)
+      // This logic groups by ISO week. A simple loop is better for labeling.
+      for (let i = 29; i >= 0; i--) {
+        const d = new Date();
+        d.setDate(today.getDate() - i);
+        periods.push(d);
+      }
+      groupFormat = {
+        $dateToString: { format: "%Y-%m-%d", date: "$createdAt" },
+      };
+      const startDate = new Date();
+      startDate.setDate(today.getDate() - 29);
+      startDate.setHours(0, 0, 0, 0);
+      match.createdAt = {
+        $gte: startDate,
+        $lte: new Date(),
+      };
+      // This is a placeholder; you might want a more sophisticated label for 30 days
+      labelFn = (date) =>
+        date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+    } else if (range === "6months") {
+      // RESTORED: This block was missing in your updated code.
+      for (let i = 5; i >= 0; i--) {
+        const d = new Date(today.getFullYear(), today.getMonth() - i, 1);
+        periods.push(d);
+      }
+      groupFormat = {
+        $dateToString: { format: "%Y-%m", date: "$createdAt" },
+      };
+      const startDate = new Date(today.getFullYear(), today.getMonth() - 5, 1);
+      match.createdAt = {
+        $gte: startDate,
+        $lte: new Date(),
+      };
+      labelFn = getMonthLabel;
+    }
+
+    // --- 2. AGGREGATION PHASE ---
+    // This runs *after* the setup is complete.
+    const agg = await Order.aggregate([
+      { $match: match },
+      {
+        $group: {
+          _id: groupFormat,
+          sales: { $sum: "$totalAmount" },
+          orders: { $sum: 1 },
+        },
+      },
+      { $sort: { _id: 1 } },
+    ]);
+
+    console.log("Aggregation Result:", agg); // For debugging
+
+    // --- 3. PROCESSING PHASE ---
+    // Now we process the results, which are in the `agg` variable.
+    const chartData = [];
+
+    // Create a lookup map for efficient searching
+    const aggMap = new Map(agg.map((item) => [item._id, item]));
+
+    if (range === "7days" || range === "30days") {
+      for (const d of periods) {
+        const dateStr = d.toISOString().slice(0, 10); // YYYY-MM-DD
+        const found = aggMap.get(dateStr);
+        chartData.push({
+          name: labelFn(d),
+          sales: found ? found.sales : 0,
+          orders: found ? found.orders : 0,
+        });
+      }
+    } else if (range === "6months") {
+      // Create a lookup map for fast access
+      const aggMap = new Map(agg.map((item) => [item._id, item]));
+
+      for (const d of periods) {
+        // --- FIX IS HERE ---
+        // Manually construct the 'YYYY-MM' string to avoid timezone issues.
+        const year = d.getFullYear();
+        // getMonth() is 0-indexed (0=Jan, 1=Feb), so we add 1.
+        // padStart ensures the month is always two digits (e.g., '07' instead of '7').
+        const month = String(d.getMonth() + 1).padStart(2, "0");
+        const dateStr = `${year}-${month}`; // Correctly produces "2025-07"
+
+        const found = aggMap.get(dateStr);
+
+        chartData.push({
+          name: labelFn(d), // Assuming getMonthLabel works correctly
+          sales: found ? found.sales : 0,
+          orders: found ? found.orders : 0,
+        });
+      }
+    }
+
+    return res.json({ success: true, data: chartData });
+  } catch (error) {
+    console.error("Sales Chart Error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to fetch sales chart data",
+      error: error.message, // Send back error message for easier debugging
+    });
   }
 };

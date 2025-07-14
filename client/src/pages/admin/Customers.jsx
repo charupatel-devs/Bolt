@@ -41,9 +41,16 @@ const Customers = () => {
     errMsg,
   } = useSelector((state) => state.customers);
 
-  // Fetch customers on mount or filter change
+  const fetchData = async () => {
+    try {
+      const data = await getAllCustomers(dispatch);
+    } catch (e) {
+      console.error("Failed to fetch customers:", e);
+    }
+  };
+
   useEffect(() => {
-    getAllCustomers(dispatch);
+    fetchData();
   }, [dispatch]);
 
   // Map backend data to UI fields (with defaults)

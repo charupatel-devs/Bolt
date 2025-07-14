@@ -11,6 +11,7 @@ const multer = require("multer");
 const path = require("path");
 const csv = require("csv-parser");
 const fs = require("fs");
+const upload = require("../utils/cloudinary"); // Assuming this is your configured upload middleware
 
 // CSV parser function
 const parseCsvFile = (filePath) => {
@@ -64,34 +65,7 @@ const parseCsvFile = (filePath) => {
       });
   });
 };
-// Configure multer for file uploads
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, "uploads/products/"); // Make sure this directory exists
-  },
-  filename: function (req, file, cb) {
-    const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
-    cb(
-      null,
-      file.fieldname + "-" + uniqueSuffix + path.extname(file.originalname)
-    );
-  },
-});
 
-const upload = multer({
-  storage: storage,
-  limits: {
-    fileSize: 5 * 1024 * 1024, // 5MB limit per file
-  },
-  fileFilter: function (req, file, cb) {
-    // Check if file is an image
-    if (file.mimetype.startsWith("image/")) {
-      cb(null, true);
-    } else {
-      cb(new Error("Only image files are allowed!"), false);
-    }
-  },
-});
 const {
   createSendAdminToken,
   clearAuthCookies,
@@ -371,51 +345,108 @@ exports.getDashboardStats = catchAsync(async (req, res, next) => {
 // @route   GET /api/admin/customers
 // @access  Private/Admin
 exports.getAllCustomers = catchAsync(async (req, res, next) => {
-  // Exclude admins, fetch users only
-  const features = new APIFeatures(
-    User.find({ role: { $ne: "admin" } }),
-    req.query
-  )
-    .filter()
-    .sort()
-    .limitFields()
-    .paginate()
-    .search();
+  // --- 1. SETUP ---
+  const page = parseInt(req.query.page, 10) || 1;
+  const limit = parseInt(req.query.limit, 10) || 10;
+  const skip = (page - 1) * limit;
 
-  const customers = await features.query;
+  // --- 2. BUILD FILTER OBJECT ---
+  const filter = { role: { $ne: "admin" } };
 
-  // For summary stats, count and aggregate on all customers (not just paginated)
-  const allCustomers = await User.find({ role: { $ne: "admin" } });
+  // Handle Search: Add keyword search to the main filter
+  if (req.query.keyword) {
+    filter.name = {
+      $regex: req.query.keyword,
+      $options: "i", // Case-insensitive
+    };
+  }
 
-  const totalCustomers = allCustomers.length;
-  const activeCustomers = allCustomers.filter((c) => c.isActive).length;
+  // Handle other potential filters from the query string
+  // Exclude special parameters used for pagination, sorting, etc.
+  const excludedFields = [
+    "page",
+    "sort",
+    "limit",
+    "fields",
+    "keyword",
+    "sortBy",
+    "sortOrder",
+  ];
+  const queryParams = { ...req.query };
+  excludedFields.forEach((el) => delete queryParams[el]);
 
-  const totalRevenue = allCustomers.reduce(
-    (sum, c) => sum + (c.totalSpent || 0),
-    0
-  );
-  const averageOrderValue =
-    allCustomers.reduce((sum, c) => sum + (c.averageOrderValue || 0), 0) /
-    (allCustomers.length || 1);
+  // Add remaining query params to the main filter
+  // This handles simple filters like `isActive=true`
+  Object.assign(filter, queryParams);
 
-  // Calculate pagination info
-  const page = req.query.page * 1 || 1;
-  const limit = req.query.limit * 1 || 10;
+  // --- 3. BUILD SORT OBJECT ---
+  const sortBy = req.query.sortBy || "createdAt";
+  const sortOrder = req.query.sortOrder === "asc" ? 1 : -1; // Default to descending
+  const sortOptions = { [sortBy]: sortOrder };
+
+  // --- 4. BUILD FIELD SELECTION ---
+  let selectFields = "-__v"; // By default, exclude the __v field
+  if (req.query.fields) {
+    selectFields = req.query.fields.split(",").join(" ");
+  }
+
+  // --- 5. EXECUTE QUERIES ---
+
+  // Get the total count of documents that match the filter (for pagination)
+  const totalCustomers = await User.countDocuments(filter);
+
+  // Get the paginated and sorted list of customers
+  const customers = await User.find(filter)
+    .sort(sortOptions)
+    .select(selectFields)
+    .skip(skip)
+    .limit(limit)
+    .collation({ locale: "en", strength: 2 }); // For proper case-insensitive name sorting
+
+  // --- 6. CALCULATE AGGREGATE STATS (Efficiently) ---
+  // This runs on the entire filtered set, not just the paginated page
+  const statsAggregation = await User.aggregate([
+    { $match: filter }, // Use the same filter to get stats for the relevant user set
+    {
+      $group: {
+        _id: null,
+        totalRevenue: { $sum: "$totalSpent" },
+        activeCustomers: {
+          $sum: {
+            $cond: ["$isActive", 1, 0], // Count active users
+          },
+        },
+      },
+    },
+  ]);
+
+  const stats = {
+    totalCustomers,
+    activeCustomers: statsAggregation[0]?.activeCustomers || 0,
+    totalRevenue: statsAggregation[0]?.totalRevenue || 0,
+    // Calculate average separately to avoid division by zero
+    averageOrderValue:
+      totalCustomers > 0
+        ? (statsAggregation[0]?.totalRevenue || 0) / totalCustomers
+        : 0,
+  };
+
+  // --- 7. SEND RESPONSE ---
   const totalPages = Math.ceil(totalCustomers / limit);
 
   res.status(200).json({
     success: true,
-    customers, // paginated
-    stats: { totalCustomers, activeCustomers, totalRevenue, averageOrderValue },
+    customers, // The paginated list of customers
+    stats,
     pagination: {
       currentPage: page,
       totalPages,
+      totalResults: totalCustomers,
       hasNextPage: page < totalPages,
       hasPrevPage: page > 1,
     },
   });
 });
-
 // @desc    Get user by ID
 // @route   GET /api/admin/users/:id
 // @access  Private/Admin
@@ -819,9 +850,7 @@ exports.createProduct = [
   catchAsync(async (req, res, next) => {
     try {
       console.log("📦 Request body:", req.body);
-      console.log("📸 Request files:", req.files);
-      console.log("📋 Content-Type:", req.headers["content-type"]);
-
+      console.log("📸 Request files (from Cloudinary):", req.files); // This now comes from Cloudinary
       // Now req.body should have the FormData fields
       let productData = { ...req.body };
 
@@ -861,19 +890,18 @@ exports.createProduct = [
         }
       }
 
-      // Handle uploaded images
-      const images = [];
+      let images = [];
       if (req.files && req.files.length > 0) {
-        req.files.forEach((file, index) => {
-          images.push({
-            url: `/uploads/products/${file.filename}`,
-            filename: file.filename,
-            originalName: file.originalname,
-            size: file.size,
-            mimeType: file.mimetype,
-            isMain: index === 0, // First image is main image
-          });
-        });
+        // req.files is an array of files uploaded by multer-storage-cloudinary
+        // Each 'file' object contains the Cloudinary URL in the 'path' property
+        images = req.files.map((file, index) => ({
+          url: file.path, // ✅ Use the secure URL provided by Cloudinary
+          filename: file.filename, // ✅ Store the Cloudinary public_id for future management (e.g., deletion)
+          originalName: file.originalname,
+          size: file.size,
+          mimeType: file.mimetype,
+          isMain: index === 0, // The first image is automatically the main one
+        }));
       }
 
       // Prepare final data

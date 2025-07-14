@@ -1,19 +1,14 @@
 // src/pages/admin/AdminDashboard.jsx
-import {
-  Box,
-  DollarSign,
-  Eye,
-  LineChart,
-  ShoppingCart,
-  Users,
-} from "lucide-react";
+import { Box, DollarSign, ShoppingCart, Users } from "lucide-react";
 
 import { useEffect, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
 import RecentOrders from "../../components/admin/dashboard/RecentOrders";
 import SalesChart from "../../components/admin/dashboard/SalesChart";
 import StatsCard from "../../components/admin/dashboard/StatsCard";
 import AdminLayout from "../../components/admin/layout/AdminLayout";
 import { getDashboardStats } from "../../services_hooks/admin/adminDashboardService";
+import { fetchOrderStats } from "../../services_hooks/admin/adminOrderService";
 
 const AdminDashboard = () => {
   const [dashboardData, setDashboardData] = useState({
@@ -27,7 +22,19 @@ const AdminDashboard = () => {
     },
     loading: true,
   });
-
+  const {
+    recentOrders: orders,
+    stats,
+    isFetching,
+    error,
+  } = useSelector((state) => state.orders);
+  const dispatch = useDispatch();
+  useEffect(() => {
+    const fetchData = async () => {
+      await fetchOrderStats(dispatch);
+    };
+    fetchData();
+  }, [dispatch]);
   useEffect(() => {
     const fetchDashboardData = async () => {
       try {
@@ -112,24 +119,6 @@ const AdminDashboard = () => {
       color: "orange",
       description: "Products in inventory",
     },
-    {
-      title: "Page Views",
-      value: dashboardData.stats.pageViews.value?.toLocaleString() || 0,
-      change: dashboardData.stats.pageViews.change,
-      trend: dashboardData.stats.pageViews.trend,
-      icon: Eye,
-      color: "indigo",
-      description: "Total page views this month",
-    },
-    {
-      title: "Conversion Rate",
-      value: `${dashboardData.stats.conversionRate.value || 0}%`,
-      change: dashboardData.stats.conversionRate.change,
-      trend: dashboardData.stats.conversionRate.trend,
-      icon: LineChart,
-      color: "pink",
-      description: "Visitor to customer conversion",
-    },
   ];
 
   if (dashboardData.loading) {
@@ -172,7 +161,7 @@ const AdminDashboard = () => {
         </div>
 
         <div className="xl:col-span-2">
-          <RecentOrders />
+          <RecentOrders orders={orders} />
         </div>
       </div>
     </AdminLayout>
