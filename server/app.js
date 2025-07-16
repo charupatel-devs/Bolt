@@ -41,6 +41,7 @@ const corsOptions = {
       "http://localhost:5173",
       "http://localhost:3001",
       "http://localhost:5174",
+      "https://bolt-yqr3.vercel.app",
     ].filter(Boolean);
 
     if (allowedOrigins.includes(origin)) {
