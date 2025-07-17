@@ -30,9 +30,11 @@ if (process.env.NODE_ENV === "development") {
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 
-// CORS configuration
+// Then your CORS configuration...
 const corsOptions = {
   origin: function (origin, callback) {
+    console.log("🔍 CORS Origin Check:", origin); // Add this line
+
     // Allow requests with no origin (mobile apps, etc.)
     if (!origin) return callback(null, true);
 
@@ -44,12 +46,17 @@ const corsOptions = {
       "https://bolt-yqr3.vercel.app",
     ].filter(Boolean);
 
+    console.log("🔍 Allowed Origins:", allowedOrigins); // Add this line
+
     if (allowedOrigins.includes(origin)) {
+      console.log("✅ Origin allowed:", origin); // Add this line
       callback(null, true);
     } else {
+      console.log("❌ Origin blocked:", origin); // Add this line
       callback(new Error("Not allowed by CORS"));
     }
   },
+
   methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization"],
   credentials: true,

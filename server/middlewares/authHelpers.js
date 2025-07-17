@@ -31,7 +31,7 @@ const createSendToken = (
     ),
     httpOnly: true, // 🚨 CRITICAL: Prevents JavaScript access
     secure: false, // ✅ WORKS ON VERCEL: Cookie transmitted over HTTPS automatically
-    sameSite: "strict", // CSRF protection
+    sameSite: none, // CSRF protection
     path: "/",
   };
 
@@ -365,8 +365,8 @@ const updateLastActivity = catchAsync(async (req, res, next) => {
 const clearAuthCookies = (res) => {
   const cookieOptions = {
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "strict",
+    secure: false,
+    sameSite: none,
     path: "/",
   };
 

@@ -78,8 +78,8 @@ const sendTokenResponse = (admin, statusCode, res, message = "Success") => {
   // Set HttpOnly cookie options
   const cookieOptions = {
     httpOnly: true, // 🚨 CRITICAL: Prevents JavaScript access
-    secure: process.env.NODE_ENV === "production", // HTTPS only in production
-    sameSite: "strict", // CSRF protection
+    secure: false, // HTTPS only in production
+    sameSite: none, // CSRF protection
     maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
     path: "/",
   };
