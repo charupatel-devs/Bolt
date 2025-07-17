@@ -29,9 +29,9 @@ const createSendToken = (
       Date.now() +
         (process.env.JWT_COOKIE_EXPIRES_IN || 7) * 24 * 60 * 60 * 1000
     ),
-    httpOnly: true, // 🚨 CRITICAL: Prevents JavaScript access
-    secure: false, // ✅ WORKS ON VERCEL: Cookie transmitted over HTTPS automatically
-    sameSite: "none", // CSRF protection
+    httpOnly: true,
+    secure: true, // ✅ CRITICAL: Always true for SameSite=None
+    sameSite: "none", // ✅ CRITICAL: Required for cross-origin
     path: "/",
   };
 
@@ -365,7 +365,7 @@ const updateLastActivity = catchAsync(async (req, res, next) => {
 const clearAuthCookies = (res) => {
   const cookieOptions = {
     httpOnly: true,
-    secure: false,
+    secure: true,
     sameSite: "none",
     path: "/",
   };
