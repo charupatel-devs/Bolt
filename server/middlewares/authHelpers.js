@@ -13,7 +13,6 @@ const signToken = (id) => {
     expiresIn: process.env.JWT_EXPIRE || "7d",
   });
 };
-
 // 🚨 UPDATED: Create and send JWT token via HttpOnly cookie
 const createSendToken = (
   user,
@@ -31,7 +30,7 @@ const createSendToken = (
         (process.env.JWT_COOKIE_EXPIRES_IN || 7) * 24 * 60 * 60 * 1000
     ),
     httpOnly: true, // 🚨 CRITICAL: Prevents JavaScript access
-    secure: process.env.NODE_ENV === "production", // HTTPS only in production
+    secure: false, // ✅ WORKS ON VERCEL: Cookie transmitted over HTTPS automatically
     sameSite: "strict", // CSRF protection
     path: "/",
   };
