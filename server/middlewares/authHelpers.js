@@ -31,7 +31,7 @@ const createSendToken = (
     ),
     httpOnly: true, // 🚨 CRITICAL: Prevents JavaScript access
     secure: false, // ✅ WORKS ON VERCEL: Cookie transmitted over HTTPS automatically
-    sameSite: none, // CSRF protection
+    sameSite: "none", // CSRF protection
     path: "/",
   };
 
@@ -366,7 +366,7 @@ const clearAuthCookies = (res) => {
   const cookieOptions = {
     httpOnly: true,
     secure: false,
-    sameSite: none,
+    sameSite: "none",
     path: "/",
   };
 
