@@ -187,7 +187,7 @@ export const updateProductService = async (
     });
 
     const { data } = await api.put(
-      `/admin/products/${productId}`,
+      `/admin/products/update/${productId}`,
       formDataToSend,
       {
         headers: {
