@@ -1,6 +1,3 @@
-// routes/productRoutes.js
-// Updated product routes with complete authentication
-
 const express = require("express");
 const {
   getAllProducts,
@@ -13,12 +10,11 @@ const {
   addProductReview,
   getProductReviews,
   getProductSpecifications,
-  getAllStocks,
-  getStockById,
-  adjustStock,
+  getProductNamesByCategory,
 } = require("../controllers/productController");
 
 const {
+  isAdmin,
   isAuthenticated,
   optionalAuth,
   requireVerifiedEmail,
@@ -27,18 +23,9 @@ const {
 } = require("../middlewares/auth");
 
 const router = express.Router();
-// ===========================================
-// ADMIN PRODUCTS STOCK INFORMATION
-// ===========================================
 
-// GET all product stocks
-router.get("/stock", getAllStocks);
-
-// GET single product stock
-router.get("/stock/:id", getStockById);
-
-// PATCH adjust product stock
-router.patch("/stock/adjust/:id", adjustStock);
+// Route to create a new product with multiple images
+// 'images' is the field name from your form, 5 is the max number of files
 
 // ===========================================
 // PUBLIC ROUTES (No authentication required)
@@ -46,12 +33,7 @@ router.patch("/stock/adjust/:id", adjustStock);
 
 // Product listing and search
 
-router.get(
-  "/",
-  optionalAuth, // Optional auth for personalized content
-  getAllProducts
-);
-
+router.get("/names", optionalAuth, getProductNamesByCategory);
 router.get("/search", optionalAuth, searchProducts);
 
 router.get("/featured", getFeaturedProducts);

@@ -1,9 +1,9 @@
-// adminOrderService.js
 import toast from "react-hot-toast";
 import {
   fetchOrdersFailure,
   fetchOrdersStart,
   fetchOrdersSuccess,
+  fetchRecentOrdersSuccess,
 } from "../../store/admin/adminOrderSlice";
 import api from "../api";
 
@@ -41,29 +41,37 @@ export const getOrdersByStatus = async (status, dispatch) => {
   try {
     const { data } = await api.get(`/orders/orders/${status}`);
     dispatch(fetchOrdersSuccess(data));
+    toast.success(`Fetched ${status} orders!`, {
+      id: `orders-${status}`,
+      ...SuccessToastOptions,
+    });
     return data;
   } catch (error) {
     const errorMessage = parseError(error);
-
     toast.error(`Failed to fetch ${status} orders: ${errorMessage}`, {
       id: `orders-${status}`,
       ...ErrorToastOptions,
     });
-    dispatch(fetchOrdersFailure(error.message));
-    throw error;
+    dispatch(fetchOrdersFailure(errorMessage));
   }
 };
 
 export const fetchOrderStats = async (dispatch) => {
+  dispatch(fetchOrdersStart());
   try {
     const { data } = await api.get("/orders/management");
-    return data;
+    console.log("Order stats fetched:", data);
+    dispatch(fetchRecentOrdersSuccess(data));
+    toast.success("Order stats loaded!", {
+      id: "order-stats",
+      ...SuccessToastOptions,
+    });
   } catch (error) {
     const errorMessage = parseError(error);
     toast.error(`Failed to fetch order stats: ${errorMessage}`, {
       id: "order-stats",
       ...ErrorToastOptions,
     });
-    throw error;
+    dispatch(fetchOrdersFailure(errorMessage));
   }
 };

@@ -15,7 +15,7 @@ const initialState = {
     currentPage: 1,
     totalPages: 0,
     totalProducts: 0,
-    limit: 5,
+    limit: 50,
     hasNextPage: false,
     hasPrevPage: false,
   },
@@ -31,8 +31,8 @@ const initialState = {
   errMsg: "",
 };
 
-const productSlice = createSlice({
-  name: "products",
+const stockSlice = createSlice({
+  name: "stocks",
   initialState,
   reducers: {
     ProductActionStart: (state) => {
@@ -52,57 +52,41 @@ const productSlice = createSlice({
       state.errMsg = "";
 
       switch (type) {
-        case "GET_PRODUCTS":
+        case "GET_STOCKS":
           state.products = payload.products;
           state.stats = payload.stats;
           state.pagination = payload.pagination;
           break;
-        case "GET_PRODUCT_NAMES":
-          console.log(payload.products);
-          state.products = payload.products;
-          break;
-        case "GET_SINGLE_PRODUCT":
-          state.currentProduct = payload.product;
-          state.currentCategory = payload.category;
+
+        case "GET_STOCK_BY_ID":
+          state.currentProduct = payload;
           break;
 
-        case "ADD_PRODUCT":
-          state.products.unshift(payload);
-          state.stats.totalProducts += 1;
-          break;
-
-        case "UPDATE_PRODUCT":
+        case "ADJUST_STOCK":
+          // Optionally update the product in products array and currentProduct
+          if (
+            state.currentProduct &&
+            state.currentProduct._id === payload.productId
+          ) {
+            state.currentProduct.stock = payload.newStock;
+          }
           {
-            const updateIndex = state.products.findIndex(
-              (product) => product._id === payload._id
+            const idx = state.products.findIndex(
+              (p) => p._id === payload.productId
             );
-            if (updateIndex !== -1) {
-              state.products[updateIndex] = payload;
-            }
-            if (
-              state.currentProduct &&
-              state.currentProduct._id === payload._id
-            ) {
-              state.currentProduct = payload;
+            if (idx !== -1) {
+              state.products[idx].stock = payload.newStock;
             }
           }
           break;
 
-        case "DELETE_PRODUCT":
-          state.products = state.products.filter(
-            (product) => product._id !== payload
-          );
-          state.stats.totalProducts = Math.max(
-            0,
-            state.stats.totalProducts - 1
-          );
-          if (state.currentProduct && state.currentProduct._id === payload) {
-            state.currentProduct = null;
-          }
-          break;
-
-        case "BULK_IMPORT":
-        case "EXPORT_PRODUCTS":
+        case "GET_STOCK_ADJUSTMENTS":
+          state.stockAdjustments = payload.adjustments;
+          state.pagination = {
+            ...state.pagination,
+            totalProducts: payload.total,
+            totalPages: Math.ceil(payload.total / state.pagination.limit),
+          };
           break;
 
         default:
@@ -138,6 +122,6 @@ export const {
   ClearProductFilters,
   ClearProductError,
   ResetProductsState,
-} = productSlice.actions;
+} = stockSlice.actions;
 
-export default productSlice.reducer;
+export default stockSlice.reducer;

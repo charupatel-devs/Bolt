@@ -1,10 +1,12 @@
 import { Plus } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
+import toast from "react-hot-toast";
 import { useDispatch, useSelector } from "react-redux";
 import { useLocation, useNavigate } from "react-router-dom";
 import AdminLayout from "../../components/admin/layout/AdminLayout";
 import AddSingleProduct from "../../components/admin/pages-components/AddSingleProduct";
 import BulkImportProduct from "../../components/admin/pages-components/BulkImportProduct";
+import ViewProductToast from "../../components/admin/toast/ViewProductToast.jsx";
 import {
   addProduct,
   bulkImportProductsService,
@@ -524,7 +526,8 @@ const AdminAddProduct = ({ initialMode = "single" }) => {
         ...formData,
         specifications: formData.specifications,
       };
-      await addProduct(submitData, dispatch);
+      const response = await addProduct(submitData, dispatch);
+
       setFormData({
         name: "",
         sku: "",
@@ -541,11 +544,14 @@ const AdminAddProduct = ({ initialMode = "single" }) => {
         images: [],
         specifications: {},
       });
+      toast.custom((t) => <ViewProductToast t={t} />, {
+        duration: 8000,
+        position: "top-center",
+      });
       setCategoryAttributes([]);
       setSelectedCategory(null);
     } catch (error) {
       console.error("💥 Component: Error:", error);
-      alert("Error creating product: " + error.message);
     } finally {
       setLoading(false);
     }

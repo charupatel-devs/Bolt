@@ -80,7 +80,7 @@ const verifyTokenAndGetUser = async (token) => {
 // Main authentication middleware
 exports.isAuthenticated = catchAsync(async (req, res, next) => {
   const token = extractToken(req);
-
+  console.log("Extracted token:", token);
   // Check if token exists
   if (!token) {
     return next(

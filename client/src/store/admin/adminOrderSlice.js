@@ -3,9 +3,41 @@ import { createSlice } from "@reduxjs/toolkit";
 
 const initialState = {
   orders: [],
+  recentOrders: [],
+  stats: {
+    today: {
+      total: 0,
+      revenue: 0,
+      pending: 0,
+      processing: 0,
+      shipped: 0,
+      delivered: 0,
+      refunded: 0,
+      returns: 0,
+    },
+    week: {
+      total: 0,
+      revenue: 0,
+      pending: 0,
+      processing: 0,
+      shipped: 0,
+      delivered: 0,
+      refunded: 0,
+      returns: 0,
+    },
+    month: {
+      total: 0,
+      revenue: 0,
+      pending: 0,
+      processing: 0,
+      shipped: 0,
+      delivered: 0,
+      refunded: 0,
+      returns: 0,
+    },
+  },
   isFetching: false,
   error: null,
-  // currentStatus: null, // Tracks which status is currently loaded
 };
 
 const adminOrderSlice = createSlice({
@@ -19,10 +51,15 @@ const adminOrderSlice = createSlice({
       state.loading = true;
       state.error = null;
     },
+    fetchRecentOrdersSuccess: (state, action) => {
+      state.loading = false;
+      state.recentOrders = action.payload.recentOrders;
+      state.stats = action.payload.stats || [];
+      state.error = null;
+    },
     fetchOrdersSuccess: (state, action) => {
       state.loading = false;
-      state.orders = action.payload;
-      // state.currentStatus = action.payload.status;
+      state.orders = action.payload || [];
       state.error = null;
     },
     fetchOrdersFailure: (state, action) => {
@@ -32,7 +69,11 @@ const adminOrderSlice = createSlice({
   },
 });
 
-export const { fetchOrdersStart, fetchOrdersSuccess, fetchOrdersFailure } =
-  adminOrderSlice.actions;
+export const {
+  fetchOrdersStart,
+  fetchOrdersSuccess,
+  fetchRecentOrdersSuccess,
+  fetchOrdersFailure,
+} = adminOrderSlice.actions;
 
 export default adminOrderSlice.reducer;

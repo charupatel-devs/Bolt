@@ -18,7 +18,7 @@ const AdminProtectedRoute = () => {
     try {
       // Validate token with backend (HttpOnly cookie automatically included)
       const response = await fetch(
-        `${"http://localhost:5001/api"}/admin/validate-token`,
+        `${"https://bolt-pup2.onrender.com/api"}/admin/validate-token`,
         {
           method: "GET",
           credentials: "include", // 🚨 CRITICAL: Include HttpOnly cookies

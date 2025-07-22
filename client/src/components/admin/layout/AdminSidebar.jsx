@@ -6,7 +6,6 @@ import {
   Package,
   Settings,
   ShoppingCart,
-  Truck,
   Users,
 } from "lucide-react";
 import { useState } from "react";
@@ -98,16 +97,16 @@ const AdminSidebar = ({ isOpen, onToggle }) => {
     //     { label: "Banner Management", path: "/admin/marketing/banners" },
     //   ],
     // },
-    {
-      key: "shipping",
-      label: "Shipping",
-      icon: Truck,
-      submenu: [
-        // { label: "Shipping Methods", path: "/admin/shipping/methods" },
-        // { label: "Shipping Zones", path: "/admin/shipping/zones" },
-        { label: "Track Shipments", path: "/admin/shipping/tracking" },
-      ],
-    },
+    // {
+    //   key: "shipping",
+    //   label: "Shipping",
+    //   icon: Truck,
+    //   submenu: [
+    //     // { label: "Shipping Methods", path: "/admin/shipping/methods" },
+    //     // { label: "Shipping Zones", path: "/admin/shipping/zones" },
+    //     { label: "Track Shipments", path: "/admin/shipping/tracking" },
+    //   ],
+    // },
     // {
     //   key: "finance",
     //   label: "Finance",

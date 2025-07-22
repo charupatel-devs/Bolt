@@ -1,20 +1,14 @@
 // src/pages/admin/AdminDashboard.jsx
-import {
-  Box,
-  DollarSign,
-  Eye,
-  LineChart,
-  ShoppingCart,
-  Users,
-} from "lucide-react";
+import { Box, DollarSign, ShoppingCart, Users } from "lucide-react";
 
 import { useEffect, useState } from "react";
-import RecentActivities from "../../components/admin/dashboard/RecentActivities";
+import { useDispatch, useSelector } from "react-redux";
 import RecentOrders from "../../components/admin/dashboard/RecentOrders";
 import SalesChart from "../../components/admin/dashboard/SalesChart";
 import StatsCard from "../../components/admin/dashboard/StatsCard";
-import TopProducts from "../../components/admin/dashboard/TopProducts";
 import AdminLayout from "../../components/admin/layout/AdminLayout";
+import { getDashboardStats } from "../../services_hooks/admin/adminDashboardService";
+import { fetchOrderStats } from "../../services_hooks/admin/adminOrderService";
 
 const AdminDashboard = () => {
   const [dashboardData, setDashboardData] = useState({
@@ -28,14 +22,59 @@ const AdminDashboard = () => {
     },
     loading: true,
   });
-
-  // Simulate API call
+  const {
+    recentOrders: orders,
+    stats,
+    isFetching,
+    error,
+  } = useSelector((state) => state.orders);
+  const dispatch = useDispatch();
+  useEffect(() => {
+    const fetchData = async () => {
+      await fetchOrderStats(dispatch);
+    };
+    fetchData();
+  }, [dispatch]);
   useEffect(() => {
     const fetchDashboardData = async () => {
-      // Simulate API delay
-      setTimeout(() => {
+      try {
+        setDashboardData((prev) => ({ ...prev, loading: true }));
+        const apiRes = await getDashboardStats();
+
+        // If your API returns { success, data: { overview, ... } }
+        const overview = apiRes.data?.overview || {};
+
+        // Optionally: calculate change/trend here if you want to show them
+        setDashboardData({
+          stats: {
+            totalRevenue: {
+              value: overview.totalRevenue || 0,
+              change: 0,
+              trend: "up",
+            },
+            totalOrders: {
+              value: overview.totalOrders || 0,
+              change: 0,
+              trend: "up",
+            },
+            totalCustomers: {
+              value: overview.totalUsers || 0,
+              change: 0,
+              trend: "up",
+            },
+            totalProducts: {
+              value: overview.totalProducts || 0,
+              change: 0,
+              trend: "up",
+            },
+            pageViews: { value: 0, change: 0, trend: "up" }, // If not available, set to 0
+            conversionRate: { value: 0, change: 0, trend: "up" }, // If not available, set to 0
+          },
+          loading: false,
+        });
+      } catch (error) {
         setDashboardData((prev) => ({ ...prev, loading: false }));
-      }, 1000);
+      }
     };
 
     fetchDashboardData();
@@ -44,7 +83,9 @@ const AdminDashboard = () => {
   const statsCards = [
     {
       title: "Total Revenue",
-      value: `$${dashboardData.stats.totalRevenue.value.toLocaleString()}`,
+      value: `$${
+        dashboardData.stats.totalRevenue.value?.toLocaleString() || 0
+      }`,
       change: dashboardData.stats.totalRevenue.change,
       trend: dashboardData.stats.totalRevenue.trend,
       icon: DollarSign,
@@ -53,7 +94,7 @@ const AdminDashboard = () => {
     },
     {
       title: "Total Orders",
-      value: dashboardData.stats.totalOrders.value.toLocaleString(),
+      value: dashboardData.stats.totalOrders.value?.toLocaleString() || 0,
       change: dashboardData.stats.totalOrders.change,
       trend: dashboardData.stats.totalOrders.trend,
       icon: ShoppingCart,
@@ -62,7 +103,7 @@ const AdminDashboard = () => {
     },
     {
       title: "Total Customers",
-      value: dashboardData.stats.totalCustomers.value.toLocaleString(),
+      value: dashboardData.stats.totalCustomers.value?.toLocaleString() || 0,
       change: dashboardData.stats.totalCustomers.change,
       trend: dashboardData.stats.totalCustomers.trend,
       icon: Users,
@@ -71,30 +112,12 @@ const AdminDashboard = () => {
     },
     {
       title: "Total Products",
-      value: dashboardData.stats.totalProducts.value.toLocaleString(),
+      value: dashboardData.stats.totalProducts.value?.toLocaleString() || 0,
       change: dashboardData.stats.totalProducts.change,
       trend: dashboardData.stats.totalProducts.trend,
       icon: Box,
       color: "orange",
       description: "Products in inventory",
-    },
-    {
-      title: "Page Views",
-      value: dashboardData.stats.pageViews.value.toLocaleString(),
-      change: dashboardData.stats.pageViews.change,
-      trend: dashboardData.stats.pageViews.trend,
-      icon: Eye,
-      color: "indigo",
-      description: "Total page views this month",
-    },
-    {
-      title: "Conversion Rate",
-      value: `${dashboardData.stats.conversionRate.value}%`,
-      change: dashboardData.stats.conversionRate.change,
-      trend: dashboardData.stats.conversionRate.trend,
-      icon: LineChart,
-      color: "pink",
-      description: "Visitor to customer conversion",
     },
   ];
 
@@ -133,34 +156,12 @@ const AdminDashboard = () => {
             <StatsCard key={index} {...stat} />
           ))}
         </div>
-
-        {/* Charts and Analytics Section */}
-        <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 mb-8">
-          {/* Sales Chart - Takes 2 columns */}
-          <div className="xl:col-span-2">
-            <SalesChart />
-          </div>
-
-          {/* Low Stock Alert */}
-          <div className="xl:col-span-1">{/* <LowStockProducts /> */}</div>
+        <div className="xl:col-span-2">
+          <SalesChart />
         </div>
 
-        {/* Second Row - Recent Orders and Activities */}
-        <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 mb-8">
-          {/* Recent Orders - Takes 2 columns */}
-          <div className="xl:col-span-2">
-            <RecentOrders />
-          </div>
-
-          {/* Recent Activities */}
-          <div className="xl:col-span-1">
-            <RecentActivities />
-          </div>
-        </div>
-
-        {/* Top Products Section */}
-        <div className="grid grid-cols-1 gap-6">
-          <TopProducts />
+        <div className="xl:col-span-2">
+          <RecentOrders orders={orders} />
         </div>
       </div>
     </AdminLayout>

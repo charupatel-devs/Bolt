@@ -13,7 +13,6 @@ const signToken = (id) => {
     expiresIn: process.env.JWT_EXPIRE || "7d",
   });
 };
-
 // 🚨 UPDATED: Create and send JWT token via HttpOnly cookie
 const createSendToken = (
   user,
@@ -30,9 +29,9 @@ const createSendToken = (
       Date.now() +
         (process.env.JWT_COOKIE_EXPIRES_IN || 7) * 24 * 60 * 60 * 1000
     ),
-    httpOnly: true, // 🚨 CRITICAL: Prevents JavaScript access
-    secure: process.env.NODE_ENV === "production", // HTTPS only in production
-    sameSite: "strict", // CSRF protection
+    httpOnly: true,
+    secure: true, // ✅ CRITICAL: Always true for SameSite=None
+    sameSite: "none", // ✅ CRITICAL: Required for cross-origin
     path: "/",
   };
 
@@ -366,8 +365,8 @@ const updateLastActivity = catchAsync(async (req, res, next) => {
 const clearAuthCookies = (res) => {
   const cookieOptions = {
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "strict",
+    secure: true,
+    sameSite: "none",
     path: "/",
   };
 

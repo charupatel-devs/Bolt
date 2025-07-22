@@ -1,3 +1,4 @@
+import toast from "react-hot-toast";
 import {
   ProductActionFailure,
   ProductActionStart,
@@ -5,6 +6,33 @@ import {
 } from "../../store/admin/adminProductSlice";
 import api from "../api";
 
+// Toast options
+const ErrorToastOptions = {
+  duration: 4000,
+  style: {
+    background: "#f87171",
+    color: "#fff",
+  },
+};
+
+const SuccessToastOptions = {
+  duration: 3000,
+  style: {
+    background: "#4ade80",
+    color: "#000",
+  },
+};
+
+// Parse error function
+const parseError = (error) => {
+  if (error.response) {
+    return error.response.data.message || "Invalid credentials";
+  } else if (error.request) {
+    return "Network error. Please check your connection.";
+  } else {
+    return "Something went wrong. Please try again.";
+  }
+};
 export const addProduct = async (productData, dispatch) => {
   try {
     dispatch(ProductActionStart());
@@ -52,28 +80,22 @@ export const addProduct = async (productData, dispatch) => {
       },
     });
 
-    if (data.success && data.product) {
-      dispatch(
-        ProductActionSuccess({
-          type: "ADD_PRODUCT",
-          payload: data.product,
-        })
-      );
-      return data;
-    } else {
-      dispatch(ProductActionFailure("Failed to add product"));
-      throw new Error("Failed to add product");
-    }
+    dispatch(
+      ProductActionSuccess({
+        type: "ADD_PRODUCT",
+        payload: data.product,
+      })
+    );
+    // toast.custom((t) => <ViewProductToast t={t} />, {
+    //   duration: 8000,
+    //   position: "top-center",
+    // });
+
+    return data;
   } catch (error) {
-    console.error("💥 Service: Axios error in addProduct:", error);
-
-    const errorMessage =
-      error.response?.data?.message ||
-      error.response?.statusText ||
-      error.message ||
-      "Unknown error adding product";
-
+    const errorMessage = parseError(error);
     dispatch(ProductActionFailure(errorMessage));
+    toast.error(errorMessage, ErrorToastOptions);
     throw new Error("Error adding product: " + errorMessage);
   }
 };
@@ -108,17 +130,14 @@ export const getAllProducts = async (dispatch, params = {}) => {
 
     if (data?.products) {
       dispatch(ProductActionSuccess({ type: "GET_PRODUCTS", payload: data }));
+      toast.success("Products loaded!", SuccessToastOptions);
     } else {
       throw new Error("Invalid response format");
     }
   } catch (error) {
-    const errorMessage =
-      error.response?.data?.message ||
-      error.response?.statusText ||
-      error.message ||
-      "Unknown error fetching products";
-
+    const errorMessage = parseError(error);
     dispatch(ProductActionFailure(errorMessage));
+    toast.error(errorMessage, ErrorToastOptions);
     throw new Error("Error fetching products: " + errorMessage);
   }
 };
@@ -168,7 +187,7 @@ export const updateProductService = async (
     });
 
     const { data } = await api.put(
-      `/admin/products/${productId}`,
+      `/admin/products/update/${productId}`,
       formDataToSend,
       {
         headers: {
@@ -213,8 +232,6 @@ export const deleteProductService = async (dispatch, productId) => {
 
     const { data } = await api.delete(`/admin/products/delete/${productId}`);
 
-    console.log("✅ Service: Product deleted successfully:", data);
-
     if (data.success) {
       dispatch(
         ProductActionSuccess({
@@ -222,6 +239,8 @@ export const deleteProductService = async (dispatch, productId) => {
           payload: productId,
         })
       );
+      toast.success("Product deleted!", SuccessToastOptions);
+
       return data;
     } else {
       dispatch(ProductActionFailure("Failed to delete product"));
@@ -371,28 +390,36 @@ export const exportProductsService = async (
     throw new Error("Error exporting products: " + errorMessage);
   }
 };
-
-export const fetchStocks = async (dispatch) => {
+// Returns a promise resolving to a list of products for the given categoryId
+export const getProductNameByCategory = async (dispatch, categoryId) => {
   try {
+    if (!categoryId) {
+      dispatch(ProductActionFailure("No category selected"));
+      toast.error("Please select a category first.", ErrorToastOptions);
+      return [];
+    }
+
     dispatch(ProductActionStart());
-    const { data } = await api.get("/products/stock");
-    if (data.success) {
+
+    const { data } = await api.get(`/products/names?category=${categoryId}`);
+
+    if (data.products.length) {
       dispatch(
         ProductActionSuccess({
-          type: "GET_STOCKS",
-          payload: data.products,
+          type: "GET_PRODUCT_NAMES",
+          payload: data,
         })
       );
+      toast.success("Product names loaded!", SuccessToastOptions);
     } else {
-      throw new Error("Failed to fetch stocks");
+      dispatch(ProductActionFailure("No products found for this category"));
+      toast.error("No products found for this category.", ErrorToastOptions);
     }
+    return products;
   } catch (error) {
-    const errorMessage =
-      error.response?.data?.message ||
-      error.response?.statusText ||
-      error.message ||
-      "Unknown error fetching stocks";
+    const errorMessage = parseError(error);
     dispatch(ProductActionFailure(errorMessage));
-    throw new Error("Error fetching stocks: " + errorMessage);
+    toast.error(errorMessage, ErrorToastOptions);
+    return [];
   }
 };

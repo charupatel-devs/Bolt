@@ -24,24 +24,17 @@ import { getOrdersByStatus } from "../../services_hooks/admin/adminOrderService"
 const AdminPendingOrders = () => {
   const dispatch = useDispatch();
   const [viewMode, setViewMode] = useState("table"); // Default to table view
-
   const { orders, isFetching, error } = useSelector((state) => state.orders);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedOrders, setSelectedOrders] = useState([]);
   const [priorityFilter, setPriorityFilter] = useState("all");
   const [ageFilter, setAgeFilter] = useState("all");
-
-  const fetchOrders = async () => {
-    try {
-      console.log("Fetching products with filters:");
-      await getOrdersByStatus("pending", dispatch);
-    } catch (err) {
-      console.error("Failed to fetch products:", err);
-    }
-  };
-
   useEffect(() => {
-    fetchOrders();
+    console.log("Fetching pending orders...");
+    const fetchData = async () => {
+      await getOrdersByStatus("pending", dispatch);
+    };
+    fetchData();
   }, [dispatch]);
 
   const getUrgencyColor = (urgency) => {

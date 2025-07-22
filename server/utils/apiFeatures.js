@@ -69,28 +69,21 @@ class APIFeatures {
 
   paginate() {
     const page = this.queryString.page * 1 || 1;
-    const limit = this.queryString.limit * 1 || 12;
+    const limit = this.queryString.limit * 1 || 5;
     const skip = (page - 1) * limit;
 
     this.query = this.query.skip(skip).limit(limit);
     return this;
   }
-
   search() {
-    const searchTerm = this.queryString.keyword || this.queryString.search;
-    if (searchTerm && searchTerm.trim() !== "") {
-      const searchCondition = {
-        $or: [
-          { name: { $regex: searchTerm, $options: "i" } },
-          { description: { $regex: searchTerm, $options: "i" } },
-          { "specifications.brand": { $regex: searchTerm, $options: "i" } },
-          { "specifications.model": { $regex: searchTerm, $options: "i" } },
-          { tags: { $in: [new RegExp(searchTerm, "i")] } },
-        ],
+    if (this.queryStr.keyword) {
+      const keyword = {
+        name: {
+          $regex: this.queryStr.keyword,
+          $options: "i",
+        },
       };
-
-      // Add $and if previous conditions exist
-      this.query = this.query.find({ $and: [searchCondition] });
+      this.query = this.query.find(keyword);
     }
     return this;
   }

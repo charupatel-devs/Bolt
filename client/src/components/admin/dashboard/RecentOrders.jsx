@@ -1,287 +1,202 @@
-// src/components/admin/dashboard/RecentOrders.jsx
-// After
-import { CheckCheck, Clock, Eye, Truck } from "lucide-react";
-
+import {
+  AlertTriangle,
+  CheckCircle,
+  Clock,
+  DollarSign,
+  Filter,
+  Package,
+  Search,
+  ShoppingCart,
+  Truck,
+} from "lucide-react";
 import { useState } from "react";
 
-const RecentOrders = () => {
-  const [selectedFilter, setSelectedFilter] = useState("all");
+// Optionally accept fetchRecentOrders as a prop for maximum flexibility
+const RecentOrders = ({
+  orders,
+  showSearch = true,
+  showFilter = true,
+  showViewAll = true,
+}) => {
+  const [search, setSearch] = useState("");
 
-  // Sample data - replace with actual API data
-  const orders = [
-    {
-      id: "ORD-12345",
-      customer: "John Doe",
-      customerEmail: "john@example.com",
-      products: ["iPhone 15 Pro", "Apple Watch Series 9"],
-      total: 1299.99,
-      status: "pending",
-      date: "2024-01-15T10:30:00",
-      avatar:
-        "https://ui-avatars.com/api/?name=John+Doe&background=3b82f6&color=ffffff",
-    },
-    {
-      id: "ORD-12344",
-      customer: "Sarah Wilson",
-      customerEmail: "sarah@example.com",
-      products: ["Samsung Galaxy S24", "Galaxy Buds Pro"],
-      total: 899.99,
-      status: "processing",
-      date: "2024-01-15T09:15:00",
-      avatar:
-        "https://ui-avatars.com/api/?name=Sarah+Wilson&background=10b981&color=ffffff",
-    },
-    {
-      id: "ORD-12343",
-      customer: "Mike Johnson",
-      customerEmail: "mike@example.com",
-      products: ['MacBook Pro 16"', "Magic Mouse"],
-      total: 2599.99,
-      status: "shipped",
-      date: "2024-01-15T08:45:00",
-      avatar:
-        "https://ui-avatars.com/api/?name=Mike+Johnson&background=f59e0b&color=ffffff",
-    },
-    {
-      id: "ORD-12342",
-      customer: "Emily Chen",
-      customerEmail: "emily@example.com",
-      products: ["iPad Air", "Apple Pencil", "Smart Keyboard"],
-      total: 1199.99,
-      status: "delivered",
-      date: "2024-01-14T16:20:00",
-      avatar:
-        "https://ui-avatars.com/api/?name=Emily+Chen&background=8b5cf6&color=ffffff",
-    },
-    {
-      id: "ORD-12341",
-      customer: "David Brown",
-      customerEmail: "david@example.com",
-      products: ["Sony WH-1000XM5", "Charging Case"],
-      total: 399.99,
-      status: "pending",
-      date: "2024-01-14T14:10:00",
-      avatar:
-        "https://ui-avatars.com/api/?name=David+Brown&background=ef4444&color=ffffff",
-    },
-    {
-      id: "ORD-12340",
-      customer: "Lisa Anderson",
-      customerEmail: "lisa@example.com",
-      products: ["Dell XPS 13", "Wireless Mouse"],
-      total: 1499.99,
-      status: "processing",
-      date: "2024-01-14T11:30:00",
-      avatar:
-        "https://ui-avatars.com/api/?name=Lisa+Anderson&background=06b6d4&color=ffffff",
-    },
-  ];
-
-  const statusConfig = {
-    pending: {
-      label: "Pending",
-      color: "bg-yellow-100 text-yellow-800",
-      icon: Clock,
-    },
-    processing: {
-      label: "Processing",
-      color: "bg-blue-100 text-blue-800",
-      icon: CheckCheck,
-    },
-    shipped: {
-      label: "Shipped",
-      color: "bg-purple-100 text-purple-800",
-      icon: Truck,
-    },
-    delivered: {
-      label: "Delivered",
-      color: "bg-green-100 text-green-800",
-      icon: CheckCheck,
-    },
+  const getStatusColor = (status) => {
+    switch (status) {
+      case "pending":
+        return "bg-yellow-100 text-yellow-800 border-yellow-200";
+      case "processing":
+        return "bg-blue-100 text-blue-800 border-blue-200";
+      case "shipped":
+        return "bg-purple-100 text-purple-800 border-purple-200";
+      case "delivered":
+        return "bg-green-100 text-green-800 border-green-200";
+      case "returned":
+      case "returns":
+        return "bg-orange-100 text-orange-800 border-orange-200";
+      case "refunded":
+        return "bg-gray-100 text-gray-800 border-gray-200";
+      default:
+        return "bg-gray-100 text-gray-800 border-gray-200";
+    }
   };
 
-  const formatCurrency = (amount) => {
-    return new Intl.NumberFormat("en-US", {
+  const getStatusIcon = (status) => {
+    switch (status) {
+      case "pending":
+        return <Clock className="w-4 h-4" />;
+      case "processing":
+        return <Package className="w-4 h-4" />;
+      case "shipped":
+        return <Truck className="w-4 h-4" />;
+      case "delivered":
+        return <CheckCircle className="w-4 h-4" />;
+      case "returned":
+      case "returns":
+        return <AlertTriangle className="w-4 h-4" />;
+      case "refunded":
+        return <DollarSign className="w-4 h-4" />;
+      default:
+        return <ShoppingCart className="w-4 h-4" />;
+    }
+  };
+
+  const formatCurrency = (amount) =>
+    new Intl.NumberFormat("en-US", {
       style: "currency",
-      currency: "USD",
+      currency: "INR",
     }).format(amount);
-  };
 
-  const formatDate = (dateString) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString("en-US", {
+  const formatDate = (dateString) =>
+    new Date(dateString).toLocaleDateString("en-US", {
       month: "short",
       day: "numeric",
       hour: "2-digit",
       minute: "2-digit",
     });
-  };
 
-  const filteredOrders =
-    selectedFilter === "all"
-      ? orders
-      : orders.filter((order) => order.status === selectedFilter);
-
-  const filterOptions = [
-    { value: "all", label: "All Orders", count: orders.length },
-    {
-      value: "pending",
-      label: "Pending",
-      count: orders.filter((o) => o.status === "pending").length,
-    },
-    {
-      value: "processing",
-      label: "Processing",
-      count: orders.filter((o) => o.status === "processing").length,
-    },
-    {
-      value: "shipped",
-      label: "Shipped",
-      count: orders.filter((o) => o.status === "shipped").length,
-    },
-    {
-      value: "delivered",
-      label: "Delivered",
-      count: orders.filter((o) => o.status === "delivered").length,
-    },
-  ];
+  // Filter orders by search
+  const filteredOrders = orders.filter((order) => {
+    const q = search.toLowerCase();
+    return (
+      order.orderNumber?.toLowerCase().includes(q) ||
+      order.user?.name?.toLowerCase().includes(q) ||
+      order.user?.email?.toLowerCase().includes(q)
+    );
+  });
 
   return (
-    <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h3 className="text-lg font-semibold text-gray-900">Recent Orders</h3>
-          <p className="text-sm text-gray-600">
-            Latest customer orders and their status
-          </p>
-        </div>
-        <button className="text-blue-600 hover:text-blue-800 text-sm font-medium">
-          View All Orders
-        </button>
-      </div>
-
-      {/* Filter Tabs */}
-      <div className="flex space-x-1 mb-6 bg-gray-100 p-1 rounded-lg">
-        {filterOptions.map((option) => (
-          <button
-            key={option.value}
-            onClick={() => setSelectedFilter(option.value)}
-            className={`flex-1 flex items-center justify-center space-x-2 px-3 py-2 rounded-md text-sm font-medium transition-colors duration-200 ${
-              selectedFilter === option.value
-                ? "bg-white text-blue-600 shadow-sm"
-                : "text-gray-600 hover:text-gray-900"
-            }`}
-          >
-            <span>{option.label}</span>
-            <span
-              className={`px-2 py-0.5 rounded-full text-xs ${
-                selectedFilter === option.value
-                  ? "bg-blue-100 text-blue-600"
-                  : "bg-gray-200 text-gray-600"
-              }`}
-            >
-              {option.count}
-            </span>
-          </button>
-        ))}
-      </div>
-
-      {/* Orders List */}
-      <div className="space-y-4">
-        {filteredOrders.map((order) => {
-          const StatusIcon = statusConfig[order.status].icon;
-
-          return (
-            <div
-              key={order.id}
-              className="flex items-center space-x-4 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors duration-200"
-            >
-              {/* Customer Avatar */}
-              <img
-                src={order.avatar}
-                alt={order.customer}
-                className="w-12 h-12 rounded-full"
-              />
-
-              {/* Order Details */}
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center justify-between mb-1">
-                  <h4 className="text-sm font-medium text-gray-900 truncate">
-                    {order.customer}
-                  </h4>
-                  <span className="text-sm font-semibold text-gray-900">
-                    {formatCurrency(order.total)}
-                  </span>
-                </div>
-
-                <div className="flex items-center justify-between mb-2">
-                  <p className="text-xs text-gray-600 truncate">
-                    {order.id} • {order.customerEmail}
-                  </p>
-                  <p className="text-xs text-gray-500">
-                    {formatDate(order.date)}
-                  </p>
-                </div>
-
-                {/* Products */}
-                <div className="flex items-center justify-between">
-                  <p className="text-xs text-gray-600 truncate mr-2">
-                    {order.products.length > 1
-                      ? `${order.products[0]} +${
-                          order.products.length - 1
-                        } more`
-                      : order.products[0]}
-                  </p>
-
-                  {/* Status Badge */}
-                  <div className="flex items-center space-x-2">
-                    <span
-                      className={`inline-flex items-center space-x-1 px-2 py-1 rounded-full text-xs font-medium ${
-                        statusConfig[order.status].color
-                      }`}
-                    >
-                      <StatusIcon className="w-3 h-3" />
-                      <span>{statusConfig[order.status].label}</span>
-                    </span>
-
-                    {/* View Details Button */}
-                    <button className="p-1 text-gray-400 hover:text-gray-600 rounded">
-                      <Eye className="w-4 h-4" />
-                    </button>
-                  </div>
-                </div>
+    <div className="bg-white rounded-xl shadow-sm border border-gray-100">
+      <div className="p-6 border-b border-gray-200">
+        <div className="flex items-center justify-between">
+          <h2 className="text-lg font-semibold text-gray-900">Recent Orders</h2>
+          <div className="flex items-center space-x-3">
+            {showSearch && (
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                <input
+                  type="text"
+                  placeholder="Search orders..."
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  className="pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
               </div>
-            </div>
-          );
-        })}
-      </div>
-
-      {/* Load More Button */}
-      {filteredOrders.length > 0 && (
-        <div className="mt-6 text-center">
-          <button className="px-4 py-2 text-sm font-medium text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-lg transition-colors duration-200">
-            Load More Orders
-          </button>
-        </div>
-      )}
-
-      {/* Empty State */}
-      {filteredOrders.length === 0 && (
-        <div className="text-center py-8">
-          {/* Empty State */}
-          <div className="w-16 h-16 mx-auto mb-4 bg-gray-100 rounded-full flex items-center justify-center">
-            <Clock className="w-8 h-8 text-gray-400" />
+            )}
+            {showFilter && (
+              <button className="flex items-center px-3 py-2 border border-gray-200 rounded-lg hover:bg-gray-50">
+                <Filter className="w-4 h-4 mr-2" />
+                Filter
+              </button>
+            )}
+            {showViewAll && (
+              <button className="text-blue-600 hover:text-blue-800 font-medium">
+                View All Orders
+              </button>
+            )}
           </div>
-
-          <h4 className="text-sm font-medium text-gray-900 mb-1">
-            No orders found
-          </h4>
-          <p className="text-xs text-gray-500">
-            No orders match the selected filter.
-          </p>
         </div>
-      )}
+      </div>
+      <div className="overflow-x-auto">
+        <table className="min-w-full">
+          <thead className="bg-gray-50">
+            <tr>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Order ID
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Customer
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Items
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Total
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Status
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Date
+              </th>
+            </tr>
+          </thead>
+          <tbody className="bg-white divide-y divide-gray-200">
+            {filteredOrders.map((order) => (
+              <tr key={order._id} className="hover:bg-gray-50">
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <div className="text-sm font-medium text-blue-600">
+                    {order.orderNumber}
+                  </div>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <div>
+                    <div className="text-sm font-medium text-gray-900">
+                      {order.user?.name}
+                    </div>
+                    <div className="text-sm text-gray-500">
+                      {order.user?.email}
+                    </div>
+                  </div>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <div className="text-sm text-gray-900">
+                    {order.totalItems} items
+                  </div>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <div className="text-sm font-medium text-gray-900">
+                    {formatCurrency(order.totalAmount)}
+                  </div>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <span
+                    className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${getStatusColor(
+                      order.status
+                    )}`}
+                  >
+                    {getStatusIcon(order.status)}
+                    <span className="ml-1 capitalize">
+                      {order.statusDisplay || order.status}
+                    </span>
+                  </span>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <div className="text-sm text-gray-900">
+                    {formatDate(order.createdAt)}
+                  </div>
+                </td>
+              </tr>
+            ))}
+            {filteredOrders.length === 0 && (
+              <tr>
+                <td colSpan={6} className="text-center py-8 text-gray-400">
+                  No orders found.
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 };
