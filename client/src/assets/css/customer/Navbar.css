@@ -31,10 +31,12 @@
 
 /* Logo */
 .navbar-logo .logo-text {
-  font-size: 40px;
+  font-size: 45px;
   font-weight: 750;
   color: #e02424;
   text-decoration: none;
+  font-family: 'Montserrat', sans-serif;
+
 }
 
 /* Search bar */
@@ -45,7 +47,7 @@
   border-radius: 6px;
   overflow: hidden;
   height: 42px;
-  width: 600px;
+  width: 550px;
   border: 1px solid #ccc;
 }
 
@@ -217,16 +219,20 @@
   align-items: center;
   gap: 6px;
   font-weight: 500;
-  color: white;
+  color: white !important;
   font-size: 14px;
   padding: 4px;
-  border: 2px solid transparent;
+  border: none !important;
+  background: none !important;
   transition: all 0.2s;
 }
+
 .auth-trigger:hover {
-  border: 2px solid #e02424;
-  border-radius: 6px;
+  text-decoration: underline;
+  border: none;
+  background: none;
 }
+
 
 .auth-dropdown {
   position: absolute;
@@ -298,4 +304,22 @@
     opacity: 1;
     transform: translateY(0);
   }
+}
+.auth-dropdown-wrapper .auth-trigger {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  color: #333;
+  font-weight: 500;
+}
+
+.auth-dropdown .dropdown-item {
+  padding: 8px 12px;
+  cursor: pointer;
+  color: #333;
+}
+
+.auth-dropdown .dropdown-item:hover {
+  background-color: #f3f4f6;
 }

@@ -4,6 +4,7 @@
   height: 100%;
   padding: 20px 20px 20px 0; /* No left padding to align with sidebar */
   box-sizing: border-box;
+  font-family: 'Montserrat', sans-serif;
 }
 
 /* ---------- Table Layout ---------- */
@@ -12,6 +13,7 @@
   padding: 20px;
   box-sizing: border-box;
   background-color: #fefefe; /* Optional */
+  margin-left: 32px; 
 }
 
 
@@ -92,11 +94,12 @@
 }
 
 .sort-by {
-  font-weight: bold;
+  /* font-weight: bold; */
   display: flex;
   align-items: center;
   gap: 6px;
   font-size: 14px;
+  
 }
 
 .sort-dropdown {

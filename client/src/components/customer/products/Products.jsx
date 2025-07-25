@@ -134,7 +134,7 @@ const Products = () => {
       }
     };
 
-    fetchProducts();
+    fetchProducts();  
   }, [categoryId]);
 
   useEffect(() => {

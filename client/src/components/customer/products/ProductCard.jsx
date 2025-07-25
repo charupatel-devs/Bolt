@@ -2,17 +2,18 @@ import React, { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import Layout from "../layout/Layout";
 import "../../../assets/css/customer/ProductCard.css";
-import { useDispatch } from "react-redux";
-import { addToCart } from "../../../services_hooks/customer/cartService";
+import { useDispatch, useSelector } from "react-redux"; 
+import { addToCartAction } from "../../../store/customer/cartAction"; 
 import { getProductById } from "../../../services_hooks/customer/productService";
 
 const ProductCard = () => {
   const { productId } = useParams();
   const dispatch = useDispatch();
-
+  const { token } = useSelector((state) => state.auth); 
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [quantity, setQuantity] = useState(1); 
 
   useEffect(() => {
     const fetchProduct = async () => {
@@ -34,8 +35,10 @@ const ProductCard = () => {
   }, [productId]);
 
   const handleAddToCart = () => {
+    if (!token) return alert("Please login to add items to cart.");
     if (!product || !product._id) return;
-    dispatch(addToCart(product._id, 1));
+
+    dispatch(addToCartAction(product._id, quantity)); 
   };
 
   if (loading) return <div className="loading-product">Loading...</div>;
@@ -61,7 +64,7 @@ const ProductCard = () => {
             <h1 className="product-name">{product.name}</h1>
 
             <div className="product-info-grid">
-              <div><strong>DigiKey Part Number:</strong></div>
+              <div><strong> Part Number:</strong></div>
               <div>{product.sku}</div>
 
               <div><strong>Manufacturer:</strong></div>
@@ -87,7 +90,12 @@ const ProductCard = () => {
 
             <div className="quantity-box">
               <label>Quantity</label>
-              <input type="number" min="1" defaultValue={1} />
+              <input
+                type="number"
+                min="1"
+                value={quantity}
+                onChange={(e) => setQuantity(Number(e.target.value))}
+              />
             </div>
 
             <button className="add-to-cart" onClick={handleAddToCart}>

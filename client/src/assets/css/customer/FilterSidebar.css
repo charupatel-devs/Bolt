@@ -1,13 +1,23 @@
+@import url('https://fonts.googleapis.com/css2?family=Roboto&family=Montserrat:wght@600&display=swap');
 .sidebar-container {
-  margin-left: 0.5rem;
-  margin-right: 5rem;
+  min-width: 220px;
+  background: #fff;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.07);
+  border-right: 1px solid #ececec;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  /* Remove height: 100% or any fixed height */
 }
 
 .sidebar-box {
-  background: #fff;
-  border: 2px solid #ddd;
-  padding: 1.5rem 1.75rem; /* Added space between border and content */
-  border-radius: 6px; /* Slightly smoother corners */
+  background: none;
+  border: none;
+  padding: 1.5rem 1.2rem 1.5rem 1.2rem;
+  border-radius: 0.8rem;
+  box-shadow: none;
+  font-family: 'Roboto', sans-serif;
 }
 
 .sidebar-header {
@@ -15,14 +25,52 @@
   justify-content: space-between;
   align-items: baseline;
   margin-bottom: 0.75rem;
+  border-bottom: none;
 }
 
 .sidebar-heading {
-  color: red;
+  color: #e02424;
   font-size: 1.25rem;
   font-weight: bold;
   padding-bottom: 0.25rem;
   text-decoration: underline;
+  border-bottom: none;
+  font-family: 'Montserrat', sans-serif;
+}
+
+.sidebar-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  width: 160px;
+  border-top: none;
+}
+
+.sidebar-item {
+  display: block;
+  margin: 0.5rem 0;
+  cursor: pointer;
+  font-weight: bold;
+  color: #222;
+  transition: color 0.2s, border-left 0.2s;
+  padding: 0.4rem 0.5rem 0.4rem 0.75rem;
+  border-left: 3px solid transparent;
+  border-radius: 4px;
+  background: none;
+  border-bottom: none;
+}
+
+.sidebar-item:hover,
+.sidebar-item.active {
+  color: #e02424;
+  border-left-color: #e02424;
+  background-color: #fef2f2;
+}
+
+.sidebar-item.active {
+  color: red;
+  border-left-color: red;
+  background-color: #ffeaea;
 }
 
 .view-all-link {
@@ -35,35 +83,4 @@
 
 .view-all-link:hover {
   text-decoration: underline;
-}
-
-.sidebar-list {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-  width: 160px; /* slightly wider */
-}
-
-.sidebar-item {
-  display: block;
-  margin: 0.5rem 0;
-  cursor: pointer;
-  font-weight: bold;
-  transition: color 0.2s, border-left 0.2s;
-  padding: 0.4rem 0.5rem 0.4rem 0.75rem; /* subtle inner spacing */
-  border-left: 3px solid transparent;
-  color: #333;
-  border-radius: 4px;
-}
-
-.sidebar-item:hover {
-  color: red;
-  border-left-color: red;
-  background-color: #fef2f2; /* light background on hover */
-}
-
-.sidebar-item.active {
-  color: red;
-  border-left-color: red;
-  background-color: #ffeaea; /* light red for active */
 }

@@ -11,6 +11,8 @@ import adminOrderReducer from "./admin/adminOrderSlice";
 import adminProductReducer from "./admin/adminProductSlice";
 import adminStockReducer from "./admin/adminStockSlice";
 // Customer product slice
+import cartReducer from "../store/customer/cartSlice"; 
+// import orderReducer from "./customer/orderSlice"; 
 
 export default configureStore({
   reducer: {
@@ -26,5 +28,7 @@ export default configureStore({
     // Customer-related state
     userAuth: userAuthReducer,
     product: productReducer,
+    cart: cartReducer,       
+    // order: orderReducer, 
   },
 });

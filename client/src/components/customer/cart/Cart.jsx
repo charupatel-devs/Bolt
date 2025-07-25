@@ -1,92 +1,79 @@
-import React, { useEffect, useState } from "react";
-import "../../../assets/css/customer/Cart.css"
+import React, { useEffect } from "react";
+import "../../../assets/css/customer/Cart.css";
+import { useDispatch, useSelector } from "react-redux";
+import toast from "react-hot-toast";
+
+import {
+  fetchCartStart,
+  fetchCartSuccess,
+  fetchCartFailure,
+  updateCartQuantity,
+  clearCartState,
+} from "../../../store/customer/cartSlice";
+
+import {
+  fetchCartItems,
+  updateCartItemQuantity,
+  clearCartService,
+  // placeOrderService, // Order functionality commented out
+} from "../../../services_hooks/customer/cartService";
+
 const Cart = () => {
-  const [cartItems, setCartItems] = useState([]);
-  const token = localStorage.getItem("authToken");
+  const dispatch = useDispatch();
+  const token = useSelector((state) => state.userAuth.token);
+  const { cartItems, loading } = useSelector((state) => state.cart);
 
   useEffect(() => {
-    fetch("http://localhost:5001/api/orders/cart", {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    })
-      .then((res) => res.json())
-      .then((data) => setCartItems(data.cartItems || []))
-      .catch((err) => console.error(err));
-  }, []);
-
-  const updateQuantity = async (productId, quantity) => {
-    try {
-      const res = await fetch(`http://localhost:5001/api/orders/cart/update/${productId}`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ quantity }),
-      });
-
-      const data = await res.json();
-      if (data.success) {
-        setCartItems((prev) =>
-          prev.map((item) =>
-            item.productId === productId ? { ...item, quantity } : item
-          )
-        );
-      } else {
-        alert("Failed to update quantity");
+    const loadCart = async () => {
+      dispatch(fetchCartStart());
+      try {
+        const items = await fetchCartItems(token);
+        dispatch(fetchCartSuccess(items));
+      } catch (err) {
+        dispatch(fetchCartFailure("Failed to load cart"));
       }
+    };
+    loadCart();
+  }, [dispatch, token]);
+
+  const handleUpdateQuantity = async (productId, quantity) => {
+    try {
+      await updateCartItemQuantity(productId, quantity, token);
+      dispatch(updateCartQuantity({ productId, quantity }));
     } catch (err) {
-      console.error("Error updating quantity:", err);
+      dispatch(fetchCartFailure("Failed to update quantity"));
     }
   };
 
   const handleClearCart = async () => {
     try {
-      const res = await fetch("http://localhost:5001/api/orders/cart/clear", {
-        method: "DELETE",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      if (res.ok) {
-        setCartItems([]);
-        alert("Cart cleared successfully.");
-      } else {
-        alert("Failed to clear cart.");
-      }
+      await clearCartService(token);
+      dispatch(clearCartState());
     } catch (err) {
-      console.error("Clear cart error:", err);
+      dispatch(fetchCartFailure("Failed to clear cart"));
     }
   };
 
-  const handlePlaceOrder = async () => {
-    try {
-      const res = await fetch("http://localhost:5001/api/orders/create", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-      });
-
-      const data = await res.json();
-      if (data.success) {
-        setCartItems([]);
-        alert("Order placed successfully!");
-      } else {
-        alert("Order failed.");
-      }
-    } catch (err) {
-      console.error("Place order error:", err);
-    }
-  };
+  // const handlePlaceOrder = async () => {
+  //   try {
+  //     const res = await placeOrderService(token);
+  //     if (res.success) {
+  //       dispatch(clearCartState());
+  //       toast.success("Order placed successfully!");
+  //     } else {
+  //       toast.error("Order failed");
+  //     }
+  //   } catch (err) {
+  //     toast.error("Error placing order");
+  //   }
+  // };
 
   return (
     <div className="cart-container">
       <h2>Your Cart</h2>
-      {cartItems.length === 0 ? (
+      {loading ? (
+        <p>Loading...</p>
+      ) : cartItems.length === 0 ? (
         <p>Your cart is empty</p>
       ) : (
         <>
@@ -105,7 +92,7 @@ const Cart = () => {
                   <td>
                     <button
                       onClick={() =>
-                        updateQuantity(item.productId, item.quantity - 1)
+                        handleUpdateQuantity(item.productId, item.quantity - 1)
                       }
                       disabled={item.quantity <= 1}
                     >
@@ -114,7 +101,7 @@ const Cart = () => {
                     <span style={{ margin: "0 8px" }}>{item.quantity}</span>
                     <button
                       onClick={() =>
-                        updateQuantity(item.productId, item.quantity + 1)
+                        handleUpdateQuantity(item.productId, item.quantity + 1)
                       }
                     >
                       +
@@ -130,13 +117,13 @@ const Cart = () => {
             <button onClick={handleClearCart} className="clear-btn">
               Clear Cart
             </button>
-            <button
+            {/* <button
               onClick={handlePlaceOrder}
               className="order-btn"
               style={{ marginLeft: "10px" }}
             >
               Place Order
-            </button>
+            </button> */}
           </div>
         </>
       )}

@@ -2,10 +2,10 @@ import jwt_decode from "jwt-decode";
 import React, { useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { Navigate, Outlet, useNavigate } from "react-router-dom";
-import { logOut } from "../features/authSlice";
+import { logOut } from "../../store/customer/userAuthSlice";
 
 const ProtectedRoute = () => {
-  const { isFetching, token } = useSelector((state) => state.auth);
+  const { isFetching, token } = useSelector((state) => state.userAuth);
   const dispatch = useDispatch();
   const navigate = useNavigate();
 

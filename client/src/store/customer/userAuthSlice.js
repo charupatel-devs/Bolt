@@ -1,4 +1,7 @@
 import { createSlice } from "@reduxjs/toolkit";
+import { useSelector } from "react-redux";
+import { FaUser } from "react-icons/fa";
+
 
 // Initialize state from localStorage
 const token = localStorage.getItem("userToken");

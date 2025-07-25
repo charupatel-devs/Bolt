@@ -1,7 +1,7 @@
 import React, { useEffect } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { useNavigate } from "react-router-dom";
-import { logoutUser } from "../../services_hooks/customer/userAuthApi"; // ✅ only correct import
+import { logoutUser } from "../../services_hooks/customer/userAuthApi"; 
 import "../../assets/css/customer/Dashboard.css";
 
 const Dashboard = () => {

@@ -1,5 +1,7 @@
+@import url('https://fonts.googleapis.com/css2?family=Roboto&family=Montserrat:wght@600&display=swap');
+
 .about-us-container {
-  font-family: 'Segoe UI', sans-serif;
+  font-family: 'Roboto', sans-serif;
   color: #333;
   background: #f9f9f9;
   padding: 2rem;
@@ -13,6 +15,7 @@
 }
 
 .hero-section .highlight {
+  font-family: 'Montserrat', sans-serif;
   color: #e60000;
   font-size: 45px;
   font-weight:700;
@@ -22,6 +25,7 @@
   margin-top: 3rem;
 }
 .history-section .heading{
+  font-family: 'Montserrat', sans-serif;
     font-size: 28px;
     font-weight:700;
 
@@ -54,6 +58,7 @@
 }
 
 .fast-facts-section {
+  font-family: 'Montserrat', sans-serif;
   margin-top: 3rem;
   background: #1e1e1e;
   color: white;
