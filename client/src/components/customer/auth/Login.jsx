@@ -1,6 +1,6 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import "../../../assets/css/customer/Login.css";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { FaEye, FaEyeSlash } from "react-icons/fa";
 import { useDispatch, useSelector } from "react-redux";
 import { loginUser } from "../../../services_hooks/customer/userAuthApi"; 
@@ -9,21 +9,64 @@ const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [isProcessingLogin, setIsProcessingLogin] = useState(false);
 
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  const { loading, error } = useSelector((state) => state.userAuth);
+  const location = useLocation();
+  const { loading, error, userToken } = useSelector((state) => state.userAuth);
+
+  // Debug: Log current auth state
+  useEffect(() => {
+    console.log("🔍 Current auth state:", { 
+      userToken: userToken ? "Present" : "Missing", 
+      loading, 
+      error,
+      isProcessingLogin 
+    });
+  }, [userToken, loading, error, isProcessingLogin]);
+
+  // Redirect if already authenticated
+  useEffect(() => {
+    console.log("🔍 Login useEffect - userToken:", userToken, "location:", location.pathname, "isProcessingLogin:", isProcessingLogin);
+    if (userToken && !isProcessingLogin) {
+      const from = location.state?.from?.pathname || "/";
+      console.log("🚀 Redirecting authenticated user to:", from);
+      
+      // Add a small delay to ensure Redux state is properly updated
+      setTimeout(() => {
+        navigate(from, { replace: true });
+      }, 100);
+    }
+  }, [userToken, navigate, location, isProcessingLogin]);
 
   const handleLogin = async (e) => {
     e.preventDefault();
-    console.log(" Sending credentials:", { email, password });
+    
+    if (isProcessingLogin) {
+      console.log("🔄 Login already in progress, ignoring duplicate request");
+      return;
+    }
+    
+    console.log("🔐 Starting login process with credentials:", { email, password });
+    setIsProcessingLogin(true);
+    
+    // Clear any existing errors when starting a new login attempt
+    if (error) {
+      dispatch({ type: 'userAuth/ClearUserError' });
+    }
 
     try {
       const response = await loginUser(dispatch, { email, password }); 
-      console.log("Login Successful:", response);
-      navigate("dashboard");
+      console.log("✅ Login Successful:", response);
+      
+      // Don't navigate here - let the useEffect handle navigation
+      // This prevents double navigation attempts
+      
     } catch (err) {
-      console.error(" Login Failed:", err.message);
+      console.error("❌ Login Failed:", err.message);
+    } finally {
+      setIsProcessingLogin(false);
     }
   };
 
@@ -67,8 +110,8 @@ const Login = () => {
             </span>
           </div>
 
-          <button className="login-btn" type="submit" disabled={loading}>
-            {loading ? "Logging in..." : "Login"}
+          <button className="login-btn" type="submit" disabled={loading || isProcessingLogin}>
+            {loading || isProcessingLogin ? "Logging in..." : "Login"}
           </button>
         </form>
 
@@ -87,11 +130,29 @@ const Login = () => {
         <hr />
 
         <div className="register-link">
-          Don’t have an account?{" "}
+          Don't have an account?{" "}
           <Link to="/register" className="register-now-link">
             Register Now
           </Link>
         </div>
+
+        {/* Temporary Debug Section */}
+        {process.env.NODE_ENV === 'development' && (
+          <div style={{ 
+            marginTop: '20px', 
+            padding: '10px', 
+            background: '#f0f0f0', 
+            borderRadius: '5px',
+            fontSize: '12px'
+          }}>
+            <strong>Debug Info:</strong><br/>
+            userToken: {userToken ? '✅ Present' : '❌ Missing'}<br/>
+            loading: {loading ? '🔄 Loading' : '✅ Idle'}<br/>
+            error: {error || 'None'}<br/>
+            localStorage userToken: {localStorage.getItem('userToken') ? '✅ Present' : '❌ Missing'}<br/>
+            localStorage userData: {localStorage.getItem('userData') ? '✅ Present' : '❌ Missing'}
+          </div>
+        )}
       </div>
 
       <footer className="login-footer">

@@ -2,7 +2,7 @@ import axios from "axios";
 
 // Create axios instance with base configuration
 const api = axios.create({
-  baseURL: "https://bolt-pup2.onrender.com/api",
+   baseURL: "https://bolt-pup2.onrender.com/api",
   timeout: 10000,
   withCredentials: true,
   headers: {
@@ -60,6 +60,8 @@ api.interceptors.response.use(
         isAdminRoute: requestUrl.includes("/admin"),
         isLoginPage: currentPath === "/admin/login",
         isLoginRequest: requestUrl.includes("/admin/login"),
+        errorMessage: error.response?.data?.message,
+        timestamp: new Date().toISOString()
       });
 
       if (requestUrl.includes("/admin")) {
@@ -73,20 +75,50 @@ api.interceptors.response.use(
           console.log("💡 Login failed - staying on login page");
         }
       }
-      // Handle user routes
+      // Handle user routes - Only redirect for protected endpoints
       else {
         const currentPath = window.location.pathname;
         const isUserLoginPage =
-          currentPath === "/login" || currentPath === "/register";
+          currentPath === "/customer/login" || 
+          currentPath === "/login" || 
+          currentPath === "/register";
         const isUserLoginRequest =
           requestUrl.includes("/user/login") ||
           requestUrl.includes("/auth/login");
+        
+        // Only redirect for protected user endpoints, not public ones
+        const isProtectedUserEndpoint = 
+          requestUrl.includes("/user/profile") ||
+          requestUrl.includes("/user/orders") ||
+          requestUrl.includes("/user/cart") ||
+          requestUrl.includes("/user/settings");
 
-        if (!isUserLoginPage && !isUserLoginRequest) {
-          console.log("🔐 User session expired, redirecting to login");
-          window.location.href = "/login";
+        console.log("👤 User route 401 detected:", {
+          isUserLoginPage,
+          isUserLoginRequest,
+          isProtectedUserEndpoint,
+          currentPath,
+          requestUrl
+        });
+
+        // Only redirect if it's a protected endpoint and not on login page
+        if (isProtectedUserEndpoint && !isUserLoginPage && !isUserLoginRequest) {
+          console.log("🔐 User session expired for protected endpoint, redirecting to login");
+          window.location.href = "/customer/login";
+        } else {
+          console.log("💡 Public endpoint 401 or login page - not redirecting");
         }
       }
+    }
+
+    // Handle 429 Rate Limiting - Don't redirect, just log
+    if (error.response?.status === 429) {
+      console.log("⚠️ RATE LIMIT DETECTED:", {
+        url: error.config?.url,
+        message: "Too many requests. Please wait before trying again.",
+        retryAfter: error.response?.headers?.['retry-after'] || 'unknown'
+      });
+      // Don't redirect for rate limiting - just let the error bubble up
     }
 
     return Promise.reject(error);

@@ -1,15 +1,13 @@
+// src/store/customer/userAuthSlice.js
 import { createSlice } from "@reduxjs/toolkit";
-import { useSelector } from "react-redux";
-import { FaUser } from "react-icons/fa";
 
-
-// Initialize state from localStorage
-const token = localStorage.getItem("userToken");
-const userData = JSON.parse(localStorage.getItem("userData"));
+// Optionally load initial state from localStorage
+const storedUser = localStorage.getItem("userData");
+const storedToken = localStorage.getItem("userToken");
 
 const initialState = {
-  user: userData || null,
-  token: token || null,
+  userData: storedUser ? JSON.parse(storedUser) : null,
+  userToken: storedToken ? storedToken : null,
   loading: false,
   error: null,
 };
@@ -18,62 +16,63 @@ const userAuthSlice = createSlice({
   name: "userAuth",
   initialState,
   reducers: {
-    // Login actions
+    // LOGIN
     UserLoginStart: (state) => {
       state.loading = true;
       state.error = null;
     },
     UserLoginSuccess: (state, action) => {
       state.loading = false;
-      state.user = action.payload.user;
-      state.token = action.payload.token;
+      state.userData = action.payload.user;
+      state.userToken = action.payload.token;
       state.error = null;
-
-      // Store in localStorage
-      localStorage.setItem("userToken", action.payload.token);
-      localStorage.setItem("userData", JSON.stringify(action.payload.user));
+      
+      // Force immediate localStorage update
+      try {
+        localStorage.setItem("userData", JSON.stringify(action.payload.user));
+        localStorage.setItem("userToken", action.payload.token);
+        console.log("✅ localStorage updated:", { 
+          userToken: localStorage.getItem("userToken") ? "Present" : "Missing",
+          userData: localStorage.getItem("userData") ? "Present" : "Missing"
+        });
+      } catch (error) {
+        console.error("❌ localStorage error:", error);
+      }
     },
     UserLoginFailure: (state, action) => {
       state.loading = false;
       state.error = action.payload;
     },
 
-    // Register actions
+    // REGISTER
     UserRegisterStart: (state) => {
       state.loading = true;
       state.error = null;
     },
     UserRegisterSuccess: (state, action) => {
       state.loading = false;
-      state.user = action.payload.user;
-      state.token = action.payload.token;
+      state.userData = action.payload.user;
+      state.userToken = action.payload.token;
       state.error = null;
-
-      // Store in localStorage
-      localStorage.setItem("userToken", action.payload.token);
       localStorage.setItem("userData", JSON.stringify(action.payload.user));
+      localStorage.setItem("userToken", action.payload.token);
     },
     UserRegisterFailure: (state, action) => {
       state.loading = false;
       state.error = action.payload;
     },
 
-    // Logout actions
-    UserLogoutStart: (state) => {
-      state.loading = true;
-    },
-    UserLogoutSuccess: (state) => {
-      state.user = null;
-      state.token = null;
+    // LOGOUT
+    UserLogout: (state) => {
+      state.userData = null;
+      state.userToken = null;
       state.loading = false;
       state.error = null;
-
-      // Remove from localStorage
-      localStorage.removeItem("userToken");
       localStorage.removeItem("userData");
+      localStorage.removeItem("userToken");
     },
 
-    // Clear error (optional utility reducer)
+    // OPTIONAL utility
     ClearUserError: (state) => {
       state.error = null;
       state.loading = false;
@@ -88,8 +87,7 @@ export const {
   UserRegisterStart,
   UserRegisterSuccess,
   UserRegisterFailure,
-  UserLogoutStart,
-  UserLogoutSuccess,
+  UserLogout,
   ClearUserError,
 } = userAuthSlice.actions;
 

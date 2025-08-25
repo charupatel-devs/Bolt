@@ -9,7 +9,8 @@ import { getProductById } from "../../../services_hooks/customer/productService"
 const ProductCard = () => {
   const { productId } = useParams();
   const dispatch = useDispatch();
-  const { token } = useSelector((state) => state.auth); 
+  const { userToken } = useSelector((state) => state.userAuth);
+
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -35,9 +36,22 @@ const ProductCard = () => {
   }, [productId]);
 
   const handleAddToCart = () => {
-    if (!token) return alert("Please login to add items to cart.");
-    if (!product || !product._id) return;
+    console.log("🛒 ProductCard handleAddToCart called:", { 
+      userToken: userToken ? "Present" : "Missing", 
+      product: product ? product._id : "Missing",
+      quantity 
+    });
+    
+    if (!userToken) {
+      console.log("❌ No userToken, showing login alert");
+      return alert("Please login to add items to cart.");
+    }
+    if (!product || !product._id) {
+      console.log("❌ No product or product._id:", { product: !!product, productId: product?._id });
+      return;
+    }
 
+    console.log("✅ Dispatching addToCartAction:", { productId: product._id, quantity });
     dispatch(addToCartAction(product._id, quantity)); 
   };
 

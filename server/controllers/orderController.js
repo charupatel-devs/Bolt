@@ -140,6 +140,13 @@ exports.addToCart = catchAsync(async (req, res, next) => {
   if (!product.isActive)
     return next(new AppError("Product is not available", 400));
 
+  // Safety check for corrupted minOrderQuantity values
+  if (!product.minOrderQuantity || product.minOrderQuantity > 50) {
+    console.log(`⚠️ Fixing corrupted minOrderQuantity for product ${product.name}: ${product.minOrderQuantity} -> 1`);
+    product.minOrderQuantity = 1;
+    await product.save();
+  }
+
   // Stock and quantity validation
   if (product.stock < quantity) {
     return next(
@@ -243,6 +250,13 @@ exports.updateCartItem = catchAsync(async (req, res, next) => {
 
   const product = await Product.findById(itemId);
   if (!product) return next(new AppError("Product not found", 404));
+
+  // Safety check for corrupted minOrderQuantity values
+  if (!product.minOrderQuantity || product.minOrderQuantity > 50) {
+    console.log(`⚠️ Fixing corrupted minOrderQuantity for product ${product.name}: ${product.minOrderQuantity} -> 1`);
+    product.minOrderQuantity = 1;
+    await product.save();
+  }
 
   if (quantity === 0) {
     // Remove item if quantity is 0

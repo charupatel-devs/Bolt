@@ -9,9 +9,10 @@ import AboutUs from "../pages/customer/AboutUs";
 import ContactUs from "../pages/customer/ContactUs";
 import ProductCard from "../components/customer/products/ProductCard";
 import Cart from "../components/customer/cart/Cart";
+import Checkout from "../components/customer/cart/Checkout";
 // import OrderDetails from "../components/customer/orders/OrderDetails";
-import ProtectedRoute from "../utils/customer/ProtectedRoute";
-// import Dashboard from "../pages/customer/Dashboard";
+ import ProtectedRoute from "../utils/customer/ProtectedRoute";
+
 
 const CustomerRoutes = () => {
   return (
@@ -26,13 +27,14 @@ const CustomerRoutes = () => {
       <Route path="product/:productId" element={<ProductCard />} />
       <Route path="about" element={<AboutUs />} />
       <Route path="contact" element={<ContactUs />} />
+      <Route path="cart" element={<Cart />} />
 
       {/* Protected Routes */}
       <Route element={<ProtectedRoute />}>
-        <Route path="customer/cart" element={<Cart />} />
-        {/* <Route path="customer/order-details/:orderId" element={<OrderDetails />} /> */}
-        {/* {/* <Route path="dashboard" element={<Dashboard />} />  */}
-      </Route>
+        <Route path="checkout" element={<Checkout />} />
+        {/* <Route path="order-details/:orderId" element={<OrderDetails />} /> */}
+
+      </Route> 
 
       {/* Fallback */}
       <Route path="*" element={<Navigate to="/" replace />} />

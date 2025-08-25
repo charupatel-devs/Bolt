@@ -6,14 +6,22 @@ import {
   UserRegisterStart,
   UserRegisterSuccess,
   UserRegisterFailure,
-  UserLogoutStart,
-  UserLogoutSuccess,
+  UserLogout,
+
 } from "../../store/customer/userAuthSlice";
 import api from "../api";
 
 // Toast Options
-const ErrorToastOptions = { duration: 4000, style: { background: "#f87171", color: "#fff" } };
-const SuccessToastOptions = { duration: 3000, style: { background: "#4ade80", color: "#000" } };
+const ErrorToastOptions = { 
+  duration: 4000, 
+  style: { background: "#f87171", color: "#fff" },
+  id: "error-toast" // Prevent duplicate toasts
+};
+const SuccessToastOptions = { 
+  duration: 3000, 
+  style: { background: "#4ade80", color: "#000" },
+  id: "success-toast" // Prevent duplicate toasts
+};
 
 const parseError = (error) => {
   if (error.response) {
@@ -34,6 +42,26 @@ async function postWithRetry(endpoint, payload, maxRetries = 3, delay = 1000) {
     } catch (err) {
       if (err.response?.status === 429 && attempt < maxRetries) {
         const backoff = delay * 2 ** attempt;
+        console.log(`🔄 Rate limited, retrying in ${backoff}ms (attempt ${attempt + 1}/${maxRetries})`);
+        await new Promise((res) => setTimeout(res, backoff));
+        attempt++;
+        continue;
+      }
+      throw err;
+    }
+  }
+}
+
+// Helper: retry with exponential backoff for GET requests
+async function getWithRetry(endpoint, maxRetries = 2, delay = 1000) {
+  let attempt = 0;
+  while (true) {
+    try {
+      return await api.get(endpoint);
+    } catch (err) {
+      if (err.response?.status === 429 && attempt < maxRetries) {
+        const backoff = delay * 2 ** attempt;
+        console.log(`🔄 Rate limited, retrying in ${backoff}ms (attempt ${attempt + 1}/${maxRetries})`);
         await new Promise((res) => setTimeout(res, backoff));
         attempt++;
         continue;
@@ -64,41 +92,46 @@ export const registerUser = async (dispatch, userData) => {
 export const loginUser = async (dispatch, credentials) => {
   dispatch(UserLoginStart());
   try {
-    const { data } = await api.post("/user/login", credentials);
-    dispatch(UserLoginSuccess(data));
+    console.log("🔄 Attempting login with credentials:", { email: credentials.email });
+    const { data } = await postWithRetry("/user/login", credentials);
+    console.log("✅ Login API response:", data);
+    
+    // Validate the response structure
+    if (!data || !data.user || !data.token) {
+      throw new Error("Invalid response structure from server");
+    }
+    
+    // data = { user, token, ... }
+    dispatch(UserLoginSuccess(data)); // <-- pass as-is
     toast.success(`Welcome back, ${data.user?.name || "User"}!`, { id: "user-login", ...SuccessToastOptions });
     return data;
   } catch (error) {
+    console.error("❌ Login error details:", error);
     const errorMsg = parseError(error);
     dispatch(UserLoginFailure(errorMsg));
-    toast.error(errorMsg, { id: "user-login", ...ErrorToastOptions });
+    
+    // Only show error toast if it's a real error, not a network timeout that might still succeed
+    if (error.response?.status >= 400) {
+      toast.error(errorMsg, { id: "user-login", ...ErrorToastOptions });
+    }
     throw error;
   }
 };
 
 // Logout User
 export const logoutUser = async (dispatch) => {
-  dispatch(UserLogoutStart());
-  try {
-    toast.loading("Signing out...", { id: "user-logout" });
-    await api.post("/user/logout");
-    dispatch(UserLogoutSuccess());
-    toast.success("Logged out successfully", { id: "user-logout", ...SuccessToastOptions });
-    return true;
-  } catch (error) {
-    dispatch(UserLogoutSuccess());
-    toast.success("Logged out successfully", { id: "user-logout", ...SuccessToastOptions });
-    return true;
-  }
+  dispatch(UserLogout());
+  toast.success("Logged out successfully", { id: "user-logout", ...SuccessToastOptions });
+  return true;
 };
 
 // Optional APIs
 export const getUserProfile = async () => {
-  const { data } = await api.get("/user/profile");
+  const { data } = await getWithRetry("/user/profile");
   return data;
 };
 
 export const validateUserToken = async () => {
-  const { data } = await api.get("/user/validate-token");
+  const { data } = await getWithRetry("/user/validate-token");
   return data;
 };
