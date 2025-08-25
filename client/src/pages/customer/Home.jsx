@@ -151,8 +151,16 @@ const Home = () => {
       setTestimonialsLoading(true);
       setTestimonialsError(null);
       try {
-        // Skip API call since /api/reviews doesn't exist on backend
-        // Use sample testimonials directly
+        // Try to fetch from API first
+        const response = await fetch('/api/reviews');
+        if (response.ok) {
+          const data = await response.json();
+          if (data.reviews && data.reviews.length > 0) {
+            setTestimonials(data.reviews);
+            return;
+          }
+        }
+        // Fallback to sample testimonials if API fails or returns empty
         setTestimonials([
           {
             id: 1,
