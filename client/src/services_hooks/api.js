@@ -2,7 +2,8 @@ import axios from "axios";
 
 // Create axios instance with base configuration
 const api = axios.create({
-   baseURL: "https://bolt-pup2.onrender.com/api",
+  baseURL: "https://bolt-pup2.onrender.com/api",
+  // baseURL: "http://localhost:5001/api",
   timeout: 10000,
   withCredentials: true,
   headers: {

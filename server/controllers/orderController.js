@@ -214,10 +214,22 @@ exports.addToCart = catchAsync(async (req, res, next) => {
   // Save to database (totals calculated automatically via pre-save hook)
   await cart.save();
 
+  // Populate cart items with product details for response
+  await cart.populate('items.productId', 'name primaryImage sku');
+
   res.status(200).json({
     success: true,
     message: "Item added to cart successfully",
-    cart: {
+    cart: cart.items.map(item => ({
+      productId: item.productId._id,
+      productName: item.productId.name,
+      image: item.productId.primaryImage,
+      sku: item.productId.sku,
+      quantity: item.quantity,
+      price: item.price,
+      addedAt: item.addedAt
+    })),
+    summary: {
       itemCount: cart.items.length,
       totalItems: cart.items.reduce((total, item) => total + item.quantity, 0),
       totalAmount: cart.totalAmount,

@@ -8,6 +8,7 @@ import {
   FaUser,
   FaBars,
   FaTimes,
+  FaHeart,
 } from "react-icons/fa";
 import { useDispatch, useSelector } from "react-redux";
 import { logoutUser } from "../../../services_hooks/customer/userAuthApi";
@@ -32,9 +33,6 @@ const Navbar = ({ onMenuClick }) => {
   const totalItems = Array.isArray(cartItems) 
     ? cartItems.reduce((total, item) => total + (item.quantity || 1), 0)
     : 0;
-
-  // Debug output
-  console.log("Navbar userAuth debug:", { userData, userToken });
 
   useEffect(() => {
     if (userToken) {
@@ -163,7 +161,7 @@ const Navbar = ({ onMenuClick }) => {
                   <Link to="/customer/orders" className="dropdown-item">
                     Orders
                   </Link>
-                  <Link to="/customer/cart" className="dropdown-item">
+                  <Link to="/cart" className="dropdown-item">
                     Cart
                   </Link>
                   <Link to="/lists" className="dropdown-item">
@@ -199,7 +197,7 @@ const Navbar = ({ onMenuClick }) => {
                   <Link to="/customer/orders" className="dropdown-item">
                     Orders
                   </Link>
-                  <Link to="/customer/cart" className="dropdown-item">
+                  <Link to="/cart" className="dropdown-item">
                     Cart
                   </Link>
                   <Link to="/lists" className="dropdown-item">
@@ -212,13 +210,23 @@ const Navbar = ({ onMenuClick }) => {
 
           {/* Cart icon with live item count */}
           <Link 
-            to="/customer/cart" 
+            to="/cart" 
             className="cart"
-            onClick={() => console.log("🛒 Cart icon clicked, navigating to /customer/cart")}
+            onClick={() => console.log("🛒 Cart icon clicked, navigating to /cart")}
           >
             <FaShoppingCart />
             <span className="cart-text">{totalItems} item(s)</span>
             {totalItems > 0 && <span className="cart-badge">{totalItems}</span>}
+          </Link>
+
+          {/* Wishlist icon with live item count */}
+          <Link 
+            to="/wishlist" 
+            className="wishlist"
+          >
+            <FaHeart />
+            <span className="wishlist-text">Wishlist</span>
+            {/* Wishlist count will be added here */}
           </Link>
 
           {/* Mobile Menu Toggle */}
@@ -311,7 +319,7 @@ const Navbar = ({ onMenuClick }) => {
                   <Link to="/customer/orders" onClick={() => setMobileMenuOpen(false)}>
                     Orders
                   </Link>
-                  <Link to="/customer/cart" onClick={() => setMobileMenuOpen(false)}>
+                  <Link to="/cart" onClick={() => setMobileMenuOpen(false)}>
                     Cart
                   </Link>
                   <Link to="/lists" onClick={() => setMobileMenuOpen(false)}>

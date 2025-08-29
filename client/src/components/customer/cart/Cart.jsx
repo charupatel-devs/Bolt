@@ -1,9 +1,10 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { FaShoppingCart, FaTrash, FaMinus, FaPlus } from "react-icons/fa";
 import "../../../assets/css/customer/Cart.css";
 import { useDispatch, useSelector } from "react-redux";
-import toast from "react-hot-toast";
+import { useNavigate } from "react-router-dom";
+import toast from "react-toastify";
 import Layout from "../layout/Layout";
 
 import {
@@ -20,8 +21,11 @@ import {
   clearCartService,
 } from "../../../services_hooks/customer/cartService";
 
+import { fetchCartItemsAction } from "../../../store/customer/cartAction";
+
 const Cart = () => {
   const dispatch = useDispatch();
+  const navigate = useNavigate();
   const { userToken } = useSelector((state) => state.userAuth);
   const { cartItems = [], loading } = useSelector((state) => state.cart);
 
@@ -37,37 +41,73 @@ const Cart = () => {
 
   useEffect(() => {
     const loadCart = async () => {
-      if (!userToken) return;
+      if (!userToken) {
+        console.log("🛒 Cart: No userToken, skipping cart load");
+        return;
+      }
       
+      console.log("🛒 Cart: Loading cart with token:", userToken ? "Present" : "Missing");
       dispatch(fetchCartStart());
       try {
         const items = await fetchCartItems(userToken);
+        console.log("🛒 Cart: Fetched cart items:", items);
         dispatch(fetchCartSuccess(items || []));
       } catch (err) {
+        console.error("🛒 Cart: Failed to load cart:", err.message);
         dispatch(fetchCartFailure("Failed to load cart"));
       }
     };
     loadCart();
   }, [dispatch, userToken]);
 
-  const handleUpdateQuantity = async (productId, quantity) => {
-    if (quantity < 0) return;
+  // Debug cart state
+  console.log("🛒 Cart: Current state:", { 
+    cartItems, 
+    loading, 
+    userToken: userToken ? "Present" : "Missing",
+    itemCount: cartItems?.length || 0 
+  });
+
+  const handleNavigateToProduct = (productId) => {
+    const id = productId?._id || productId;
+    navigate(`/product/${id}`);
+  };
+
+  const handleUpdateQuantity = async (productId, newQuantity) => {
+    if (newQuantity < 0) return;
+    
+    const id = productId?._id || productId;
+    console.log("🔄 Updating quantity:", { productId: id, quantity: newQuantity });
     
     try {
-      if (quantity === 0) {
-        // Remove item if quantity is 0
-        await updateCartItemQuantity(productId, 0, userToken);
-        dispatch(updateCartQuantity({ productId, quantity: 0 }));
-        // Filter out the item with 0 quantity
-        const updatedItems = cartItems.filter(item => item.productId !== productId);
+      if (newQuantity === 0) {
+        await updateCartItemQuantity(id, 0, userToken);
+        
+        const updatedItems = cartItems.filter(item => {
+          const itemProductId = item.productId?._id || item.productId || item._id;
+          return itemProductId !== id;
+        });
         dispatch(fetchCartSuccess(updatedItems));
         toast.success("Item removed from cart");
       } else {
-        await updateCartItemQuantity(productId, quantity, userToken);
-        dispatch(updateCartQuantity({ productId, quantity }));
+        await updateCartItemQuantity(id, newQuantity, userToken);
+        
+        const updatedItems = cartItems.map(item => {
+          const itemProductId = item.productId?._id || item.productId || item._id;
+          if (itemProductId === id) {
+            return { ...item, quantity: newQuantity };
+          }
+          return item;
+        });
+        
+        dispatch(fetchCartSuccess(updatedItems));
+        toast.success("Quantity updated");
       }
     } catch (err) {
+      console.error("❌ Update quantity error:", err);
       dispatch(fetchCartFailure("Failed to update quantity"));
+      toast.error("Failed to update quantity");
+      dispatch(fetchCartItemsAction());
     }
   };
 
@@ -100,7 +140,7 @@ const Cart = () => {
                 Create Account
               </Link>
             </div>
-            <Link to="/customer/" className="continue-shopping-btn">
+            <Link to="/" className="continue-shopping-btn">
               Continue Shopping
             </Link>
           </div>
@@ -112,10 +152,29 @@ const Cart = () => {
   if (loading) {
     return (
       <Layout>
-        <div className="cart-container">
-          <div className="loading-cart">
-            <div className="loading-spinner"></div>
+        <div className="cart-loader-container">
+          <div className="skeleton-cart">
+            {/* Product Image */}
+            <div className="skeleton-img shimmer"></div>
+            
+            {/* Product Info */}
+            <div className="skeleton-details">
+              <div className="skeleton-line shimmer"></div>
+              <div className="skeleton-line shimmer"></div>
+              <div className="skeleton-line short shimmer"></div>
+            </div>
           </div>
+
+          <div className="skeleton-cart">
+            <div className="skeleton-img shimmer"></div>
+            <div className="skeleton-details">
+              <div className="skeleton-line shimmer"></div>
+              <div className="skeleton-line shimmer"></div>
+              <div className="skeleton-line short shimmer"></div>
+            </div>
+          </div>
+
+          <p className="loading-text">Fetching your cart items...</p>
         </div>
       </Layout>
     );
@@ -129,7 +188,7 @@ const Cart = () => {
             <FaShoppingCart className="empty-cart-icon" />
             <h2>Your cart is empty</h2>
             <p>Looks like you haven't added any items to your cart yet.</p>
-            <Link to="/customer/" className="continue-shopping-btn">
+            <Link to="/" className="continue-shopping-btn">
               Continue Shopping
             </Link>
           </div>
@@ -141,95 +200,140 @@ const Cart = () => {
   return (
     <Layout>
       <div className="cart-container">
-        <div className="cart-header">
-          <h2>Shopping Cart</h2>
-          <div className="cart-items-count">
-            {totalItems} {totalItems === 1 ? 'item' : 'items'}
-          </div>
-        </div>
+        <div className="cart-wrapper">
+          {/* Left Side - Shopping Bag */}
+          <div className="shopping-bag">
+            <div className="bag-header">
+              <h2>Shopping Bag</h2>
+              <p>{totalItems} items in your bag</p>
+            </div>
 
-        <div className="cart-content">
-          <table className="cart-table">
-            <thead>
-              <tr>
-                <th>Product</th>
-                <th>Quantity</th>
-                <th>Price</th>
-                <th>Total</th>
-                <th>Action</th>
-              </tr>
-            </thead>
-            <tbody>
-              {cartItems.map((item) => (
-                <tr key={item.productId}>
-                  <td>
-                    <div className="product-info">
+            <div className="cart-items-list">
+              {cartItems.map((item, index) => {
+                console.log("🔍 Cart item structure:", item);
+                
+                const product = item.productId || item;
+                const productName = product?.name || item.productName || 'Unknown Product';
+                const productPrice = product?.price || item.price || 0;
+                
+                // Try multiple ways to get the product ID
+                let productId = null;
+                if (item.productId && typeof item.productId === 'object') {
+                  productId = item.productId._id;
+                } else if (item.productId && typeof item.productId === 'string') {
+                  productId = item.productId;
+                } else if (item._id) {
+                  productId = item._id;
+                } else if (product._id) {
+                  productId = product._id;
+                }
+                
+                console.log("🆔 Extracted productId:", productId);
+                const quantity = item.quantity || 1;
+                
+                return (
+                  <div 
+                    key={productId || index} 
+                    className="cart-item"
+                    onClick={() => {
+                      console.log("🔗 Cart item clicked:", { 
+                        productId, 
+                        product: product?._id, 
+                        item: item._id,
+                        fullItem: item,
+                        navigatingTo: `/product/${productId}`
+                      });
+                      if (productId) {
+                        handleNavigateToProduct(productId);
+                      } else {
+                        console.error("❌ No valid product ID found for navigation");
+                      }
+                    }}
+                    style={{ cursor: 'pointer' }}
+                  >
+                    {/* Product Image */}
+                    <div className="item-image">
                       <img
-                        src="/images/default-product.jpg"
-                        alt={item.productName || 'Product'}
-                        className="product-image"
+                        src={product?.images?.[0] || "/images/default-product.jpg"}
+                        alt={productName}
                       />
-                      <div className="product-details">
-                        <h3>{item.productName || 'Unknown Product'}</h3>
-                        <div className="product-sku">SKU: {item.productId}</div>
+                    </div>
+                    
+                    {/* Product Info */}
+                    <div className="item-details">
+                      <h3>{productName}</h3>
+                      <div className="item-meta">
+                        <span><strong>SKU:</strong> {product?.sku || 'N/A'}</span>
+                        <span><strong>Brand:</strong> {product?.brand || 'N/A'}</span>
+                        <span><strong>Category:</strong> {product?.category?.name || 'N/A'}</span>
+                        <span><strong>Unit:</strong> {product?.unit || 'Each'}</span>
                       </div>
                     </div>
-                  </td>
-                  <td>
+                    
+                    {/* Price */}
+                    <div className="item-price">
+                      <span>₹{productPrice.toFixed(2)}</span>
+                    </div>
+                    
+                    {/* Quantity Controls */}
                     <div className="quantity-controls">
-                      <button
+                      <button 
                         className="quantity-btn"
-                        onClick={() => handleUpdateQuantity(item.productId, (item.quantity || 1) - 1)}
-                        disabled={(item.quantity || 1) <= 1}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleUpdateQuantity(productId, quantity - 1);
+                        }}
                       >
-                        <FaMinus size={12} />
+                        <FaMinus />
                       </button>
-                      <span className="quantity-display">{item.quantity || 1}</span>
-                      <button
+                      <span className="quantity">{quantity}</span>
+                      <button 
                         className="quantity-btn"
-                        onClick={() => handleUpdateQuantity(item.productId, (item.quantity || 1) + 1)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleUpdateQuantity(productId, quantity + 1);
+                        }}
                       >
-                        <FaPlus size={12} />
+                        <FaPlus />
                       </button>
                     </div>
-                  </td>
-                  <td className="price-cell">₹{(item.price || 0).toFixed(2)}</td>
-                  <td className="price-cell">₹{((item.price || 0) * (item.quantity || 1)).toFixed(2)}</td>
-                  <td>
-                    <button
-                      className="remove-btn"
-                      onClick={() => handleUpdateQuantity(item.productId, 0)}
-                      title="Remove item"
-                    >
-                      <FaTrash size={14} />
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+                    
+                    {/* Total Price */}
+                    <div className="item-total">
+                      <span>₹{(productPrice * quantity).toFixed(2)}</span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
 
-          <div className="cart-summary">
-            <div className="summary-row">
-              <span>Subtotal ({totalItems} items):</span>
-              <span>₹{subtotal.toFixed(2)}</span>
-            </div>
-            <div className="summary-row">
-              <span>Tax (GST 18%):</span>
-              <span>₹{tax.toFixed(2)}</span>
-            </div>
-            <div className="summary-row total">
-              <span>Total:</span>
-              <span>₹{total.toFixed(2)}</span>
+          {/* Right Side - Cart Summary */}
+          <div className="cart-sidebar">
+            {/* Cart Total */}
+            <div className="cart-total-section">
+              <h3>Cart Total</h3>
+              <div className="total-breakdown">
+                <div className="total-row">
+                  <span>Cart Subtotal</span>
+                  <span>₹{subtotal.toFixed(2)}</span>
+                </div>
+                <div className="total-row">
+                  <span>Tax (18%)</span>
+                  <span>₹{tax.toFixed(2)}</span>
+                </div>
+                <div className="total-row final-total">
+                  <span>Order Total</span>
+                  <span>₹{total.toFixed(2)}</span>
+                </div>
+              </div>
+              <button className="checkout-button">Proceed to Checkout</button>
             </div>
 
-            <div className="cart-actions">
-              <button onClick={handleClearCart} className="clear-btn">
-                Clear Cart
-              </button>
-              <Link to="/customer/checkout" className="checkout-btn">
-                Proceed to Checkout
-              </Link>
+            {/* Call Us Anytime */}
+            <div className="call-us-section">
+              <h3>Call Us Anytime</h3>
+              <p>Need help? Our customer support team is available 24/7 at +91-9876543210 for any assistance.</p>
             </div>
           </div>
         </div>

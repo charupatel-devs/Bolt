@@ -9,25 +9,34 @@ import {
 import { fetchCartItems, addCartItem } from "../../services_hooks/customer/cartService";
 import toast from "react-hot-toast";
 
-export const fetchCartItemsAction = () => async (dispatch) => {
+export const fetchCartItemsAction = () => async (dispatch, getState) => {
   dispatch(fetchCartStart());
   try {
-    const token = localStorage.getItem("userToken");
-    const items = await fetchCartItems(token);
+    const { userToken } = getState().userAuth;
+    const items = await fetchCartItems(userToken);
     dispatch(fetchCartSuccess(items));
   } catch (err) {
     dispatch(fetchCartFailure("Failed to fetch cart"));
   }
 };
 
-export const addToCartAction = (productId, quantity = 1) => async (dispatch) => {
+export const addToCartAction = (productId, quantity = 1) => async (dispatch, getState) => {
   dispatch(addToCartStart());
   try {
-    const token = localStorage.getItem("userToken");
-    console.log("🎯 CartAction: Dispatching addToCart with:", { productId, quantity, token: token ? "Present" : "Missing" });
+    const { userToken } = getState().userAuth;
+    console.log("🎯 CartAction: Dispatching addToCart with:", { productId, quantity, token: userToken ? "Present" : "Missing" });
     
-    const items = await addCartItem(productId, quantity, token);
+    const items = await addCartItem(productId, quantity, userToken);
+    console.log("🎯 CartAction: Add to cart response:", items);
+    
     dispatch(addToCartSuccess(items));
+    
+    // Force refresh cart after successful add
+    console.log("🎯 CartAction: Refreshing cart after add...");
+    setTimeout(() => {
+      dispatch(fetchCartItemsAction());
+    }, 500);
+    
     // Remove duplicate toast - cartService already shows success message
   } catch (err) {
     console.error("🎯 CartAction: Add to cart failed:", err.message);

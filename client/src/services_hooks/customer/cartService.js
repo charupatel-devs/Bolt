@@ -17,7 +17,11 @@ export const fetchCartItems = async (token) => {
     const { data } = await api.get("/orders/cart", {
       headers: { Authorization: `Bearer ${token}` }
     });
-    return data.cart;
+    console.log("🛒 fetchCartItems raw response:", data);
+    console.log("🛒 cart.items structure:", data.cart?.items);
+    console.log("🛒 first item structure:", data.cart?.items?.[0]);
+    // Extract items array from cart object
+    return data.cart?.items || [];
   } catch (err) {
     const msg = parseError(err);
     toast.error(msg, ErrorToastOptions);

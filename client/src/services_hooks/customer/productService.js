@@ -43,7 +43,7 @@ export const getProducts = async (filters) => {
   }
 };
 
-// ✅ Fetch product by ID (for ProductCard.jsx)
+// Fetch product by ID (for ProductCard.jsx)
 export const getProductById = async (productId) => {
   try {
     const response = await api.get(`/products/${productId}`);
@@ -61,6 +61,90 @@ export const getFeaturedProducts = async (limit = 8) => {
     return Array.isArray(res.data) ? res.data : res.data.products || res.data;
   } catch (error) {
     console.error("Error fetching featured products:", error);
+    throw new Error(parseProductError(error));
+  }
+};
+
+// Wishlist APIs
+export const getWishlist = async (userToken) => {
+  try {
+    const response = await api.get("/user/wishlist", {
+      headers: { Authorization: `Bearer ${userToken}` }
+    });
+    
+    return response.data.wishlist || [];
+  } catch (error) {
+    console.error("Error fetching wishlist:", error);
+    throw new Error(parseProductError(error));
+  }
+};
+
+export const addToWishlist = async (productId, userToken) => {
+  try {
+    console.log("🔗 API Call: Adding to wishlist", { productId, hasToken: !!userToken });
+    
+    const response = await api.post(`/user/wishlist/add/${productId}`, {}, {
+      headers: {
+        'Authorization': `Bearer ${userToken}`
+      }
+    });
+    
+    console.log("✅ Add to wishlist success:", response.data);
+    return response.data;
+  } catch (error) {
+    console.error("❌ Error adding to wishlist:", error);
+    throw new Error(parseProductError(error));
+  }
+};
+
+export const removeFromWishlist = async (productId, userToken) => {
+  try {
+    console.log("🔗 API Call: Removing from wishlist", { productId, hasToken: !!userToken });
+    
+    const response = await api.delete(`/user/wishlist/remove/${productId}`, {
+      headers: {
+        'Authorization': `Bearer ${userToken}`
+      }
+    });
+    
+    console.log("✅ Remove from wishlist success:", response.data);
+    return response.data;
+  } catch (error) {
+    console.error("❌ Error removing from wishlist:", error);
+    throw new Error(parseProductError(error));
+  }
+};
+
+// Product Specifications API
+export const getProductSpecifications = async (productId) => {
+  try {
+    const res = await api.get(`/products/${productId}/specifications`);
+    return res.data?.specifications || res.data || {};
+  } catch (error) {
+    console.error("Error fetching product specifications:", error);
+    throw new Error(parseProductError(error));
+  }
+};
+
+// Product Reviews APIs
+export const getProductReviews = async (productId) => {
+  try {
+    const res = await api.get(`/products/${productId}/reviews`);
+    return res.data?.reviews || res.data || [];
+  } catch (error) {
+    console.error("Error fetching product reviews:", error);
+    throw new Error(parseProductError(error));
+  }
+};
+
+export const addProductReview = async (productId, reviewData, userToken) => {
+  try {
+    const res = await api.post(`/products/${productId}/reviews`, reviewData, {
+      headers: { Authorization: `Bearer ${userToken}` }
+    });
+    return res.data;
+  } catch (error) {
+    console.error("Error adding product review:", error);
     throw new Error(parseProductError(error));
   }
 };

@@ -10,6 +10,7 @@ import ContactUs from "../pages/customer/ContactUs";
 import ProductCard from "../components/customer/products/ProductCard";
 import Cart from "../components/customer/cart/Cart";
 import Checkout from "../components/customer/cart/Checkout";
+import Wishlist from "../components/customer/wishlist/Wishlist";
 // import OrderDetails from "../components/customer/orders/OrderDetails";
  import ProtectedRoute from "../utils/customer/ProtectedRoute";
 
@@ -28,6 +29,7 @@ const CustomerRoutes = () => {
       <Route path="about" element={<AboutUs />} />
       <Route path="contact" element={<ContactUs />} />
       <Route path="cart" element={<Cart />} />
+      <Route path="wishlist" element={<Wishlist />} />
 
       {/* Protected Routes */}
       <Route element={<ProtectedRoute />}>
