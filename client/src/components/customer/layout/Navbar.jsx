@@ -99,14 +99,48 @@ const Navbar = ({ onMenuClick }) => {
       "Semiconductors",
     ],
     Manufacturers: [
+      "Texas Instruments",
+      "STMicroelectronics", 
+      "Infineon Technologies",
       "Analog Devices",
-      "Diodes Inc",
+      "Microchip Technology",
+      "NXP Semiconductors",
+      "ON Semiconductor",
+      "Maxim Integrated",
+      "Cypress Semiconductor",
+      "Renesas Electronics",
+      "Vishay",
+      "ROHM Semiconductor",
       "Littelfuse",
       "Omron",
-      "ROHM Semiconductor",
+      "Molex",
+      "TE Connectivity"
     ],
-    Resources: ["Blog", "Datasheets", "Training", "Support"],
-    Quote: ["Request a Quote", "Bulk Orders", "Pricing Info"],
+    Resources: [
+      "Technical Articles", 
+      "Application Notes",
+      "Design Tools & Calculators",
+      "Reference Designs",
+      "Datasheets Library",
+      "Video Library",
+      "Webinars & Training",
+      "Product Selection Guides",
+      "PCB Design Resources",
+      "Testing & Measurement",
+      "Quality & Reliability",
+      "Technical Support"
+    ],
+    Quote: [
+      "Request Quote", 
+      "Bulk Pricing",
+      "Volume Discounts",
+      "Custom Solutions",
+      "BOM Upload & Quote",
+      "Distributor Network",
+      "Lead Time Information",
+      "Price & Stock Check",
+      "Procurement Services"
+    ],
   };
 
   return (
@@ -164,7 +198,7 @@ const Navbar = ({ onMenuClick }) => {
                   <Link to="/cart" className="dropdown-item">
                     Cart
                   </Link>
-                  <Link to="/lists" className="dropdown-item">
+                  <Link to="/wishlist" className="dropdown-item">
                     Lists
                   </Link>
                   <span className="dropdown-item" onClick={handleLogout}>
@@ -200,7 +234,7 @@ const Navbar = ({ onMenuClick }) => {
                   <Link to="/cart" className="dropdown-item">
                     Cart
                   </Link>
-                  <Link to="/lists" className="dropdown-item">
+                  <Link to="/wishlist" className="dropdown-item">
                     Lists
                   </Link>
                 </div>
@@ -322,7 +356,7 @@ const Navbar = ({ onMenuClick }) => {
                   <Link to="/cart" onClick={() => setMobileMenuOpen(false)}>
                     Cart
                   </Link>
-                  <Link to="/lists" onClick={() => setMobileMenuOpen(false)}>
+                  <Link to="/wishlist" onClick={() => setMobileMenuOpen(false)}>
                     Lists
                   </Link>
                   <button onClick={handleLogout}>

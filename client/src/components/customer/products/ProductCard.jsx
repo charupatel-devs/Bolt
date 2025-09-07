@@ -190,10 +190,12 @@ const ProductCard = () => {
 
   if (loading) return (
     <Layout>
-      <div className="product-loading">
-        <div className="loading-spinner"></div>
-        <p>Loading product details...</p>
-      </div>
+         <div className="loading-container">
+                <div className="dot-loader">
+    <span></span><span></span><span></span>
+  </div>
+                <p>Loading featured product details...</p>
+              </div>
     </Layout>
   );
 

@@ -98,8 +98,29 @@ const Wishlist = () => {
   if (loading) {
     return (
       <Layout>
-        <div className="wishlist-container">
-          <div className="loading-spinner">Loading your wishlist...</div>
+        <div className="wishlist-loader-container">
+          <div className="skeleton-wishlist">
+            {/* Product Image */}
+            <div className="skeleton-img shimmer"></div>
+            
+            {/* Product Info */}
+            <div className="skeleton-details">
+              <div className="skeleton-line shimmer"></div>
+              <div className="skeleton-line shimmer"></div>
+              <div className="skeleton-line short shimmer"></div>
+            </div>
+          </div>
+
+          <div className="skeleton-wishlist">
+            <div className="skeleton-img shimmer"></div>
+            <div className="skeleton-details">
+              <div className="skeleton-line shimmer"></div>
+              <div className="skeleton-line shimmer"></div>
+              <div className="skeleton-line short shimmer"></div>
+            </div>
+          </div>
+
+          <p className="loading-text">Fetching your wishlist items...</p>
         </div>
       </Layout>
     );

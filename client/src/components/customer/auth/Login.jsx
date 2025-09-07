@@ -136,23 +136,7 @@ const Login = () => {
           </Link>
         </div>
 
-        {/* Temporary Debug Section */}
-        {process.env.NODE_ENV === 'development' && (
-          <div style={{ 
-            marginTop: '20px', 
-            padding: '10px', 
-            background: '#f0f0f0', 
-            borderRadius: '5px',
-            fontSize: '12px'
-          }}>
-            <strong>Debug Info:</strong><br/>
-            userToken: {userToken ? '✅ Present' : '❌ Missing'}<br/>
-            loading: {loading ? '🔄 Loading' : '✅ Idle'}<br/>
-            error: {error || 'None'}<br/>
-            localStorage userToken: {localStorage.getItem('userToken') ? '✅ Present' : '❌ Missing'}<br/>
-            localStorage userData: {localStorage.getItem('userData') ? '✅ Present' : '❌ Missing'}
-          </div>
-        )}
+       
       </div>
 
       <footer className="login-footer">

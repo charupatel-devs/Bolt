@@ -4,7 +4,7 @@ import { FaShoppingCart, FaTrash, FaMinus, FaPlus } from "react-icons/fa";
 import "../../../assets/css/customer/Cart.css";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
-import toast from "react-toastify";
+import { toast } from "react-toastify";
 import Layout from "../layout/Layout";
 
 import {

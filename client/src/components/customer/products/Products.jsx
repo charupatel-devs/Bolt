@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import Layout from "../layout/Layout";
 import "../../../assets/css/customer/Products.css";
 
 const Products = () => {
@@ -9,7 +10,6 @@ const Products = () => {
   const [allProducts, setAllProducts] = useState([]);
   const [visibleProducts, setVisibleProducts] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
   const [pagination, setPagination] = useState({ page: 1, limit: 4 });
   const [totalPages, setTotalPages] = useState(1);
   const [sortOption, setSortOption] = useState("name");
@@ -79,7 +79,7 @@ const Products = () => {
           setTotalPages(Math.ceil(dummy.length / pagination.limit));
         }
       } catch (err) {
-        setError("Error fetching data. Showing dummy data.");
+        console.error("Error fetching products:", err);
         const dummy = [
           {
             _id: "1",
@@ -190,106 +190,107 @@ const Products = () => {
   };
 
   return (
-    <div className="w-full min-h-screen flex">
-      <div className="flex-grow">
-        <div className="products-container-v2">
-          <div className="table-controls">
-            <div className="left-controls">
-              <span className="pagination-summary">
-                Page <strong>{pagination.page}</strong> of <strong>{totalPages}</strong>
-              </span>
-              <div className="dropdown-divider"></div>
-              <div className="sort-by">
-                <label htmlFor="sort"><b>Sort By:</b></label>
-                <select
-                  id="sort"
-                  className="sort-dropdown"
-                  value={sortOption}
-                  onChange={(e) => setSortOption(e.target.value)}
-                >
-                  <option value="name">Name</option>
-                  <option value="price">Price</option>
-                  <option value="stock">Stock</option>
-                </select>
-              </div>
-            </div>
-            <div className="right-controls">
-              <button className="download-button" onClick={handleDownload}>
-                Download Table
-              </button>
-            </div>
-          </div>
-
-          {loading && <p>Loading products...</p>}
-          {error && <p className="error">Error: {error}</p>}
-          {!loading && visibleProducts.length === 0 && <p>No products found.</p>}
-
-          {!loading && visibleProducts.length > 0 && (
-            <>
-              <div className="table-container-v2">
-                <table className="product-table-v2">
-                  <thead>
-                    <tr>
-                      <th>Name</th>
-                      <th>SKU</th>
-                      <th>Speed</th>
-                      <th>Unit</th>
-                      <th>Price (₹)</th>
-                      <th>Stock</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {visibleProducts.map((p) => (
-                      <tr
-                        key={p._id}
-                        onClick={() => navigate(`/product/${p._id}`)}
-                        style={{ cursor: "pointer" }}
-                      >
-                        <td>
-                          <div className="product-name-cell">
-                            <img
-                              src="/images/default-product.jpg"
-                              alt={p.name}
-                              className="product-thumbnail"
-                            />
-                            <span className="hover-red-name">{p.name}</span>
-                          </div>
-                        </td>
-                        <td>{p.sku}</td>
-                        <td>{p.specifications?.speed || "N/A"}</td>
-                        <td>{p.unit}</td>
-                        <td>{p.price.toFixed(2)}</td>
-                        <td>{p.stock}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-
-              <div className="pagination-controls">
-                <button
-                  disabled={pagination.page === 1}
-                  onClick={goToPrevPage}
-                  className="pagination-button"
-                >
-                  Previous
-                </button>
-                <span className="page-info">
-                  Page {pagination.page} of {totalPages}
+    <Layout>
+      <div className="w-full min-h-screen flex">
+        <div className="flex-grow">
+          <div className="products-container-v2">
+            <div className="table-controls">
+              <div className="left-controls">
+                <span className="pagination-summary">
+                  Page <strong>{pagination.page}</strong> of <strong>{totalPages}</strong>
                 </span>
-                <button
-                  disabled={pagination.page === totalPages}
-                  onClick={goToNextPage}
-                  className="pagination-button"
-                >
-                  Next
+                <div className="dropdown-divider"></div>
+                <div className="sort-by">
+                  <label htmlFor="sort"><b>Sort By:</b></label>
+                  <select
+                    id="sort"
+                    className="sort-dropdown"
+                    value={sortOption}
+                    onChange={(e) => setSortOption(e.target.value)}
+                  >
+                    <option value="name">Name</option>
+                    <option value="price">Price</option>
+                    <option value="stock">Stock</option>
+                  </select>
+                </div>
+              </div>
+              <div className="right-controls">
+                <button className="download-button" onClick={handleDownload}>
+                  Download Table
                 </button>
               </div>
-            </>
-          )}
+            </div>
+
+            {loading && <p>Loading products...</p>}
+            {!loading && visibleProducts.length === 0 && <p>No products found.</p>}
+
+            {!loading && visibleProducts.length > 0 && (
+              <>
+                <div className="table-container-v2">
+                  <table className="product-table-v2">
+                    <thead>
+                      <tr>
+                        <th>Name</th>
+                        <th>SKU</th>
+                        <th>Speed</th>
+                        <th>Unit</th>
+                        <th>Price (₹)</th>
+                        <th>Stock</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {visibleProducts.map((p) => (
+                        <tr
+                          key={p._id}
+                          onClick={() => navigate(`/product/${p._id}`)}
+                          style={{ cursor: "pointer" }}
+                        >
+                          <td>
+                            <div className="product-name-cell">
+                              <img
+                                src="/images/default-product.jpg"
+                                alt={p.name}
+                                className="product-thumbnail"
+                              />
+                              <span className="hover-red-name">{p.name}</span>
+                            </div>
+                          </td>
+                          <td>{p.sku}</td>
+                          <td>{p.specifications?.speed || "N/A"}</td>
+                          <td>{p.unit}</td>
+                          <td>{p.price.toFixed(2)}</td>
+                          <td>{p.stock}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                <div className="pagination-controls">
+                  <button
+                    disabled={pagination.page === 1}
+                    onClick={goToPrevPage}
+                    className="pagination-button"
+                  >
+                    Previous
+                  </button>
+                  <span className="page-info">
+                    Page {pagination.page} of {totalPages}
+                  </span>
+                  <button
+                    disabled={pagination.page === totalPages}
+                    onClick={goToNextPage}
+                    className="pagination-button"
+                  >
+                    Next
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
         </div>
       </div>
-    </div>
+    </Layout>
   );
 };
 

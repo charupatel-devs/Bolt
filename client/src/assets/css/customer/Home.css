@@ -29,18 +29,18 @@ body, .home-content-area, .sidebar-container {
 /* Mobile Menu Toggle */
 .mobile-menu-toggle {
   position: fixed;
-  top: 1rem;
+  top: 120px;
   left: 1rem;
   z-index: 1001;
   background: #e02424;
   color: white;
   border: none;
   border-radius: 8px;
-  padding: 0.75rem;
-  font-size: 1.2rem;
+  padding: 0.5rem;
+  font-size: 0.9rem;
   cursor: pointer;
-  min-width: 44px;
-  min-height: 44px;
+  min-width: 36px;
+  min-height: 36px;
   display: none;
   align-items: center;
   justify-content: center;
@@ -181,13 +181,13 @@ body, .home-content-area, .sidebar-container {
   left: 50%;
   transform: translateX(-50%);
   display: flex;
-  gap: 1.5rem;
+  gap: 0.5rem;
   z-index: 3;
 }
 
 .indicator {
-  width: 8px;
-  height: 8px;
+  width: 2px;
+  height: 2px;
   border-radius: 50%;
   background: rgba(255, 255, 255, 0.5);
   border: none;
@@ -197,7 +197,7 @@ body, .home-content-area, .sidebar-container {
 
 .indicator.active {
   background: #e02424;
-  transform: scale(1.2);
+  transform: scale(1.1);
 }
 
 .indicator:hover {
@@ -865,6 +865,12 @@ body, .home-content-area, .sidebar-container {
   
   .mobile-menu-toggle {
     display: flex;
+    top: 120px;
+    left: 1rem;
+    font-size: 0.9rem;
+    padding: 0.5rem;
+    min-width: 36px;
+    min-height: 36px;
   }
   
   .hero-slideshow {
@@ -883,6 +889,15 @@ body, .home-content-area, .sidebar-container {
   
   .slide-subtitle {
     font-size: 1.1rem;
+  }
+  
+  .indicator {
+    width: 3px;
+    height: 3px;
+  }
+  
+  .slide-indicators {
+    gap: 0.5rem;
   }
 }
 
@@ -928,6 +943,23 @@ body, .home-content-area, .sidebar-container {
   .newsletter-form input,
   .subscribe-btn {
     width: 100%;
+  }
+  
+  .mobile-menu-toggle {
+    top: 110px;
+    font-size: 0.85rem;
+    padding: 0.45rem;
+    min-width: 32px;
+    min-height: 32px;
+  }
+  
+  .indicator {
+    width: 2.5px;
+    height: 2.5px;
+  }
+  
+  .slide-indicators {
+    gap: 0.4rem;
   }
 }
 
@@ -1022,6 +1054,24 @@ body, .home-content-area, .sidebar-container {
   .subscribe-btn {
     border-radius: 10px;
   }
+  
+  .mobile-menu-toggle {
+    top: 100px;
+    font-size: 0.8rem;
+    padding: 0.4rem;
+    min-width: 30px;
+    min-height: 30px;
+  }
+  
+  .indicator {
+    width: 2px;
+    height: 2px;
+  }
+  
+  .slide-indicators {
+    gap: 0.3rem;
+    bottom: 1.5rem;
+  }
 }
 
 @media (max-width: 480px) {
@@ -1103,6 +1153,25 @@ body, .home-content-area, .sidebar-container {
   
   .newsletter-content p {
     font-size: 0.9rem;
+  }
+  
+  .mobile-menu-toggle {
+    top: 90px;
+    left: 0.5rem;
+    font-size: 0.75rem;
+    padding: 0.35rem;
+    min-width: 28px;
+    min-height: 28px;
+  }
+  
+  .indicator {
+    width: 1.5px;
+    height: 1.5px;
+  }
+  
+  .slide-indicators {
+    gap: 0.25rem;
+    bottom: 1rem;
   }
 }
 
